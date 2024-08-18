@@ -71,6 +71,26 @@ impl BTreeNode {
 
         self.data.insert(greater_index, entry);
     }
+
+    pub fn find_insert_leaf<'a>(&'a mut self, search_key: i64) -> &'a mut BTreeNode {
+        if self.is_leaf() {
+            return self;
+        }
+
+        let index = match self.get_greater_than_index(search_key) {
+            Ok(i) => {
+                if i == 0 {
+                    0
+                } else {
+                    i - 1
+                }
+            }
+            Err(BTreeNodeSearchError::GreaterThanAll) => self.data.len() - 1,
+        };
+
+        let next_node = self.data.get_mut(index).unwrap().right.as_mut().unwrap();
+        return next_node.find_insert_leaf(search_key);
+    }
 }
 
 pub struct BTreeNodeEntry {

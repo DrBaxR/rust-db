@@ -1,4 +1,4 @@
-use node::{BTreeNode, BTreeNodeEntry, BTreeNodeSearchError};
+use node::{BTreeNode, BTreeNodeEntry};
 
 pub mod node;
 
@@ -32,32 +32,10 @@ impl BTree {
     pub fn insert(&mut self, entry: BTreeNodeEntry) {
         match &mut self.root {
             Some(root) => {
-                // find leaf to insert into
-                let mut current_node = root;
+                let leaf_to_insert = root.find_insert_leaf(entry.key);
+                leaf_to_insert.push(entry);
 
-                // TODO: (2) extract and make recursive
-                while !current_node.is_leaf() {
-                    current_node = match current_node.get_greater_than_index(entry.key) {
-                        Ok(greater_index) => {
-                            if greater_index == 0 {
-                                current_node.left.as_mut().unwrap().as_mut()
-                            } else {
-                                let left_element =
-                                    current_node.data.get_mut(greater_index - 1).unwrap();
-
-                                left_element.right.as_mut().unwrap()
-                            }
-                        }
-                        Err(BTreeNodeSearchError::GreaterThanAll) => {
-                            let left_element = current_node.data.last_mut().unwrap();
-
-                            left_element.right.as_mut().unwrap()
-                        }
-                    }
-                }
-
-                // push in leaf
-                current_node.push(entry);
+                // check number of elements and split if needed
             }
             None => {
                 self.root = Some(BTreeNode::new(entry));
