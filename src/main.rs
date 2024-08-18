@@ -38,12 +38,13 @@ impl BTree {
                             if greater_index == 0 {
                                 current_node.left.as_mut().unwrap().as_mut()
                             } else {
-                                let left_element = current_node.data.get_mut(greater_index - 1).unwrap();
+                                let left_element =
+                                    current_node.data.get_mut(greater_index - 1).unwrap();
 
                                 left_element.right.as_mut().unwrap()
                             }
                         }
-                        Err(BTreeNodeError::GreaterThanAll) => {
+                        Err(BTreeNodeSearchError::GreaterThanAll) => {
                             let left_element = current_node.data.last_mut().unwrap();
 
                             left_element.right.as_mut().unwrap()
@@ -52,9 +53,8 @@ impl BTree {
                 }
 
                 // push in leaf
-                // TODO: (1) make it get inserted where it's supposed to
-                current_node.data.push(entry);
-            },
+                current_node.push(entry);
+            }
             None => {
                 self.root = Some(BTreeNode::from_entry(entry));
             }
@@ -67,8 +67,8 @@ struct BTreeNode {
     data: Vec<BTreeNodeEntry>,
 }
 
-enum BTreeNodeError {
-    GreaterThanAll
+enum BTreeNodeSearchError {
+    GreaterThanAll,
 }
 
 impl BTreeNode {
@@ -124,14 +124,23 @@ impl BTreeNode {
         true
     }
 
-    fn get_greater_than_index(&self, search_key: i64) -> Result<usize, BTreeNodeError> {
+    fn get_greater_than_index(&self, search_key: i64) -> Result<usize, BTreeNodeSearchError> {
         for (i, entry) in self.data.iter().enumerate() {
             if entry.key > search_key {
                 return Ok(i);
             }
         }
 
-        Err(BTreeNodeError::GreaterThanAll)
+        Err(BTreeNodeSearchError::GreaterThanAll)
+    }
+
+    fn push(&mut self, entry: BTreeNodeEntry) {
+        let greater_index = match self.get_greater_than_index(entry.key) {
+            Ok(index) => index,
+            Err(BTreeNodeSearchError::GreaterThanAll) => self.data.len() - 1,
+        };
+
+        self.data.insert(greater_index, entry);
     }
 }
 
@@ -159,9 +168,9 @@ fn main() {
 
     // tree init
     let mut tree = BTree::new(3, None);
-    tree.insert(entry2);
-    tree.insert(entry1); // SHOULD INSERT ORDERED
-    tree.insert(entry3); // SHOULD SPLIT
+    tree.insert(entry3);
+    tree.insert(entry1);
+    tree.insert(entry2); // SHOULD SPLIT
 
     tree.print();
 }
