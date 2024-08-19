@@ -3,12 +3,12 @@ use node::{BTreeNode, BTreeNodeEntry};
 pub mod node;
 
 pub struct BTree {
-    order: i64,
+    order: usize,
     root: Option<BTreeNode>,
 }
 
 impl BTree {
-    pub fn new(order: i64, root: Option<BTreeNode>) -> Self {
+    pub fn new(order: usize, root: Option<BTreeNode>) -> Self {
         Self { order, root }
     }
 
@@ -36,6 +36,11 @@ impl BTree {
                 leaf_to_insert.push(entry);
 
                 // check number of elements and split if needed
+                if !leaf_to_insert.is_full(self.order) {
+                    return;
+                }
+
+                todo!("Implement splitting of full leaf node")
             }
             None => {
                 self.root = Some(BTreeNode::new(entry));

@@ -39,6 +39,10 @@ impl BTreeNode {
         res
     }
 
+    pub fn is_full(&self, order: usize) -> bool {
+        self.data.len() == order
+    }
+
     pub fn is_leaf(&self) -> bool {
         if let Some(_) = &self.left {
             return false;
