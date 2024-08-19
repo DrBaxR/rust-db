@@ -12,7 +12,8 @@ fn main() {
     let mut tree = BTree::new(3, None);
     tree.insert(entry3);
     tree.insert(entry1);
-    // tree.insert(entry2); // SHOULD SPLIT
+    tree.insert(entry2); // SHOULD SPLIT
 
-    tree.print();
+    println!("{:?}", tree);
+    tree.split_root();
 }

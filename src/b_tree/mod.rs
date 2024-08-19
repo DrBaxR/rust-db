@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use node::{BTreeNode, BTreeNodeEntry};
 
 pub mod node;
@@ -7,19 +9,28 @@ pub struct BTree {
     root: Option<BTreeNode>,
 }
 
+impl Debug for BTree {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
+}
+
 impl BTree {
     pub fn new(order: usize, root: Option<BTreeNode>) -> Self {
         Self { order, root }
     }
 
-    pub fn print(&self) {
-        println!("Tree order: {}", self.order);
+    fn to_string(&self) -> String {
+        let mut string = String::new();
+        string.push_str(format!("Tree order: {}\n", self.order).as_str());
 
         if let Some(root) = &self.root {
-            println!("{}", root.to_string())
+            string.push_str(format!("{:?}\n", root).as_str());
         } else {
-            println!("Tree is empty");
+            string.push_str("Tree is empty");
         }
+
+        string
     }
 
     // find leaf to insert into
@@ -40,11 +51,20 @@ impl BTree {
                     return;
                 }
 
-                todo!("Implement splitting of full leaf node")
+                // todo!("Implement splitting of full leaf node")
             }
             None => {
                 self.root = Some(BTreeNode::new(entry));
             }
         }
+    }
+
+    // TODO: remove this method
+    pub fn split_root(self) {
+        let split = self.root.unwrap().split_node(self.order);
+
+        println!("median: {:?}", split.median);
+        println!("left: {:?}", split.left);
+        println!("right: {:?}", split.right);
     }
 }

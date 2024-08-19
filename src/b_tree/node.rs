@@ -1,10 +1,24 @@
+use std::fmt::Debug;
+
 pub struct BTreeNode {
     pub left: Option<Box<BTreeNode>>,
     pub data: Vec<BTreeNodeEntry>,
 }
 
+pub struct BTreeNodeSplit {
+    pub median: BTreeNodeEntry,
+    pub left: BTreeNode,
+    pub right: BTreeNode,
+}
+
 pub enum BTreeNodeSearchError {
     GreaterThanAll,
+}
+
+impl Debug for BTreeNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
 }
 
 impl BTreeNode {
@@ -12,6 +26,13 @@ impl BTreeNode {
         Self {
             left: None,
             data: vec![entry],
+        }
+    }
+
+    fn from_vec(entries: Vec<BTreeNodeEntry>) -> Self {
+        Self {
+            left: None,
+            data: entries,
         }
     }
 
@@ -95,12 +116,42 @@ impl BTreeNode {
         let next_node = self.data.get_mut(index).unwrap().right.as_mut().unwrap();
         return next_node.find_insert_leaf(search_key);
     }
+
+    // assumes that node is full
+    pub fn split_node(mut self, order: usize) -> BTreeNodeSplit {
+        let median = self.data.remove(order / 2);
+
+        // TODO: potentially add some checks for whether node is full
+        // TODO: (2) consider only removing for one of these, since the other one can remain as old vector
+        // TODO: (1) also consider refactoring and moving to BTreeNodeSplit::from(node)
+        let mut left = Vec::new();
+        for i in 0..order / 2 {
+            left.push(self.data.remove(i));
+        }
+
+        let mut right = Vec::new();
+        for i in 0..order / 2 {
+            right.push(self.data.remove(i));
+        }
+
+        BTreeNodeSplit {
+            median,
+            left: BTreeNode::from_vec(left),
+            right: BTreeNode::from_vec(right),
+        }
+    }
 }
 
 pub struct BTreeNodeEntry {
     pub key: i64,
     pub value: i64,
     pub right: Option<BTreeNode>,
+}
+
+impl Debug for BTreeNodeEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
 }
 
 impl BTreeNodeEntry {
