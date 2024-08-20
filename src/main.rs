@@ -15,5 +15,4 @@ fn main() {
     tree.insert(entry2); // SHOULD SPLIT
 
     println!("{:?}", tree);
-    tree.split_root();
 }

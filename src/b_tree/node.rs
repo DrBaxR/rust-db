@@ -121,23 +121,15 @@ impl BTreeNode {
     pub fn split_node(mut self, order: usize) -> BTreeNodeSplit {
         let median = self.data.remove(order / 2);
 
-        // TODO: potentially add some checks for whether node is full
-        // TODO: (2) consider only removing for one of these, since the other one can remain as old vector
-        // TODO: (1) also consider refactoring and moving to BTreeNodeSplit::from(node)
         let mut left = Vec::new();
         for i in 0..order / 2 {
             left.push(self.data.remove(i));
         }
 
-        let mut right = Vec::new();
-        for i in 0..order / 2 {
-            right.push(self.data.remove(i));
-        }
-
         BTreeNodeSplit {
             median,
             left: BTreeNode::from_vec(left),
-            right: BTreeNode::from_vec(right),
+            right: BTreeNode::from_vec(self.data),
         }
     }
 }

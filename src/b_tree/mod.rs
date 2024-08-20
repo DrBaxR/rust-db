@@ -58,13 +58,4 @@ impl BTree {
             }
         }
     }
-
-    // TODO: remove this method
-    pub fn split_root(self) {
-        let split = self.root.unwrap().split_node(self.order);
-
-        println!("median: {:?}", split.median);
-        println!("left: {:?}", split.left);
-        println!("right: {:?}", split.right);
-    }
 }
