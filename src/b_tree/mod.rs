@@ -51,7 +51,11 @@ impl BTree {
                     return;
                 }
 
-                // todo!("Implement splitting of full leaf node")
+                let leaf_split = leaf_to_insert.split_node(self.order);
+                println!("median: {:?}\n", leaf_split.median);
+                println!("left: {:?}\n", leaf_split.left);
+                println!("right: {:?}\n", leaf_split.right);
+                // TODO: insert median into parent and update children
             }
             None => {
                 self.root = Some(BTreeNode::new(entry));

@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+#[derive(Clone)]
 pub struct BTreeNode {
     pub left: Option<Box<BTreeNode>>,
     pub data: Vec<BTreeNodeEntry>,
@@ -29,10 +30,10 @@ impl BTreeNode {
         }
     }
 
-    fn from_vec(entries: Vec<BTreeNodeEntry>) -> Self {
+    fn from_vec(entries: &[BTreeNodeEntry]) -> Self {
         Self {
             left: None,
-            data: entries,
+            data: entries.to_vec(),
         }
     }
 
@@ -117,23 +118,23 @@ impl BTreeNode {
         return next_node.find_insert_leaf(search_key);
     }
 
-    // assumes that node is full
-    pub fn split_node(mut self, order: usize) -> BTreeNodeSplit {
-        let median = self.data.remove(order / 2);
+    // assumes that node is full; doesn't set right of the entry to the right field
+    pub fn split_node(&self, order: usize) -> BTreeNodeSplit {
+        let median_index = order / 2;
+        let median = self.data.get(median_index).unwrap();
 
-        let mut left = Vec::new();
-        for i in 0..order / 2 {
-            left.push(self.data.remove(i));
-        }
+        let split_left = &self.data[0..median_index];
+        let split_right = &self.data[median_index + 1..];
 
         BTreeNodeSplit {
-            median,
-            left: BTreeNode::from_vec(left),
-            right: BTreeNode::from_vec(self.data),
+            median: BTreeNodeEntry::new(median.key, median.value, None),
+            left: BTreeNode::from_vec(split_left),
+            right: BTreeNode::from_vec(split_right),
         }
     }
 }
 
+#[derive(Clone)]
 pub struct BTreeNodeEntry {
     pub key: i64,
     pub value: i64,
