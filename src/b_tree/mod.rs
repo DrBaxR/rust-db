@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, ptr};
 
 use node::{BTreeNode, BTreeNodeEntry};
 
@@ -44,7 +44,7 @@ impl BTree {
         match &mut self.root {
             Some(root) => {
                 let leaf_to_insert = root.find_insert_leaf(entry.key);
-                leaf_to_insert.push(entry);
+                leaf_to_insert.push_no_children(entry);
 
                 // check number of elements and split if needed
                 if !leaf_to_insert.is_full(self.order) {
@@ -52,14 +52,31 @@ impl BTree {
                 }
 
                 let leaf_split = leaf_to_insert.split_node(self.order);
-                println!("median: {:?}\n", leaf_split.median);
-                println!("left: {:?}\n", leaf_split.left);
-                println!("right: {:?}\n", leaf_split.right);
-                // TODO: insert median into parent and update children
+                // self.insert_into_parent(leaf_to_insert, leaf_split.median, leaf_split.left, leaf_split.right);
             }
             None => {
                 self.root = Some(BTreeNode::new(entry));
             }
         }
+    }
+
+    // TODO: return new root?/update self.root
+    fn insert_into_parent(&mut self, node: *const BTreeNode, elem: BTreeNodeEntry, left: BTreeNode, right: BTreeNode) {
+        let order = self.order;
+        let parent = self.find_parent(node);
+
+        // case when parent exists
+        parent.push_with_children(elem, left, right);
+        if !parent.is_full(order) {
+            return;
+        }
+        
+        let parent_split = parent.split_node(order);
+        self.insert_into_parent(parent, parent_split.median, parent_split.left, parent_split.right);
+    }
+
+    // TODO: make it return an option, None in case node is root
+    fn find_parent(&self, node: *const BTreeNode) -> &mut BTreeNode {
+        todo!()
     }
 }

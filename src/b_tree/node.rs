@@ -89,13 +89,18 @@ impl BTreeNode {
         Err(BTreeNodeSearchError::GreaterThanAll)
     }
 
-    pub fn push(&mut self, entry: BTreeNodeEntry) {
+    pub fn push_no_children(&mut self, entry: BTreeNodeEntry) {
         let greater_index = match self.get_greater_than_index(entry.key) {
             Ok(index) => index,
             Err(BTreeNodeSearchError::GreaterThanAll) => self.data.len() - 1,
         };
 
         self.data.insert(greater_index, entry);
+    }
+
+    // TODO: push with left and right children
+    pub fn push_with_children(&mut self, entry: BTreeNodeEntry, left: BTreeNode, right: BTreeNode) {
+        todo!()
     }
 
     pub fn find_insert_leaf<'a>(&'a mut self, search_key: i64) -> &'a mut BTreeNode {
