@@ -1,4 +1,4 @@
-use std::{fmt::Debug, ptr};
+use std::fmt::Debug;
 
 use node::{BTreeNode, BTreeNodeEntry};
 
@@ -33,26 +33,27 @@ impl BTree {
         string
     }
 
-    // find leaf to insert into
-    // push in leaf
-    // if node not full => DONE
-    // if node full after push =>
-    // 1. find median
-    // 2. split node into left and right nodes (before and after median)
-    // 3. insert median into parent (may cause split and so on)
     pub fn insert(&mut self, entry: BTreeNodeEntry) {
-        match &mut self.root {
-            Some(root) => {
+        match self.root.take() {
+            Some(mut root) => {
                 let leaf_to_insert = root.find_insert_leaf(entry.key);
                 leaf_to_insert.push_no_children(entry);
 
                 // check number of elements and split if needed
-                if !leaf_to_insert.is_full(self.order) {
-                    return;
-                }
+                if leaf_to_insert.is_full(self.order) {
+                    let leaf_split = leaf_to_insert.split_node(self.order);
 
-                let leaf_split = leaf_to_insert.split_node(self.order);
-                // self.insert_into_parent(leaf_to_insert, leaf_split.median, leaf_split.left, leaf_split.right);
+                    let new_root = self.insert_into_parent(
+                        leaf_to_insert,
+                        leaf_split.median,
+                        leaf_split.left,
+                        leaf_split.right,
+                    );
+
+                    self.root = new_root.or(Some(root));
+                } else {
+                    self.root = Some(root);
+                }
             }
             None => {
                 self.root = Some(BTreeNode::new(entry));
@@ -60,23 +61,44 @@ impl BTree {
         }
     }
 
-    // TODO: return new root?/update self.root
-    fn insert_into_parent(&mut self, node: *const BTreeNode, elem: BTreeNodeEntry, left: BTreeNode, right: BTreeNode) {
+    fn insert_into_parent(
+        &self,
+        node: *const BTreeNode,
+        mut elem: BTreeNodeEntry,
+        left: BTreeNode,
+        right: BTreeNode,
+    ) -> Option<BTreeNode> {
         let order = self.order;
-        let parent = self.find_parent(node);
+        // unwrap is acceptable, as this method only gets called if the tree has a root
+        let parent = BTree::find_parent_of(self.root.as_ref().unwrap(), node);
 
-        // case when parent exists
-        parent.push_with_children(elem, left, right);
-        if !parent.is_full(order) {
-            return;
+        if let Some(parent) = parent {
+            // has parent
+            parent.push_with_children(elem, left, right);
+            if !parent.is_full(order) {
+                return None;
+            }
+
+            let parent_split = parent.split_node(order);
+            return self.insert_into_parent(
+                parent,
+                parent_split.median,
+                parent_split.left,
+                parent_split.right,
+            );
+        } else {
+            // is root
+            elem.right = Some(right);
+            let mut new_root = BTreeNode::new(elem);
+            new_root.left = Some(Box::new(left));
+
+            return Some(new_root);
         }
-        
-        let parent_split = parent.split_node(order);
-        self.insert_into_parent(parent, parent_split.median, parent_split.left, parent_split.right);
     }
 
-    // TODO: make it return an option, None in case node is root
-    fn find_parent(&self, node: *const BTreeNode) -> &mut BTreeNode {
+    // TODO: think how you can get around returning a mutable reference - why does this need to be mutable?
+    // None => node points to tree root; assumes node is always part of the tree
+    fn find_parent_of(root: &BTreeNode, node: *const BTreeNode) -> Option<&mut BTreeNode> {
         todo!()
     }
 }

@@ -137,6 +137,22 @@ impl BTreeNode {
             right: BTreeNode::from_vec(split_right),
         }
     }
+
+    pub fn children(&self) -> Vec<&BTreeNode> {
+        let mut children = vec![];
+
+        if let Some(left) = &self.left {
+            children.push(left.as_ref());
+        }
+
+        for entry in &self.data {
+            if let Some(right) = &entry.right {
+                children.push(right);
+            }
+        }
+
+        children
+    }
 }
 
 #[derive(Clone)]
