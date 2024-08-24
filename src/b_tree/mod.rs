@@ -4,6 +4,7 @@ use node::{BTreeNode, BTreeNodeEntry};
 
 pub mod node;
 
+// TODO: remake whole structure
 pub struct BTree {
     order: usize,
     root: Option<BTreeNode>,
@@ -12,6 +13,11 @@ pub struct BTree {
 enum ParentInsertResult {
     NewParent(BTreeNode),
     NewRoot(BTreeNode),
+}
+
+enum LeafInsertResult<'a> {
+    IntoLeaf(&'a BTreeNode), // leaf that was inserted into
+    IntoRoot(BTreeNode),     // new root
 }
 
 impl Debug for BTree {
@@ -38,19 +44,21 @@ impl BTree {
         string
     }
 
-    // TODO: review all insert logic again and make sure it makes sense
     pub fn insert(&mut self, entry: BTreeNodeEntry) {
-        match self.root.take() {
-            Some(mut root) => {
-                let leaf_to_insert = root.find_insert_leaf(entry.key);
-                leaf_to_insert.push_no_children(entry);
+        let order = self.order;
+        let insert_filled = self.insert_into_leaf(entry);
 
-                // check number of elements and split if needed
-                if leaf_to_insert.is_full(self.order) {
-                    let leaf_split = leaf_to_insert.split_node(self.order);
+        match insert_filled {
+            LeafInsertResult::IntoRoot(new_root) => {
+                self.root = Some(new_root);
+            }
+            LeafInsertResult::IntoLeaf(leaf) => {
+                if leaf.is_full(order) {
+                    let leaf_split = leaf.get_node_split(order);
 
+                    // TODO: this is not correct, as `insert_into_parent` expects the root of self to be present (not true, since it was taken at match start)
                     let new_root = self.insert_into_parent(
-                        leaf_to_insert,
+                        leaf,
                         leaf_split.median,
                         leaf_split.left,
                         leaf_split.right,
@@ -63,14 +71,33 @@ impl BTree {
                     // (idk, brain fried)
 
                     // self.root = new_root.or(Some(root));
-                } else {
-                    self.root = Some(root);
+                    // check number of elements and split if needed
                 }
             }
-            None => {
-                self.root = Some(BTreeNode::new(entry));
-            }
         }
+    }
+
+    // this method is an attrocity
+    fn insert_into_leaf(&mut self, entry: BTreeNodeEntry) -> LeafInsertResult {
+        let mut new_root = None;
+
+        let leaf_inserted = match &mut self.root {
+            Some(ref mut root) => {
+                let leaf_to_insert = root.find_insert_leaf(entry.key);
+                leaf_to_insert.push_no_children(entry);
+
+                Some(leaf_to_insert)
+            }
+            None => {
+                new_root = Some(BTreeNode::new(entry));
+
+                None
+            }
+        };
+
+        leaf_inserted
+            .map(|l| LeafInsertResult::IntoLeaf(l))
+            .unwrap_or(LeafInsertResult::IntoRoot(new_root.unwrap()))
     }
 
     // return last node that needed to be changed (from leaf to root); OR the new root
@@ -91,7 +118,7 @@ impl BTree {
             new_parent.push_with_children(elem, left, right);
 
             if new_parent.is_full(order) {
-                let parent_split = new_parent.split_node(order);
+                let parent_split = new_parent.get_node_split(order);
 
                 return self.insert_into_parent(
                     parent,

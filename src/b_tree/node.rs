@@ -124,7 +124,7 @@ impl BTreeNode {
     }
 
     // assumes that node is full; doesn't set right of the entry to the right field
-    pub fn split_node(&self, order: usize) -> BTreeNodeSplit {
+    pub fn get_node_split(&self, order: usize) -> BTreeNodeSplit {
         let median_index = order / 2;
         let median = self.data.get(median_index).unwrap();
 
