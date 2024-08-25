@@ -7,9 +7,10 @@ pub struct BTree {
 
 enum NodeReplace<'a> {
     Node(Node, &'a Node), // what node you need to replace with what value
-    Root(Node) // root needs to be replaced with value
+    Root(Node),           // root needs to be replaced with value
 }
 
+// TODO: figure out how to do rust docs
 impl BTree {
     pub fn new(b: usize) -> Self {
         Self {
@@ -30,7 +31,7 @@ impl BTree {
 
         // if full split in median, left and right
         let split_node = node_to_insert.get_split();
-        
+
         // insert median in parent (potentiallt split again, again, ...)
         // TODO: make insert_split_in_parent return dirrectly new root
         let node_replace = self.insert_split_in_parent(node_to_insert, split_node);
@@ -39,7 +40,38 @@ impl BTree {
 
     // constructs a new node subtree that represents the correct result post insert
     // return value represents instructions of where you need to replace a node to have a correct post-insert tree
-    fn insert_split_in_parent(&self, parent_of: &Node, split: NodeSplit) -> NodeReplace {
+    fn insert_split_in_parent(&self, current: &Node, split: NodeSplit) -> NodeReplace {
+        // find parent of node
+        let parent = self.find_parent(current);
+
+        // insert median in the parent
+        if let Some(parent) = parent {
+            // regular node
+            let mut new_parent = parent.clone();
+            new_parent.push_with_children(split);
+
+            // if not full, return NodeReplace
+            if !new_parent.is_full() {
+                return NodeReplace::Node(new_parent, parent);
+            }
+
+            // if full, split
+            let new_split = new_parent.get_split();
+
+            // recurse
+            return self.insert_split_in_parent(parent, new_split);
+        } else {
+            // root
+            let mut new_root = Node::new(self.b);
+            new_root.push_with_children(split);
+
+            return NodeReplace::Root(new_root);
+        };
+    }
+
+    // return None if parent is root
+    // panic if node is NOT in tree
+    fn find_parent(&self, node: &Node) -> Option<&Node> {
         todo!()
     }
 
@@ -48,4 +80,3 @@ impl BTree {
         todo!()
     }
 }
-
