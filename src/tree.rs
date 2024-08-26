@@ -47,8 +47,7 @@ impl BTree {
         // insert median in the parent
         if let Some(parent) = parent {
             // regular node
-            let mut new_parent = parent.clone();
-            new_parent.push_with_children(split);
+            let new_parent = parent.push_with_children(split.median.0, split.median.1, Some(split.left), Some(split.right));
 
             // if not full, return NodeReplace
             if !new_parent.is_full() {
@@ -63,20 +62,34 @@ impl BTree {
         } else {
             // root
             let mut new_root = Node::new(self.b);
-            new_root.push_with_children(split);
+            new_root = new_root.push_with_children(split.median.0, split.median.1, Some(split.left), Some(split.right));
 
             return NodeReplace::Root(new_root);
         };
     }
 
-    // return None if parent is root
+    // return None if node is root
     // panic if node is NOT in tree
     fn find_parent(&self, node: &Node) -> Option<&Node> {
-        todo!()
+        if std::ptr::addr_eq(&self.root, node) {
+            return None;
+        }
+
+        let parent = self.root.find_parent_of(node);
+        if parent.is_none() {
+            panic!("Node has no parent in tree");
+        }
+
+        parent
     }
 
     // returns new root after replace is applied
     fn get_root_after_replace(&self, replace: NodeReplace) -> Node {
-        todo!()
+        match replace {
+            NodeReplace::Node(node, to_replace) => {
+                self.root.clone_with_replaced_node(to_replace, &node)
+            },
+            NodeReplace::Root(root) => root,
+        }
     }
 }

@@ -11,9 +11,16 @@ pub struct Node {
 }
 
 pub struct NodeSplit {
-    median: (usize, usize),
-    left: Node,
-    right: Node,
+    pub median: (usize, usize),
+    pub left: Node,
+    pub right: Node,
+}
+
+enum KeySearchResult {
+    NodeEmpty,
+    LessThanAll,
+    LessThanIndex(usize),
+    GreaterThanAll,
 }
 
 impl Node {
@@ -27,7 +34,7 @@ impl Node {
     }
 
     fn is_leaf(&self) -> bool {
-        todo!()
+        self.edges.iter().all(|e| e.is_none())
     }
 
     // determines if self is the parent of node
@@ -36,7 +43,31 @@ impl Node {
             .iter()
             .filter(|op| op.is_some())
             .map(|op| op.as_ref().unwrap())
-            .any(|child| std::ptr::eq(child, node))
+            .any(|child| std::ptr::addr_eq(child, node))
+    }
+
+    // None if parent is not inside tree
+    pub fn find_parent_of(&self, node: &Node) -> Option<&Node> {
+        if self.is_parent_of(node) {
+            return Some(self);
+        }
+
+        if self.is_leaf() {
+            return None;
+        }
+
+        for edge in self
+            .edges
+            .iter()
+            .filter(|o| o.is_some())
+            .map(|o| o.as_ref().unwrap())
+        {
+            if let Some(parent) = edge.find_parent_of(node) {
+                return Some(parent);
+            }
+        }
+
+        None
     }
 
     pub fn is_full(&self) -> bool {
@@ -61,20 +92,103 @@ impl Node {
 
     // only takes care of the value, setting left and right to None
     // creates a new node that represents current node post-split
-    // keep in mind case where self is empty
     pub fn push(&self, key: usize, value: usize) -> Node {
-        todo!()
+        self.push_with_children(key, value, None, None)
     }
 
-    // push to current node, also taking care of the
+    // return new node - how current node would look like if you insert
     // should be able to handle case where self is empty
-    pub fn push_with_children(&mut self, split: NodeSplit) -> Node {
-        todo!()
+    pub fn push_with_children(&self, key: usize, value: usize, left: Option<Node>, right: Option<Node>) -> Node {
+        let search_result = self.search_key(key);
+        let mut new_node = self.clone();
+
+        match search_result {
+            KeySearchResult::NodeEmpty => {
+                new_node.keys[0] = key;
+                new_node.values[0] = value;
+                new_node.edges[0] = left;
+                new_node.edges[1] = right;
+            },
+            KeySearchResult::LessThanAll => {
+                new_node.keys.insert(0, key);
+                new_node.values.insert(0, value);
+                new_node.edges.insert(0, left);
+                new_node.edges[1] = right;
+            },
+            KeySearchResult::LessThanIndex(i) => {
+                new_node.keys.insert(i, key);
+                new_node.values.insert(i, value);
+                new_node.edges.insert(i, left);
+                new_node.edges[i + 1] = right;
+            },
+            KeySearchResult::GreaterThanAll => {
+                new_node.keys.push(key);
+                new_node.values.push(value);
+                new_node.edges.push(right);
+                let second_to_last = new_node.edges.len() - 2;
+                new_node.edges[second_to_last] = left;
+            },
+        }
+
+        new_node
     }
 
     // return what would happen if you split
     // panic if node is not full or has too many things inside
     pub fn get_split(&self) -> NodeSplit {
         todo!()
+    }
+
+    // search where key should be inserted in self
+    fn search_key(&self, key: usize) -> KeySearchResult {
+        if self.edges.is_empty() {
+            return KeySearchResult::NodeEmpty;
+        }
+
+        if key < *self.keys.get(0).unwrap() {
+            return KeySearchResult::LessThanAll;
+        }
+
+        for (i, self_key) in self.keys.iter().enumerate() {
+            if key < *self_key {
+                return KeySearchResult::LessThanIndex(i);
+            }
+        }
+
+        KeySearchResult::GreaterThanAll
+    }
+
+    // returns clone of self, but instead of node to_replace (as child somewhere), use replace_with
+    // if not in tree, clone without replacing
+    pub fn clone_with_replaced_node(&self, to_replace: &Node, replace_with: &Node) -> Node {
+        if std::ptr::addr_eq(self, to_replace) {
+            return replace_with.clone();
+        }
+
+        let mut new_self = self.clone_without_edges();
+        for (i, edge) in self.edges.iter().enumerate() {
+            if let Some(edge) = edge {
+                new_self.edges[i] = Some(edge.clone_with_replaced_node(to_replace, replace_with));
+            } else {
+                new_self.edges[i] = None;
+            }
+        }
+
+        new_self
+    }
+
+    // clones keys and values, all edges of original are set to None
+    fn clone_without_edges(&self) -> Node {
+        let mut new_edges = vec![];
+        for _ in self.edges.iter() {
+            new_edges.push(None);
+        }
+
+        Node {
+            keys: self.keys.clone(),
+            values: self.values.clone(),
+            edges: new_edges,
+            b: self.b,
+        }
     }
 }
