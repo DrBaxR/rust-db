@@ -6,6 +6,6 @@ fn main() {
     println!("{:?}", tree);
     tree.insert(1, 1);
     println!("{:?}", tree);
-    tree.insert(2, 2);
+    // tree.insert(2, 2);
     // tree.insert(3, 3); // split :)
 }

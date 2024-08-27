@@ -32,17 +32,19 @@ impl BTree {
         let node_to_insert = self.root.find_leaf_for(key);
         // insert inside it
         // TODO: make push dirrectly return Option<NodeSplit>, if node needs to split
-        node_to_insert.push(key, value);
-        if !node_to_insert.is_full() {
+        let new_node_to_insert = node_to_insert.push(key, value);
+        if !new_node_to_insert.is_full() {
+            // TODO: UPDATE NODE TO INSERT INTO ORIGINAL TREEEEEEEE!!!!!
+            todo!("THIS");
             return;
         }
 
         // if full split in median, left and right
-        let split_node = node_to_insert.get_split();
+        let split_node = new_node_to_insert.get_split();
 
         // insert median in parent (potentiallt split again, again, ...)
         // TODO: make insert_split_in_parent return dirrectly new root
-        let node_replace = self.insert_split_in_parent(node_to_insert, split_node);
+        let node_replace = self.insert_split_in_parent(&new_node_to_insert, split_node);
         self.root = self.get_root_after_replace(node_replace);
     }
 

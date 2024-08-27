@@ -12,6 +12,7 @@ pub struct Node {
     b: usize,
 }
 
+#[derive(Debug)]
 pub struct NodeSplit {
     pub median: (usize, usize),
     pub left: Node,
@@ -57,7 +58,7 @@ impl Node {
     }
 
     fn is_leaf(&self) -> bool {
-        self.edges.iter().all(|e| e.is_none())
+        self.edges.is_empty() || self.edges.iter().all(|e| e.is_none())
     }
 
     // determines if self is the parent of node
