@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 use crate::node::{Node, NodeSplit};
 
 pub struct BTree {
@@ -10,12 +8,6 @@ pub struct BTree {
 enum NodeReplace<'a> {
     Node(Node, &'a Node), // what node you need to replace with what value
     Root(Node),           // root needs to be replaced with value
-}
-
-impl Debug for BTree {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "BTree with B = {}\nRoot:\n{:?}", self.b, self.root)
-    }
 }
 
 // TODO: figure out how to do rust docs
@@ -43,7 +35,7 @@ impl BTree {
 
         // insert median in parent (potentiallt split again, again, ...)
         // TODO: make insert_split_in_parent return dirrectly new root
-        let node_replace = self.insert_split_in_parent(&new_node_to_insert, split_node);
+        let node_replace = self.insert_split_in_parent(&node_to_insert, split_node);
         self.root = self.get_root_after_replace(node_replace);
     }
 
@@ -100,6 +92,10 @@ impl BTree {
             },
             NodeReplace::Root(root) => root,
         }
+    }
+
+    pub fn print_tree(&self) {
+        self.root.print_node(0);
     }
 }
 

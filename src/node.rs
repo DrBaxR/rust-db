@@ -1,5 +1,3 @@
-use std::fmt::Debug;
-
 // maps number to number
 // contains (i in 0..2b-1) elements
 // edges[i] - child to the left of the ith element
@@ -12,7 +10,6 @@ pub struct Node {
     b: usize,
 }
 
-#[derive(Debug)]
 pub struct NodeSplit {
     pub median: (usize, usize),
     pub left: Node,
@@ -26,33 +23,22 @@ enum KeySearchResult {
     GreaterThanAll,
 }
 
-impl Debug for Node {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut entries = String::from("[ ");
-        for i in 0..self.keys.len() {
-            entries.push_str(format!("| {} -> {} | ", self.keys[i], self.values[i]).as_str());
-        }
-        entries.push_str("]");
-
-        let mut children = String::from("");
-        for edge in self.edges.iter() {
-            if let Some(edge) = edge {
-                children.push_str(format!("{:?}\n", edge).as_str());
-            } else {
-                children.push_str("None\n");
-            }
-        }
-
-        write!(f, "{}\n{}", entries, children)
-    }
-}
-
 impl Node {
     pub fn new(b: usize) -> Self {
         Self {
             keys: vec![],
             values: vec![],
             edges: vec![],
+            b,
+        }
+    }
+
+    // allocates memory for node with elems key value pairs
+    fn new_of_size(b: usize, elems: usize) -> Self {
+        Self {
+            keys: vec![0; elems],
+            values: vec![0; elems],
+            edges: vec![None; elems + 1],
             b,
         }
     }
@@ -182,8 +168,8 @@ impl Node {
         );
 
         // find left and right
-        let mut left = Node::new(self.b);
-        let mut right = Node::new(self.b);
+        let mut left = Node::new_of_size(self.b, self.b - 1);
+        let mut right = Node::new_of_size(self.b, self.b - 1);
         for i in 0..self.b - 1 {
             // left
             left.keys[i] = self.keys[i];
@@ -255,6 +241,27 @@ impl Node {
             values: self.values.clone(),
             edges: new_edges,
             b: self.b,
+        }
+    }
+
+    pub fn print_node(&self, level: usize) {
+        // print entries
+        let padding = "\t".repeat(level);
+
+        let mut entries = String::from("[ ");
+        for i in 0..self.keys.len() {
+            entries.push_str(format!("| {} -> {} | ", self.keys[i], self.values[i]).as_str());
+        }
+        entries.push_str("]");
+        println!("{}{}{}", level, padding, entries);
+
+        // print children
+        for edge in self.edges.iter() {
+            if let Some(edge) = edge {
+                edge.print_node(level + 1);
+            } else {
+                println!("{}{}\tNone", level + 1, padding);
+            }
         }
     }
 }
