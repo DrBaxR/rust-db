@@ -99,4 +99,8 @@ impl BTree {
     }
 }
 
-// TODO: tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+    // TODO: tests
+}
