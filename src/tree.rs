@@ -34,8 +34,7 @@ impl BTree {
         // TODO: make push dirrectly return Option<NodeSplit>, if node needs to split
         let new_node_to_insert = node_to_insert.push(key, value);
         if !new_node_to_insert.is_full() {
-            // TODO: UPDATE NODE TO INSERT INTO ORIGINAL TREEEEEEEE!!!!!
-            todo!("THIS");
+            self.root = self.get_root_after_replace(NodeReplace::Node(new_node_to_insert, node_to_insert));
             return;
         }
 
