@@ -1,7 +1,16 @@
-// maps number to number
-// contains (i in 0..2b-1) elements
-// edges[i] - child to the left of the ith element
-// edges[i + 1] - child to the right of the ith element
+/// Node of a key-value pair that maps a number to a number.
+///
+/// ### Constraints
+/// Contains a maximum of `2 * b - 1` elements. This affects the coundaries of the vectors as follows:
+/// - `keys`: contains `i` in `0..2 * b - 1`
+/// - `values`: contains `i` in `0..2 * b - 1`
+/// - `edges`: contains `i` in `0..2 * b`
+/// 
+/// ### Semantics
+/// - `key[i]`: the key of the *ith* element in the node
+/// - `value[i]`: the value of the *ith* element in the node
+/// - `edges[i]`: the left child of the *ith* element in the node
+/// - `edges[i + 1]`: the right child of the *ith* element in the node
 #[derive(Clone)]
 pub struct Node {
     keys: Vec<usize>,
@@ -43,6 +52,7 @@ impl Node {
         }
     }
 
+    /// Returns `true` if the node is a leaf (has no children)
     fn is_leaf(&self) -> bool {
         self.edges.is_empty() || self.edges.iter().all(|e| e.is_none())
     }
@@ -269,5 +279,27 @@ impl Node {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // TODO: tests
+
+    #[test]
+    fn is_leaf_if_empty() {
+        let node = Node::new(2);
+
+        assert!(node.is_leaf());
+    }
+
+    #[test]
+    fn is_leaf_if_no_children() {
+        let mut node = Node::new(2);
+        node = node.push(1, 1);
+
+        assert!(node.is_leaf());
+    }
+
+    #[test]
+    fn is_not_leaf_if_has_child() {
+        let mut node = Node::new(2);
+        node = node.push_with_children(1, 1, Some(node.clone()), Some(node.clone()));
+
+        assert!(!node.is_leaf());
+    }
 }
