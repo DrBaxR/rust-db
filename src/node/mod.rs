@@ -92,11 +92,12 @@ impl Node {
         None
     }
 
+    /// Returns `true` if node is full.
     pub fn is_full(&self) -> bool {
         self.keys.len() >= 2 * self.b - 1
     }
 
-    // panics if trying to find a key in empty node
+    /// Returns a reference to a *leaf* in `self`'s *subtree* (including itself) that is fit for inserting a node with a key of `key`.
     pub fn find_leaf_for(&self, key: usize) -> &Node {
         if self.is_leaf() {
             return self;
