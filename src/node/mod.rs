@@ -1,3 +1,5 @@
+mod tests;
+
 /// Node of a key-value pair that maps a number to a number.
 ///
 /// ### Constraints
@@ -52,12 +54,12 @@ impl Node {
         }
     }
 
-    /// Returns `true` if the node is a leaf (has no children)
+    /// Returns `true` if the node is a leaf (has no children).
     fn is_leaf(&self) -> bool {
         self.edges.is_empty() || self.edges.iter().all(|e| e.is_none())
     }
 
-    // determines if self is the parent of node
+    /// Returns `true` if the `node` reference can be found in the children of `self`.
     pub fn is_parent_of(&self, node: &Node) -> bool {
         self.edges
             .iter()
@@ -66,7 +68,7 @@ impl Node {
             .any(|child| std::ptr::addr_eq(child, node))
     }
 
-    // None if parent is not inside tree
+    /// Returns the parent of `node`, if it can be found in the children of `self` (including itself). Otherwise returns `None`.
     pub fn find_parent_of(&self, node: &Node) -> Option<&Node> {
         if self.is_parent_of(node) {
             return Some(self);
@@ -273,33 +275,5 @@ impl Node {
                 println!("{}{}\tNone", level + 1, padding);
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn is_leaf_if_empty() {
-        let node = Node::new(2);
-
-        assert!(node.is_leaf());
-    }
-
-    #[test]
-    fn is_leaf_if_no_children() {
-        let mut node = Node::new(2);
-        node = node.push(1, 1);
-
-        assert!(node.is_leaf());
-    }
-
-    #[test]
-    fn is_not_leaf_if_has_child() {
-        let mut node = Node::new(2);
-        node = node.push_with_children(1, 1, Some(node.clone()), Some(node.clone()));
-
-        assert!(!node.is_leaf());
     }
 }
