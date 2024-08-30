@@ -7,7 +7,7 @@ mod tests;
 /// - `keys`: contains `i` in `0..2 * b - 1`
 /// - `values`: contains `i` in `0..2 * b - 1`
 /// - `edges`: contains `i` in `0..2 * b`
-/// 
+///
 /// ### Semantics
 /// - `key[i]`: the key of the *ith* element in the node
 /// - `value[i]`: the value of the *ith* element in the node
@@ -118,14 +118,16 @@ impl Node {
         }
     }
 
-    // only takes care of the value, setting left and right to None
-    // creates a new node that represents current node post-split
+    /// Return a new `Node` that represents how `self` looks like after inserting a `key` -> `value` pair that has `None` as left and right children.
+    ///
+    /// **Note:** This method does not check whether the node is full or not before inserting into it.
     pub fn push(&self, key: usize, value: usize) -> Node {
         self.push_with_children(key, value, None, None)
     }
 
-    // return new node - how current node would look like if you insert
-    // should be able to handle case where self is empty
+    /// Return a new `Node` that represents how `self` looks like after inserting a `key` ->`vaue` pair that has `left` and `right` as children.
+    ///
+    /// **Note:** This method does not check whether the node is full or not before inserting into it.
     pub fn push_with_children(
         &self,
         key: usize,
@@ -167,8 +169,10 @@ impl Node {
         new_node
     }
 
-    // return what would happen if you split
-    // panic if node is not full or has too many things inside
+    /// Return split of current node. Assumes that node is full.
+    ///
+    /// # Panics
+    /// Panics if `self` is not full
     pub fn get_split(&self) -> NodeSplit {
         if !self.is_full() {
             panic!("Can't split, node is not full");
@@ -204,7 +208,7 @@ impl Node {
         }
     }
 
-    // search where key should be inserted in self
+    /// Returns a `KeySearchResult` that indicates where `key` should be inserted in `self`.
     fn search_key(&self, key: usize) -> KeySearchResult {
         if self.edges.is_empty() {
             return KeySearchResult::NodeEmpty;
@@ -223,8 +227,8 @@ impl Node {
         KeySearchResult::GreaterThanAll
     }
 
-    // returns clone of self, but instead of node to_replace (as child somewhere), use replace_with
-    // if not in tree, clone without replacing
+    /// Returns a clone of `self` that resembles how it looks like with `to_replace` replaced with `replace_with`. 
+    /// Just acts as a regular clone if `to_replace` can't be found in `self`'s children (including itself).
     pub fn clone_with_replaced_node(&self, to_replace: &Node, replace_with: &Node) -> Node {
         if std::ptr::addr_eq(self, to_replace) {
             return replace_with.clone();
@@ -242,7 +246,7 @@ impl Node {
         new_self
     }
 
-    // clones keys and values, all edges of original are set to None
+    /// Returns clone of `self`, with all edges set to `None`.
     fn clone_without_edges(&self) -> Node {
         let mut new_edges = vec![];
         for _ in self.edges.iter() {
@@ -257,6 +261,7 @@ impl Node {
         }
     }
 
+    /// Recursively print `self` with all children.
     pub fn print_node(&self, level: usize) {
         // print entries
         let padding = "\t".repeat(level);
