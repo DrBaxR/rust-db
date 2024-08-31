@@ -1,3 +1,4 @@
+#[cfg(test)]
 mod tests;
 
 /// Node of a key-value pair that maps a number to a number.
@@ -281,5 +282,10 @@ impl Node {
                 println!("{}{}\tNone", level + 1, padding);
             }
         }
+    }
+
+    /// Returns a vector containing the keys of the current node, in order.
+    pub fn keys(&self) -> Vec<usize> {
+        self.keys.clone()
     }
 }

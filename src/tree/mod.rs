@@ -1,5 +1,8 @@
 use crate::node::{Node, NodeSplit};
 
+#[cfg(test)]
+mod tests;
+
 pub struct BTree {
     root: Node,
     b: usize,
@@ -10,7 +13,6 @@ enum NodeReplace<'a> {
     Root(Node),           // root needs to be replaced with value
 }
 
-// TODO: figure out how to do rust docs
 impl BTree {
     pub fn new(b: usize) -> Self {
         Self {
@@ -19,6 +21,7 @@ impl BTree {
         }
     }
 
+    /// Insert `key` -> `value` pair into tree.
     pub fn insert(&mut self, key: usize, value: usize) {
         // find leaf to insert into
         let node_to_insert = self.root.find_leaf_for(key);
@@ -97,10 +100,4 @@ impl BTree {
     pub fn print_tree(&self) {
         self.root.print_node(0);
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    // TODO: tests
 }
