@@ -16,10 +16,10 @@ mod tests;
 /// - `edges[i + 1]`: the right child of the *ith* element in the node
 #[derive(Clone)]
 pub struct Node {
-    keys: Vec<usize>,
-    values: Vec<usize>,
-    edges: Vec<Option<Node>>,
-    b: usize,
+    pub keys: Vec<usize>,
+    pub values: Vec<usize>,
+    pub edges: Vec<Option<Node>>,
+    pub b: usize,
 }
 
 pub struct NodeSplit {
@@ -284,8 +284,16 @@ impl Node {
         }
     }
 
-    /// Returns a vector containing the keys of the current node, in order.
-    pub fn keys(&self) -> Vec<usize> {
-        self.keys.clone()
+    /// Returns depth of subtree starting at `self` (if node is leaf, depth is `1`).
+    pub fn depth(&self) -> usize {
+        self.depth_from(1)
+    }
+
+    fn depth_from(&self, current_depth: usize) -> usize {
+        if self.is_leaf() {
+            return current_depth;
+        }
+
+        return self.edges[0].as_ref().unwrap().depth_from(current_depth + 1);
     }
 }

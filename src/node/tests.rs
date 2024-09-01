@@ -221,3 +221,18 @@ fn clone_with_replaced_node_regular() {
     let new_node_left = new_node.edges[0].as_ref().unwrap();
     assert_eq!(new_value, new_node_left.keys[0]);
 }
+
+fn depth_leaf() {
+    let node = Node::new(2);
+
+    assert_eq!(1, node.depth());
+}
+
+fn depth_one_layer() {
+    let mut node = Node::new(2);
+    let left = node.clone().push(1, 1);
+
+    node = node.push_with_children(1, 1, Some(left), Some(node.clone()));
+
+    assert_eq!(2, node.depth());
+}

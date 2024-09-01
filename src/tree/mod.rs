@@ -26,10 +26,10 @@ impl BTree {
         // find leaf to insert into
         let node_to_insert = self.root.find_leaf_for(key);
         // insert inside it
-        // TODO: make push dirrectly return Option<NodeSplit>, if node needs to split
         let new_node_to_insert = node_to_insert.push(key, value);
         if !new_node_to_insert.is_full() {
-            self.root = self.get_root_after_replace(NodeReplace::Node(new_node_to_insert, node_to_insert));
+            self.root =
+                self.get_root_after_replace(NodeReplace::Node(new_node_to_insert, node_to_insert));
             return;
         }
 
@@ -37,13 +37,17 @@ impl BTree {
         let split_node = new_node_to_insert.get_split();
 
         // insert median in parent (potentiallt split again, again, ...)
-        // TODO: make insert_split_in_parent return dirrectly new root
         let node_replace = self.insert_split_in_parent(&node_to_insert, split_node);
         self.root = self.get_root_after_replace(node_replace);
     }
 
     // constructs a new node subtree that represents the correct result post insert
     // return value represents instructions of where you need to replace a node to have a correct post-insert tree
+    /// Inserts a `NodeSplit` into the parent of `current` from the `self` tree.
+    ///
+    /// # Details
+    /// It builds a new node subtree that represents correct retulst post insertion into parent. The return value 
+    /// represents information about what needs to be replaced into `self` with the newly formed subtree.
     fn insert_split_in_parent(&self, current: &Node, split: NodeSplit) -> NodeReplace {
         // find parent of node
         let parent = self.find_parent(current);
@@ -51,7 +55,12 @@ impl BTree {
         // insert median in the parent
         if let Some(parent) = parent {
             // regular node
-            let new_parent = parent.push_with_children(split.median.0, split.median.1, Some(split.left), Some(split.right));
+            let new_parent = parent.push_with_children(
+                split.median.0,
+                split.median.1,
+                Some(split.left),
+                Some(split.right),
+            );
 
             // if not full, return NodeReplace
             if !new_parent.is_full() {
@@ -66,14 +75,21 @@ impl BTree {
         } else {
             // root
             let mut new_root = Node::new(self.b);
-            new_root = new_root.push_with_children(split.median.0, split.median.1, Some(split.left), Some(split.right));
+            new_root = new_root.push_with_children(
+                split.median.0,
+                split.median.1,
+                Some(split.left),
+                Some(split.right),
+            );
 
             return NodeReplace::Root(new_root);
         };
     }
 
-    // return None if node is root
-    // panic if node is NOT in tree
+    /// Return reference to node that is parent of `node`, or `None` if `node` is the root of the tree.
+    /// 
+    /// # Panics
+    /// Panics if `node` is not in tree.
     fn find_parent(&self, node: &Node) -> Option<&Node> {
         if std::ptr::addr_eq(&self.root, node) {
             return None;
@@ -87,12 +103,12 @@ impl BTree {
         parent
     }
 
-    // returns new root after replace is applied
+    /// Return new root of tree, after the `replace` has been applied in `self`.
     fn get_root_after_replace(&self, replace: NodeReplace) -> Node {
         match replace {
             NodeReplace::Node(node, to_replace) => {
                 self.root.clone_with_replaced_node(to_replace, &node)
-            },
+            }
             NodeReplace::Root(root) => root,
         }
     }
