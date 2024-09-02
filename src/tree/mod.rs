@@ -116,4 +116,21 @@ impl BTree {
     pub fn print_tree(&self) {
         self.root.print_node(0);
     }
+
+    /// Remove element with `key` from `self`.
+    pub fn remove(&mut self, key: usize) {
+        // delete from leaf
+            // search for value to delete
+            // if value in leaf delete
+            // if underflow, rebalance
+
+        // delete from internal node
+            // choose largest element in left or smallest element in right, remove from subtree and replace instead of deleted element
+            // if deleting from leaf follow above
+
+        // rebalance after delete
+            // if deficient right sibling exists and has mode than min elements => rotate left
+            // else if left exists and has more than min elements => rotate right
+            // else merge with one of siblings, sandwitching their separator taken from parent
+    }
 }
