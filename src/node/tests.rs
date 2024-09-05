@@ -222,12 +222,14 @@ fn clone_with_replaced_node_regular() {
     assert_eq!(new_value, new_node_left.keys[0]);
 }
 
+#[test]
 fn depth_leaf() {
     let node = Node::new(2);
 
     assert_eq!(1, node.depth());
 }
 
+#[test]
 fn depth_one_layer() {
     let mut node = Node::new(2);
     let left = node.clone().push(1, 1);
@@ -235,4 +237,33 @@ fn depth_one_layer() {
     node = node.push_with_children(1, 1, Some(left), Some(node.clone()));
 
     assert_eq!(2, node.depth());
+}
+
+#[test]
+fn find_node_with_present() {
+    let node = Node::new(2).push(1, 1).push(2, 2);
+
+    let result = node.find_node_with(2);
+    assert!(result.is_some());
+    assert!(std::ptr::addr_eq(&node, result.unwrap()))
+}
+
+#[test]
+fn find_node_with_absent() {
+    let node = Node::new(2).push(1, 1).push(2, 2);
+
+    let result = node.find_node_with(3);
+    assert!(result.is_none());
+}
+
+#[test]
+fn find_node_with_present_in_child() {
+    let left = Node::new(2).push(1, 1);
+    let right = Node::new(2).push(3, 3);
+    let node = Node::new(2).push_with_children(2, 2, Some(left), Some(right));
+
+    let result = node.find_node_with(3);
+    let expected = node.edges[1].as_ref().unwrap();
+    assert!(result.is_some());
+    assert!(std::ptr::addr_eq(expected, result.unwrap()));
 }

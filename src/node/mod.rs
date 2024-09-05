@@ -296,4 +296,24 @@ impl Node {
 
         return self.edges[0].as_ref().unwrap().depth_from(current_depth + 1);
     }
+
+    /// Returns a reference to the node in the subtree starting from `self` that contains `key`.
+    pub fn find_node_with(&self, key: usize) -> Option<&Node> {
+        if self.contains(key) {
+            return Some(self);
+        }
+
+        for edge in self.edges.iter().flatten() {
+            if let Some(found) = edge.find_node_with(key) {
+                return Some(found);
+            }
+        }
+
+        None
+    }
+
+    /// Returns `true` if the current node contains `key`.
+    fn contains(&self, key: usize) -> bool {
+        self.keys.iter().any(|k| *k == key)
+    }
 }

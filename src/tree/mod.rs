@@ -121,6 +121,7 @@ impl BTree {
     pub fn remove(&mut self, key: usize) {
         // delete from leaf
             // search for value to delete
+        // self.root.find_node_with(key);
             // if value in leaf delete
             // if underflow, rebalance
 
