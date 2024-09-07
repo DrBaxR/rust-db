@@ -56,7 +56,7 @@ impl Node {
     }
 
     /// Returns `true` if the node is a leaf (has no children).
-    fn is_leaf(&self) -> bool {
+    pub fn is_leaf(&self) -> bool {
         self.edges.is_empty() || self.edges.iter().all(|e| e.is_none())
     }
 
