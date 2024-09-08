@@ -1,34 +1,35 @@
 remove .node, .key -> (key,value): # returns removed element
         if key not in node: return
-        let .found = node_with_key
 
+        let .found = node_with_key
         if found is leaf:
                 delete .found, .key # key, value, edge
-
-                # rebalance start
-                # TODO: extract to separate procedure
-                if .found is deficient
-                        let .found_parent
-                        let .found_right, .found_left
-                        if .found_right exists AND .found_right more than min elements
-                                rotate_left .found, .found_parent, .found_right
-                        else if .found_left exists AND .found_left more than min elements
-                                rotate_right .found_left, .found_parent, .found
-                        else both siblings min
-                                let .left, .right = pick sandwitch targets .found_left, .found_right, .found
-                                copy separator .found_parent, .left
-                                move elements .right, .left # from right to left
-                                remove separator .found_parent
-                                remove child .found_parent, .right
-                                if .found_parent is root AND .found_parent empty
-                                        make root (get child .found_parent)
-                                else if .found_parent less than min
-                                        rebalance .found_parent
-
-                                
-
-                # rebalance end
+                rebalance .found
+                # return key, value deleted
         else node not leaf
                 let .right_child, .largest_key_right
                 let .largest_element_right_subtree = remove .right_child, .largest_key_right (o)
                 replace .found, .key, .largest_element_right_subtree # replace key value
+                # return key, value replaced
+
+# also will need access to the whole tree to get parent and siblings
+rebalance .node
+        if .node not deficient
+                return
+
+        let .parent
+        let .right, .left
+        if .right exists AND .right more than min elements
+                rotate_left .node, .parent, .right
+        else if .left exists AND .left more than min elements
+                rotate_right .left, .parent, .node
+        else both siblings min
+                let .left, .right = pick sandwitch targets .left, .right, .node
+                copy separator .parent, .left
+                move elements .right, .left # from right to left
+                remove separator .parent
+                remove child .parent, .right
+                if .parent is root AND .parent empty
+                        make root (get child .parent)
+                else if .parent less than min
+                        rebalance .parent (o)
