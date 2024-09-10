@@ -119,27 +119,6 @@ impl BTree {
 
     /// Remove element with `key` from `self`.
     pub fn remove(&mut self, key: usize) {
-        // delete from leaf
-            // search for value to delete
-            // if value in leaf delete
-            // if underflow, rebalance
-
-        // delete from internal node
-            // choose largest element in left or smallest element in right, remove from subtree and replace instead of deleted element
-            // if deleting from leaf follow above
-
-        // rebalance after delete
-            // if deficient right sibling exists and has mode than min elements => rotate left
-                // copy separator from parent and move to deficient node
-                // replace separator of parent with first element in right sibling
-            // else if left exists and has more than min elements => rotate right
-                // move parent separator to deficient node
-                // replace separator with last element from left node
-            // else merge with one of siblings, sandwitching their separator taken from parent
-                // copy separator to end of left node
-                // move elements from right node to left node
-                // remove separator from parent along with empty right child
-                    // if parent is root and now has no elements, make child new root
-                    // if parent has fewer elements than min, rebalance
+        self.root.remove(key);
     }
 }

@@ -316,4 +316,39 @@ impl Node {
     fn contains(&self, key: usize) -> bool {
         self.keys.iter().any(|k| *k == key)
     }
+
+    pub fn remove(&self, key: usize) {
+        let node_with_key = self.find_node_with(key);
+
+        if node_with_key.is_none() {
+            return;
+        }
+
+        let found = node_with_key.unwrap();
+        if found.is_leaf() {
+            let new_leaf = found.delete_entry(key);
+            let new_subtree = new_leaf.rebalance();
+            // TODO: think of how you can rebuild tree post rebalance
+        } else {
+            let right_child = self.get_right_child(key);
+            let largest_element_right = todo!(); // TODO: change return of remove method
+            found.replace_with() // TODO: think how you can replace key
+        }
+    }
+
+    fn delete_entry(&self, key: usize) -> Node {
+        todo!()
+    }
+
+    fn get_right_child(&self, key: usize) -> &Node {
+        todo!()
+    }
+
+    fn rebalance(&self) -> Node {
+        todo!()
+    }
+
+    fn replace_with(&self) {
+        todo!()
+    }
 }
