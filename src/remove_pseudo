@@ -12,7 +12,6 @@ remove .node, .key -> (key,value): # returns removed element
                 replace .found, .key, .largest_element_right_subtree # replace key value
                 # return key, value replaced
 
-
 # also will need access to the whole tree to get parent and siblings
 rebalance .node
         if .node not deficient
