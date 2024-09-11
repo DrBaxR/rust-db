@@ -329,6 +329,7 @@ impl Node {
             let new_leaf = found.delete_entry(key);
             let new_subtree = new_leaf.rebalance();
             // TODO: think of how you can rebuild tree post rebalance
+
         } else {
             let right_child = self.get_right_child(key);
             let largest_element_right = todo!(); // TODO: change return of remove method
