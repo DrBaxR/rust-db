@@ -46,7 +46,7 @@ impl BTree {
     /// Inserts a `NodeSplit` into the parent of `current` from the `self` tree.
     ///
     /// # Details
-    /// It builds a new node subtree that represents correct retulst post insertion into parent. The return value 
+    /// It builds a new node subtree that represents correct retulst post insertion into parent. The return value
     /// represents information about what needs to be replaced into `self` with the newly formed subtree.
     fn insert_split_in_parent(&self, current: &Node, split: NodeSplit) -> NodeReplace {
         // find parent of node
@@ -87,7 +87,7 @@ impl BTree {
     }
 
     /// Return reference to node that is parent of `node`, or `None` if `node` is the root of the tree.
-    /// 
+    ///
     /// # Panics
     /// Panics if `node` is not in tree.
     fn find_parent(&self, node: &Node) -> Option<&Node> {
@@ -117,8 +117,43 @@ impl BTree {
         self.root.print_node(0);
     }
 
-    /// Remove element with `key` from `self`.
-    pub fn remove(&mut self, key: usize) {
-        self.root.remove(key);
+    /// Remove element with `key` from `self`. Returns `(key, value)` that was removed if node exists in tree, or `Err` otherwise.
+    pub fn remove(&mut self, key: usize) -> Result<(usize, usize), ()> {
+        let node_with_key = self.root.find_node_with(key);
+
+        if node_with_key.is_none() {
+            return Err(());
+        }
+
+        let found = node_with_key.unwrap();
+        if found.is_leaf() {
+            let (new_leaf, deleted_value) = found.delete_entry(key);
+            let replace = self.rebalance_node(&new_leaf, &new_leaf);
+
+            self.root = self.get_root_after_replace(replace);
+
+            return Ok((key, deleted_value));
+        } else {
+            let right_child = found.get_right_child(key);
+            let largest_key_right = right_child.largest_key();
+
+            // unwrap is fine, because on recursive calls it's not possible to have element not exist in tree
+            let replace_with = self.remove(largest_key_right).unwrap();
+
+            // this is pretty bad, but couldn't think of a way to please the borrow checker
+            let found = self.root.find_node_with(key).unwrap();
+            let (found_replaced, replaced_value) = found.replace_entry_with(key, replace_with);
+
+            self.root = self.get_root_after_replace(NodeReplace::Node(found_replaced, found));
+
+            return Ok((key, replaced_value));
+        }
+    }
+
+    /// Build a new subtree, starting from the `start_node`, where no nodes have fewer than the minimum amount of entries. The `node_replacement`
+    /// indicates the new value of the `start_node` (post-removal of leaf entry).
+    /// Returns a `NodeReplace` that indicates what needs to be replaced in the tree in order to have it balanced.
+    fn rebalance_node(&self, start_node: &Node, node_replacement: &Node) -> NodeReplace {
+        todo!()
     }
 }
