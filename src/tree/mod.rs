@@ -136,14 +136,19 @@ impl BTree {
         } else {
             // unwrap is fine, because found is the node that contains the key
             let right_child = found.get_right_child(key).unwrap();
+
             let largest_key_right = right_child.largest_key();
+            if largest_key_right.is_none() {
+                return Err(());
+            }
+            let largest_key_right = largest_key_right.unwrap();
 
             // unwrap is fine, because on recursive calls it's not possible to have element not exist in tree
             let replace_with = self.remove(largest_key_right).unwrap();
 
             // this is pretty bad, but couldn't think of a way to please the borrow checker
             let found = self.root.find_node_with(key).unwrap();
-            let (found_replaced, replaced_value) = found.replace_entry_with(key, replace_with);
+            let (found_replaced, replaced_value) = found.replace_entry_with(key, replace_with).expect("Found node should have the key to replace inside it");
 
             self.root = self.get_root_after_replace(NodeReplace::Node(found_replaced, found));
 

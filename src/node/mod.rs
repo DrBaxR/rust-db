@@ -351,13 +351,21 @@ impl Node {
             .map(|i| Some(self.edges[i + 1].as_ref().unwrap()))?
     }
 
-    /// Returns the largest key in the node.
-    pub fn largest_key(&self) -> usize {
-        todo!()
+    /// Returns the largest key in the node. Will return `None` if the node is empty (only possible for root nodes).
+    pub fn largest_key(&self) -> Option<usize> {
+        self.keys.last().cloned()
     }
 
     /// Return new node that has its `key` entry replaced with `new`. Second entry in the tuple is the value what got replaced.
-    pub fn replace_entry_with(&self, key: usize, new: (usize, usize)) -> (Node, usize) {
-        todo!()
+    /// Returns `None` if `key` is not in the node.
+    pub fn replace_entry_with(&self, key: usize, new: (usize, usize)) -> Option<(Node, usize)> {
+        let mut new_node = self.clone();
+        let index = new_node.index_of(key)?;
+
+        let old_value = new_node.values[index];
+        new_node.keys[index] = new.0;
+        new_node.values[index] = new.1;
+
+        Some((new_node, old_value))
     }
 }

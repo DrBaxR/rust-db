@@ -318,3 +318,36 @@ fn get_right_child_not_exists() {
     
     assert!(right_child.is_none());
 }
+
+#[test]
+fn largest_key_normal() {
+    let node = Node::new(3).push(1, 1).push(2, 2).push(3, 3);
+
+    assert_eq!(node.largest_key().unwrap(), 3);
+}
+
+#[test]
+fn largest_key_empty() {
+    let node = Node::new(3);
+
+    assert!(node.largest_key().is_none());
+}
+
+#[test]
+fn replace_entry_with_exists() {
+    let node = Node::new(3).push(1, 1).push(2, 2).push(3, 3);
+
+    let (new_node, old_value) = node.replace_entry_with(1, (6, 9)).expect("Replace entry should not return None when key is in node");
+
+    assert_eq!(old_value, 1);
+    assert_eq!(new_node.keys, vec![6, 2, 3]);
+    assert_eq!(new_node.values, vec![9, 2, 3]);
+}
+
+#[test]
+fn replace_entry_with_not_exists() {
+    let node = Node::new(3).push(1, 1).push(2, 2).push(3, 3);
+
+    let result = node.replace_entry_with(9, (4, 4));
+    assert!(result.is_none());
+}
