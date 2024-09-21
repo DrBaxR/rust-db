@@ -296,3 +296,25 @@ fn delete_entry_when_not_exists() {
 
     assert!(removed.is_none());
 }
+
+#[test]
+fn get_right_child_exists() {
+    let left = Node::new(2).push(1, 1);
+    let right = Node::new(2).push(3, 3);
+    let node = Node::new(2).push_with_children(2, 2, Some(left), Some(right));
+
+    let right_child = node.get_right_child(2);
+    
+    assert!(std::ptr::addr_eq(right_child.unwrap(), node.edges[1].as_ref().unwrap()))
+}
+
+#[test]
+fn get_right_child_not_exists() {
+    let left = Node::new(2).push(1, 1);
+    let right = Node::new(2).push(3, 3);
+    let node = Node::new(2).push_with_children(2, 2, Some(left), Some(right));
+
+    let right_child = node.get_right_child(99);
+    
+    assert!(right_child.is_none());
+}

@@ -228,7 +228,7 @@ impl Node {
         KeySearchResult::GreaterThanAll
     }
 
-    /// Returns a clone of `self` that resembles how it looks like with `to_replace` replaced with `replace_with`. 
+    /// Returns a clone of `self` that resembles how it looks like with `to_replace` replaced with `replace_with`.
     /// Just acts as a regular clone if `to_replace` can't be found in `self`'s children (including itself).
     pub fn clone_with_replaced_node(&self, to_replace: &Node, replace_with: &Node) -> Node {
         if std::ptr::addr_eq(self, to_replace) {
@@ -294,7 +294,10 @@ impl Node {
             return current_depth;
         }
 
-        return self.edges[0].as_ref().unwrap().depth_from(current_depth + 1);
+        return self.edges[0]
+            .as_ref()
+            .unwrap()
+            .depth_from(current_depth + 1);
     }
 
     /// Returns a reference to the node in the subtree starting from `self` that contains `key`.
@@ -319,7 +322,7 @@ impl Node {
 
     /// Returns new node with key, value and right edge removed from it. Second entry in the returned tuple is the value that would be removed.
     pub fn delete_entry(&self, key: usize) -> (Node, Option<usize>) {
-        let index = self.keys.iter().position(|k| *k == key);
+        let index = self.index_of(key);
         let mut new_node = self.clone();
 
         if index.is_none() {
@@ -331,12 +334,21 @@ impl Node {
         let value = new_node.values.remove(index);
         new_node.edges.remove(index + 1);
 
-        return (new_node, Some(value))
+        return (new_node, Some(value));
+    }
+
+    /// Returns index of entry with `key`.
+    fn index_of(&self, key: usize) -> Option<usize> {
+        self.keys.iter().position(|k| *k == key)
     }
 
     /// Returns a reference to the right child of entry with `key`.
-    pub fn get_right_child(&self, key: usize) -> &Node {
-        todo!()
+    ///
+    /// # Panics
+    /// Panics if node with key has no right child, so *should* only be called on non-leaf nodes.
+    pub fn get_right_child(&self, key: usize) -> Option<&Node> {
+        self.index_of(key)
+            .map(|i| Some(self.edges[i + 1].as_ref().unwrap()))?
     }
 
     /// Returns the largest key in the node.

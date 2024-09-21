@@ -134,7 +134,8 @@ impl BTree {
 
             return deleted_value.map(|v| Ok((key, v))).unwrap_or(Err(()));
         } else {
-            let right_child = found.get_right_child(key);
+            // unwrap is fine, because found is the node that contains the key
+            let right_child = found.get_right_child(key).unwrap();
             let largest_key_right = right_child.largest_key();
 
             // unwrap is fine, because on recursive calls it's not possible to have element not exist in tree
