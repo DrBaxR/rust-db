@@ -267,3 +267,32 @@ fn find_node_with_present_in_child() {
     assert!(result.is_some());
     assert!(std::ptr::addr_eq(expected, result.unwrap()));
 }
+
+#[test]
+fn delete_entry_when_exists() {
+    let node = Node::new(2).push(1, 2).push(3, 4);
+
+    let (new_node, removed) = node.delete_entry(3);
+
+    assert_eq!(new_node.keys.len(), 1);
+    assert_eq!(new_node.values.len(), 1);
+    assert_eq!(new_node.edges.len(), 2);
+
+    assert!(new_node.contains(1));
+    assert!(!new_node.contains(3));
+
+    assert_eq!(removed.unwrap(), 4);
+}
+
+#[test]
+fn delete_entry_when_not_exists() {
+    let node = Node::new(2).push(1, 2).push(3, 4);
+
+    let (new_node, removed) = node.delete_entry(5);
+
+    assert_eq!(new_node.keys.len(), 2);
+    assert_eq!(new_node.values.len(), 2);
+    assert_eq!(new_node.edges.len(), 3);
+
+    assert!(removed.is_none());
+}

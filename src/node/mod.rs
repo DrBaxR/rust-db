@@ -317,12 +317,21 @@ impl Node {
         self.keys.iter().any(|k| *k == key)
     }
 
-    pub fn remove(&self, key: usize) {
-    }
+    /// Returns new node with key, value and right edge removed from it. Second entry in the returned tuple is the value that would be removed.
+    pub fn delete_entry(&self, key: usize) -> (Node, Option<usize>) {
+        let index = self.keys.iter().position(|k| *k == key);
+        let mut new_node = self.clone();
 
-    /// Returns new node with key, value and right edge removed from it. Second entry in the tuple is the value that would be removed.
-    pub fn delete_entry(&self, key: usize) -> (Node, usize) {
-        todo!()
+        if index.is_none() {
+            return (new_node, None);
+        }
+
+        let index = index.unwrap();
+        new_node.keys.remove(index);
+        let value = new_node.values.remove(index);
+        new_node.edges.remove(index + 1);
+
+        return (new_node, Some(value))
     }
 
     /// Returns a reference to the right child of entry with `key`.

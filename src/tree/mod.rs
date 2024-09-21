@@ -132,7 +132,7 @@ impl BTree {
 
             self.root = self.get_root_after_replace(replace);
 
-            return Ok((key, deleted_value));
+            return deleted_value.map(|v| Ok((key, v))).unwrap_or(Err(()));
         } else {
             let right_child = found.get_right_child(key);
             let largest_key_right = right_child.largest_key();
