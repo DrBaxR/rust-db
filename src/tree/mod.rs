@@ -8,9 +8,9 @@ pub struct BTree {
     b: usize,
 }
 
-enum NodeReplace<'a> {
-    Node(Node, &'a Node), // what node you need to replace with what value
-    Root(Node),           // root needs to be replaced with value
+enum NodeReplace {
+    Node(Node, *const Node), // what node you need to replace with what value
+    Root(Node),              // root needs to be replaced with value
 }
 
 impl BTree {
@@ -128,7 +128,7 @@ impl BTree {
         let found = node_with_key.unwrap();
         if found.is_leaf() {
             let (new_leaf, deleted_value) = found.delete_entry(key);
-            let replace = self.rebalance_node(&new_leaf, &new_leaf);
+            let replace = self.rebalance_node(&found, new_leaf);
 
             self.root = self.get_root_after_replace(replace);
 
@@ -148,7 +148,9 @@ impl BTree {
 
             // this is pretty bad, but couldn't think of a way to please the borrow checker
             let found = self.root.find_node_with(key).unwrap();
-            let (found_replaced, replaced_value) = found.replace_entry_with(key, replace_with).expect("Found node should have the key to replace inside it");
+            let (found_replaced, replaced_value) = found
+                .replace_entry_with(key, replace_with)
+                .expect("Found node should have the key to replace inside it");
 
             self.root = self.get_root_after_replace(NodeReplace::Node(found_replaced, found));
 
@@ -159,7 +161,75 @@ impl BTree {
     /// Build a new subtree, starting from the `start_node`, where no nodes have fewer than the minimum amount of entries. The `node_replacement`
     /// indicates the new value of the `start_node` (post-removal of leaf entry).
     /// Returns a `NodeReplace` that indicates what needs to be replaced in the tree in order to have it balanced.
-    fn rebalance_node(&self, start_node: &Node, node_replacement: &Node) -> NodeReplace {
+    ///
+    /// # Asserts
+    /// Asserts that `start_node` is a valid pointer to a node in the tree.
+    fn rebalance_node(&self, start_node: &Node, node_replacement: Node) -> NodeReplace {
+        if node_replacement.is_deficient() {
+            return NodeReplace::Node(node_replacement, start_node);
+        }
+
+        let parent = self.find_parent(start_node);
+        if parent.is_none() {
+            return NodeReplace::Root(node_replacement);
+        }
+
+        let parent = parent.unwrap();
+        let (left_sibling, right_sibling) = parent.get_siblings_of(start_node);
+        if let Some(right_sibling) = right_sibling {
+            if !right_sibling.is_deficient() {
+                let new_parent = BTree::get_rotated_left(start_node, parent, right_sibling);
+                return NodeReplace::Node(new_parent, parent);
+            }
+        }
+
+        if let Some(left_sibling) = left_sibling {
+            if !left_sibling.is_deficient() {
+                let new_parent = BTree::get_rotated_right(left_sibling, parent, start_node);
+                return NodeReplace::Node(new_parent, parent);
+            }
+        }
+
+        // sandwitch
+        let (merge_left, merge_right) = if let Some(right_sibling) = right_sibling {
+            (start_node, right_sibling)
+        } else {
+            (
+                left_sibling.expect("At least one of the siblings must be present"),
+                start_node,
+            )
+        };
+
+        let mut new_parent = parent.get_sandwitched_for(merge_left, merge_right);
+        if !new_parent.is_deficient() {
+            // the good ending
+            return NodeReplace::Node(new_parent, parent);
+        }
+
+        if std::ptr::addr_eq(parent, &self.root) && new_parent.keys.len() == 0 {
+            let only_child = new_parent.edges.remove(0).expect("When post-sandwitch the new parent is the root and empty, should have 1 single child in the first edge");
+            NodeReplace::Root(only_child)
+        } else {
+            // after sandwitching the two siblings, now the parent of them is deficient => recursive call to rebalance
+            self.rebalance_node(parent, new_parent)
+        }
+    }
+
+    // todo: move to node mod - for parent
+    /// Returns the new parent after the rotation has been applied.
+    ///
+    /// # Panics
+    /// Panics if `left` and `right` are not siblings in the `parent` node's children OR if their order is not correct.
+    fn get_rotated_left(left: &Node, parent: &Node, right: &Node) -> Node {
+        todo!()
+    }
+
+    // todo: move to node mod
+    /// Returns the new parent after the rotation has been applied.
+    ///
+    /// # Panics
+    /// Panics if `left` and `right` are not siblings in the `parent` node's children OR if their order is not correct.
+    fn get_rotated_right(left: &Node, parent: &Node, right: &Node) -> Node {
         todo!()
     }
 }

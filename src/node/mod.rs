@@ -230,7 +230,7 @@ impl Node {
 
     /// Returns a clone of `self` that resembles how it looks like with `to_replace` replaced with `replace_with`.
     /// Just acts as a regular clone if `to_replace` can't be found in `self`'s children (including itself).
-    pub fn clone_with_replaced_node(&self, to_replace: &Node, replace_with: &Node) -> Node {
+    pub fn clone_with_replaced_node(&self, to_replace: *const Node, replace_with: &Node) -> Node {
         if std::ptr::addr_eq(self, to_replace) {
             return replace_with.clone();
         }
@@ -367,5 +367,31 @@ impl Node {
         new_node.values[index] = new.1;
 
         Some((new_node, old_value))
+    }
+
+    /// Returns `true` if the node has less than the min amount of elements.
+    pub fn is_deficient(&self) -> bool {
+        todo!()
+    }
+
+    /// Returns `(left_sibling, right_sibling)` of `child`.
+    /// 
+    /// # Panics
+    /// Panics if `child` can't be found in the children of the node.
+    pub fn get_siblings_of(&self, child: *const Node) -> (Option<&Node>, Option<&Node>) {
+        todo!()
+    }
+
+    /// Returns how the node would look like if the `left` and `right` children of the node would be sandwitched (take separator between them in node, merge the two siblings together
+    /// and insert separator between them; and update parent edges).
+    /// 
+    /// # Panics
+    /// Panics if `left` and `right` are not adjacent children in the node.
+    pub fn get_sandwitched_for(&self, left: &Node, right: &Node) -> Node {
+        // copy separator .parent, .left
+        // move elements .right, .left # from right to left
+        // remove separator .parent
+        // remove child .parent, .right
+        todo!()
     }
 }
