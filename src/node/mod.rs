@@ -382,6 +382,22 @@ impl Node {
         todo!()
     }
 
+    /// Returns the new parent after the rotation has been applied.
+    ///
+    /// # Panics
+    /// Panics if `left` and `right` are not siblings in the node's children OR if their order is not correct.
+    pub fn get_rotated_left(&self, left: &Node, right: &Node) -> Node {
+        todo!()
+    }
+
+    /// Returns the new parent after the rotation has been applied.
+    ///
+    /// # Panics
+    /// Panics if `left` and `right` are not siblings in the node's children OR if their order is not correct.
+    pub fn get_rotated_right(&self, left: &Node, right: &Node) -> Node {
+        todo!()
+    }
+
     /// Returns how the node would look like if the `left` and `right` children of the node would be sandwitched (take separator between them in node, merge the two siblings together
     /// and insert separator between them; and update parent edges).
     /// 

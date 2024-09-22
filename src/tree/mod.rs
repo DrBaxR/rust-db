@@ -178,14 +178,14 @@ impl BTree {
         let (left_sibling, right_sibling) = parent.get_siblings_of(start_node);
         if let Some(right_sibling) = right_sibling {
             if !right_sibling.is_deficient() {
-                let new_parent = BTree::get_rotated_left(start_node, parent, right_sibling);
+                let new_parent = parent.get_rotated_left(start_node, right_sibling);
                 return NodeReplace::Node(new_parent, parent);
             }
         }
 
         if let Some(left_sibling) = left_sibling {
             if !left_sibling.is_deficient() {
-                let new_parent = BTree::get_rotated_right(left_sibling, parent, start_node);
+                let new_parent = parent.get_rotated_right(left_sibling, start_node);
                 return NodeReplace::Node(new_parent, parent);
             }
         }
@@ -213,23 +213,5 @@ impl BTree {
             // after sandwitching the two siblings, now the parent of them is deficient => recursive call to rebalance
             self.rebalance_node(parent, new_parent)
         }
-    }
-
-    // todo: move to node mod - for parent
-    /// Returns the new parent after the rotation has been applied.
-    ///
-    /// # Panics
-    /// Panics if `left` and `right` are not siblings in the `parent` node's children OR if their order is not correct.
-    fn get_rotated_left(left: &Node, parent: &Node, right: &Node) -> Node {
-        todo!()
-    }
-
-    // todo: move to node mod
-    /// Returns the new parent after the rotation has been applied.
-    ///
-    /// # Panics
-    /// Panics if `left` and `right` are not siblings in the `parent` node's children OR if their order is not correct.
-    fn get_rotated_right(left: &Node, parent: &Node, right: &Node) -> Node {
-        todo!()
     }
 }
