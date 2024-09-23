@@ -351,3 +351,63 @@ fn replace_entry_with_not_exists() {
     let result = node.replace_entry_with(9, (4, 4));
     assert!(result.is_none());
 }
+
+#[test]
+fn is_deficient() {
+    let mut node = Node::new(3).push(1, 1);
+    assert!(node.is_deficient());
+
+    node = node.push(2, 2);
+    assert!(node.is_deficient());
+    
+    node = node.push(3, 3);
+    assert!(!node.is_deficient());
+
+    node = node.push(4, 4);
+    assert!(!node.is_deficient());
+}
+
+#[test]
+#[should_panic]
+fn get_siblings_of_not_child() {
+    let left = Node::new(2).push(1, 1);
+    let right = Node::new(2).push(3, 3);
+    let node = Node::new(2).push_with_children(2, 2, Some(left), Some(right));
+
+    let new = Node::new(2).push(4, 4);
+    node.get_siblings_of(&new);
+}
+
+#[test]
+fn get_siblings_of_one_sibling() {
+    let left = Node::new(2).push(1, 1);
+    let right = Node::new(2).push(3, 3);
+    let node = Node::new(2).push_with_children(2, 2, Some(left), Some(right));
+
+    let left = node.edges[0].as_ref().unwrap();
+    let result = node.get_siblings_of(left);
+    assert!(result.0.is_none());
+    assert!(std::ptr::addr_eq(result.1.unwrap(), node.edges[1].as_ref().unwrap()));
+
+    let right = node.edges[1].as_ref().unwrap();
+    let result = node.get_siblings_of(right);
+    assert!(std::ptr::addr_eq(result.0.unwrap(), node.edges[0].as_ref().unwrap()));
+    assert!(result.1.is_none());
+}
+
+#[test]
+fn get_siblings_of_two_siblings() {
+    let left = Node::new(2).push(1, 1);
+    let mut node = Node::new(2).push_with_children(2, 2, Some(left), None);
+    let mid = Node::new(2).push(3, 3);
+    let right = Node::new(2).push(5, 5);
+    node = node.push_with_children(4, 4, Some(mid), Some(right));
+
+    let children: Vec<usize> = node.edges.iter().map(|e| e.as_ref().unwrap().keys[0]).collect();
+    assert_eq!(children, vec![1, 3, 5]);
+
+    let mid = node.edges[1].as_ref().unwrap();
+    let result = node.get_siblings_of(mid);
+    assert!(std::ptr::eq(result.0.unwrap(), node.edges[0].as_ref().unwrap()));
+    assert!(std::ptr::eq(result.1.unwrap(), node.edges[2].as_ref().unwrap()));
+}

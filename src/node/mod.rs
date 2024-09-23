@@ -371,15 +371,45 @@ impl Node {
 
     /// Returns `true` if the node has less than the min amount of elements.
     pub fn is_deficient(&self) -> bool {
-        todo!()
+        self.keys.len() < self.b
     }
 
     /// Returns `(left_sibling, right_sibling)` of `child`.
-    /// 
+    ///
     /// # Panics
     /// Panics if `child` can't be found in the children of the node.
     pub fn get_siblings_of(&self, child: *const Node) -> (Option<&Node>, Option<&Node>) {
-        todo!()
+        let mut index = None;
+        for (i, edge) in self.edges.iter().enumerate() {
+            let edge = match edge {
+                Some(edge) => edge,
+                None => continue,
+            };
+
+            if std::ptr::addr_eq(edge, child) {
+                index = Some(i);
+            }
+        }
+
+        let child_index = match index {
+            Some(i) => i,
+            None => panic!("Can't get siblings of node that is not child of parent node"),
+        };
+
+        let left = if child_index == 0 {
+            None
+        } else {
+            Some(child_index - 1)
+        };
+
+        (
+            if let Some(left) = left {
+                self.edges.get(left).map_or(None, |e| e.as_ref())
+            } else {
+                None
+            },
+            self.edges.get(child_index + 1).map_or(None, |e| e.as_ref()),
+        )
     }
 
     /// Returns the new parent after the rotation has been applied.
@@ -400,7 +430,7 @@ impl Node {
 
     /// Returns how the node would look like if the `left` and `right` children of the node would be sandwitched (take separator between them in node, merge the two siblings together
     /// and insert separator between them; and update parent edges).
-    /// 
+    ///
     /// # Panics
     /// Panics if `left` and `right` are not adjacent children in the node.
     pub fn get_sandwitched_for(&self, left: &Node, right: &Node) -> Node {
