@@ -379,22 +379,7 @@ impl Node {
     /// # Panics
     /// Panics if `child` can't be found in the children of the node.
     pub fn get_siblings_of(&self, child: *const Node) -> (Option<&Node>, Option<&Node>) {
-        let mut index = None;
-        for (i, edge) in self.edges.iter().enumerate() {
-            let edge = match edge {
-                Some(edge) => edge,
-                None => continue,
-            };
-
-            if std::ptr::addr_eq(edge, child) {
-                index = Some(i);
-            }
-        }
-
-        let child_index = match index {
-            Some(i) => i,
-            None => panic!("Can't get siblings of node that is not child of parent node"),
-        };
+        let child_index = self.get_child_index(child);
 
         let left = if child_index == 0 {
             None
@@ -412,12 +397,48 @@ impl Node {
         )
     }
 
+    /// Returns index of `child` in node's `edge` vector.
+    /// 
+    /// # Panics
+    /// Panics if `child` is not one of node's children.
+    fn get_child_index(&self, child: *const Node) -> usize {
+        let mut index = None;
+        for (i, edge) in self.edges.iter().enumerate() {
+            let edge = match edge {
+                Some(edge) => edge,
+                None => continue,
+            };
+
+            if std::ptr::addr_eq(edge, child) {
+                index = Some(i);
+            }
+        }
+
+        let child_index = match index {
+            Some(i) => i,
+            None => panic!("Can't get siblings of node that is not child of parent node"),
+        };
+
+        child_index
+    }
+
     /// Returns the new parent after the rotation has been applied.
     ///
     /// # Panics
     /// Panics if `left` and `right` are not siblings in the node's children OR if their order is not correct.
     pub fn get_rotated_left(&self, left: &Node, right: &Node) -> Node {
-        todo!()
+        let left_index = self.get_child_index(left);
+        let right_index = self.get_child_index(right);
+
+        if right_index != left_index + 1 {
+            panic!("Left and right nodes in rotation are not adjacent siblings");
+        }
+
+        todo!("double check indexes in comment below")
+        // create clone of self (parent)
+        // copy separator (self.keys[left_index], self.values[left_index]) from parent to the end of left
+        // replace separator (self.keys[left_index], self.values[left_index]) in parent with first element in right (self.edges[right_index].keys.first(), ...values)
+        // remove first element in right
     }
 
     /// Returns the new parent after the rotation has been applied.
@@ -425,6 +446,13 @@ impl Node {
     /// # Panics
     /// Panics if `left` and `right` are not siblings in the node's children OR if their order is not correct.
     pub fn get_rotated_right(&self, left: &Node, right: &Node) -> Node {
+        let left_index = self.get_child_index(left);
+        let right_index = self.get_child_index(right);
+
+        if right_index != left_index + 1 {
+            panic!("Left and right nodes in rotation are not adjacent siblings");
+        }
+
         todo!()
     }
 
