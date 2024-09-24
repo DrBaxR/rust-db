@@ -398,7 +398,7 @@ impl Node {
     }
 
     /// Returns index of `child` in node's `edge` vector.
-    /// 
+    ///
     /// # Panics
     /// Panics if `child` is not one of node's children.
     fn get_child_index(&self, child: *const Node) -> usize {
@@ -434,11 +434,23 @@ impl Node {
             panic!("Left and right nodes in rotation are not adjacent siblings");
         }
 
-        todo!("double check indexes in comment below")
-        // create clone of self (parent)
-        // copy separator (self.keys[left_index], self.values[left_index]) from parent to the end of left
-        // replace separator (self.keys[left_index], self.values[left_index]) in parent with first element in right (self.edges[right_index].keys.first(), ...values)
-        // remove first element in right
+        // rotate
+        let mut new_node = self.clone();
+        let new_left = new_node.edges[left_index]
+            .as_mut()
+            .expect("Left rotation child should also exist in cloned node");
+
+        new_left.keys.push(new_node.keys[left_index]);
+        new_left.values.push(new_node.values[left_index]);
+
+        let new_right = new_node.edges[right_index]
+            .as_mut()
+            .expect("Right rotation child should also exist in cloned node");
+
+        new_node.keys[left_index] = new_right.keys.remove(0);
+        new_node.values[left_index] = new_right.values.remove(0);
+
+        new_node
     }
 
     /// Returns the new parent after the rotation has been applied.
@@ -453,7 +465,25 @@ impl Node {
             panic!("Left and right nodes in rotation are not adjacent siblings");
         }
 
-        todo!()
+        // create clone of self
+        let mut new_node = self.clone();
+        let new_right = new_node.edges[right_index]
+            .as_mut()
+            .expect("Right rotation child should also exist in cloned node");
+
+        // copy separator from parent to start of right
+        new_right.keys.insert(0, new_node.keys[left_index]);
+        new_right.values.insert(0, new_node.values[left_index]);
+
+        // replace separator in parent with last element in left
+        let new_left = new_node.edges[left_index]
+            .as_mut()
+            .expect("Left rotation child should also exist in cloned node");
+
+        new_node.keys[left_index] = new_left.keys.remove(new_left.keys.len() - 1);
+        new_node.values[left_index] = new_left.values.remove(new_left.values.len() - 1);
+
+        new_node
     }
 
     /// Returns how the node would look like if the `left` and `right` children of the node would be sandwitched (take separator between them in node, merge the two siblings together

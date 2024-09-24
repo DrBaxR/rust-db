@@ -411,3 +411,60 @@ fn get_siblings_of_two_siblings() {
     assert!(std::ptr::eq(result.0.unwrap(), node.edges[0].as_ref().unwrap()));
     assert!(std::ptr::eq(result.1.unwrap(), node.edges[2].as_ref().unwrap()));
 }
+
+#[test]
+fn get_rotated_left() {
+    let left = Node::new(2).push(1, 1);
+    let right = Node::new(2).push(3, 3).push(4, 4);
+    let node = Node::new(2).push_with_children(2, 2, Some(left), Some(right));
+
+    let left = node.edges[0].as_ref().unwrap();
+    let right = node.edges[1].as_ref().unwrap();
+    let rotated = node.get_rotated_left(left, right);
+
+    assert_eq!(rotated.keys, vec![3]);
+    assert_eq!(rotated.edges[0].as_ref().unwrap().keys, vec![1, 2]);
+    assert_eq!(rotated.edges[1].as_ref().unwrap().keys, vec![4]);
+}
+
+#[test]
+#[should_panic]
+fn get_rotated_left_incorrect_order() {
+    let left = Node::new(2).push(1, 1);
+    let right = Node::new(2).push(3, 3).push(4, 4);
+    let node = Node::new(2).push_with_children(2, 2, Some(left), Some(right));
+
+    let left = node.edges[0].as_ref().unwrap();
+    let right = node.edges[1].as_ref().unwrap();
+    node.get_rotated_left(right, left);
+}
+
+#[test]
+#[should_panic]
+fn get_rotated_left_inexistent_nodes() {
+    let left = Node::new(2).push(1, 1);
+    let right = Node::new(2).push(3, 3).push(4, 4);
+    let node = Node::new(2).push_with_children(2, 2, Some(left), Some(right));
+
+    let left = Node::new(2);
+    let right = Node::new(2);
+    node.get_rotated_left(&right, &left);
+}
+
+#[test]
+fn get_rotated_right() {
+    let left = Node::new(2).push(1, 1).push(2, 2);
+    let right = Node::new(2).push(4, 4);
+    let node = Node::new(2).push_with_children(3, 3, Some(left), Some(right));
+
+    let left = node.edges[0].as_ref().unwrap();
+    let right = node.edges[1].as_ref().unwrap();
+    let rotated = node.get_rotated_right(left, right);
+
+    assert_eq!(rotated.keys, vec![2]);
+    assert_eq!(rotated.values, vec![2]);
+    assert_eq!(rotated.edges[0].as_ref().unwrap().keys, vec![1]);
+    assert_eq!(rotated.edges[0].as_ref().unwrap().values, vec![1]);
+    assert_eq!(rotated.edges[1].as_ref().unwrap().keys, vec![3, 4]);
+    assert_eq!(rotated.edges[1].as_ref().unwrap().values, vec![3, 4]);
+}
