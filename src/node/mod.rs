@@ -1,3 +1,5 @@
+use core::panic;
+
 #[cfg(test)]
 mod tests;
 
@@ -490,12 +492,84 @@ impl Node {
     /// and insert separator between them; and update parent edges).
     ///
     /// # Panics
-    /// Panics if `left` and `right` are not adjacent children in the node.
+    /// Panics if:
+    /// - `left` and `right` are not adjacent children in the node.
+    /// - `left` and `right` have more combined elements than `2 * b - 2` (`left + right >= 2 * b - 2`)
     pub fn get_sandwitched_for(&self, left: &Node, right: &Node) -> Node {
-        // copy separator .parent, .left
-        // move elements .right, .left # from right to left
-        // remove separator .parent
-        // remove child .parent, .right
-        todo!()
+        let left_index = self.get_child_index(left);
+        let right_index = self.get_child_index(right);
+
+        if right_index != left_index + 1 {
+            panic!("Left and right nodes in sandwitch are not adjacent siblings");
+        }
+
+        if self.edges[left_index].as_ref().unwrap().keys.len()
+            + self.edges[right_index].as_ref().unwrap().keys.len()
+            >= 2 * self.b - 2
+        {
+            panic!("Left and right nodes in sandwitch have too many elements");
+        }
+
+        // clone parent
+        let mut new_node = self.clone();
+
+        let right_elements = new_node.edges[right_index]
+            .as_mut()
+            .expect("Sandwitch right node should exist")
+            .get_elements();
+
+        let right_edges = new_node.edges[right_index]
+            .as_mut()
+            .expect("Sandwitch right node should exist")
+            .get_edges();
+
+        let left = new_node.edges[left_index]
+            .as_mut()
+            .expect("Sandwitch left node should exist");
+
+        // copy separator to end of left
+        left.keys.push(new_node.keys[left_index]);
+        left.values.push(new_node.values[left_index]);
+
+        // move everything from right to left
+        for (k, v) in right_elements {
+            left.keys.push(k);
+            left.values.push(v);
+        }
+
+        for edge in right_edges {
+            left.edges.push(edge);
+        }
+
+        // remove separator parent and empty right child
+        new_node.keys.remove(left_index);
+        new_node.values.remove(left_index);
+        new_node.edges.remove(right_index);
+
+        new_node
+    }
+
+    /// Removes and returns key value pairs from node.
+    fn get_elements(&mut self) -> Vec<(usize, usize)> {
+        let mut keys = vec![];
+        let mut values = vec![];
+
+        while !self.keys.is_empty() {
+            keys.push(self.keys.remove(0));
+            values.push(self.values.remove(0));
+        }
+
+        keys.into_iter().zip(values.into_iter()).collect()
+    }
+
+    /// Removes and returns edges from node.
+    fn get_edges(&mut self) -> Vec<Option<Node>> {
+        let mut edges = vec![];
+
+        while !self.edges.is_empty() {
+            edges.push(self.edges.remove(0));
+        }
+
+        edges
     }
 }

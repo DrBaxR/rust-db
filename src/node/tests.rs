@@ -468,3 +468,53 @@ fn get_rotated_right() {
     assert_eq!(rotated.edges[1].as_ref().unwrap().keys, vec![3, 4]);
     assert_eq!(rotated.edges[1].as_ref().unwrap().values, vec![3, 4]);
 }
+
+#[test]
+fn get_sandwitched_for() {
+    let left = Node::new(2).push(1, 1);
+    let mut node = Node::new(2).push_with_children(2, 2, Some(left), None);
+    let mid = Node::new(2).push(3, 3);
+    let right = Node::new(2);
+    node = node.push_with_children(4, 4, Some(mid), Some(right)); // (2, 4) | (1) (3) ()
+
+    let left = node.edges[1].as_ref().unwrap();
+    let right = node.edges[2].as_ref().unwrap();
+    let sandwitched = node.get_sandwitched_for(left, right);
+
+    assert_eq!(sandwitched.edges.len(), 2);
+    assert_eq!(sandwitched.keys, vec![2]);
+    assert_eq!(sandwitched.edges[0].as_ref().unwrap().keys, vec![1]);
+    assert_eq!(sandwitched.edges[1].as_ref().unwrap().keys, vec![3, 4]);
+}
+
+#[test]
+fn get_sandwitched_for_larger() {
+    let left = Node::new(3).push(1, 1);
+    let mut node = Node::new(3).push_with_children(2, 2, Some(left), None);
+    let mid = Node::new(3).push(3, 3);
+    let right = Node::new(3).push(5, 5).push(6, 6);
+    node = node.push_with_children(4, 4, Some(mid), Some(right)); // (2, 4) | (1) (3) (5, 6)
+
+    let left = node.edges[1].as_ref().unwrap();
+    let right = node.edges[2].as_ref().unwrap();
+    let sandwitched = node.get_sandwitched_for(left, right);
+
+    assert_eq!(sandwitched.edges.len(), 2);
+    assert_eq!(sandwitched.keys, vec![2]);
+    assert_eq!(sandwitched.edges[0].as_ref().unwrap().keys, vec![1]);
+    assert_eq!(sandwitched.edges[1].as_ref().unwrap().keys, vec![3, 4, 5, 6]);
+}
+
+#[test]
+#[should_panic]
+fn get_sandwitched_for_more_elements_than_max() {
+    let left = Node::new(2).push(1, 1);
+    let mut node = Node::new(2).push_with_children(2, 2, Some(left), None);
+    let mid = Node::new(2).push(3, 3);
+    let right = Node::new(2).push(4, 4);
+    node = node.push_with_children(4, 4, Some(mid), Some(right)); // (2, 4) | (1) (3) (4)
+
+    let left = node.edges[1].as_ref().unwrap();
+    let right = node.edges[2].as_ref().unwrap();
+    let sandwitched = node.get_sandwitched_for(left, right);
+}
