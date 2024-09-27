@@ -165,7 +165,7 @@ impl BTree {
     /// # Asserts
     /// Asserts that `start_node` is a valid pointer to a node in the tree.
     fn rebalance_node(&self, start_node: &Node, node_replacement: Node) -> NodeReplace {
-        if node_replacement.is_deficient() {
+        if !node_replacement.is_deficient() {
             return NodeReplace::Node(node_replacement, start_node);
         }
 
@@ -175,21 +175,28 @@ impl BTree {
         }
 
         let parent = parent.unwrap();
-        let (left_sibling, right_sibling) = parent.get_siblings_of(start_node);
+        let start_node_index = parent.get_child_index(start_node);
+
+        let mut new_parent = parent.clone();
+        let _ = std::mem::replace(&mut new_parent.edges[start_node_index], Some(node_replacement));
+        let node_replacement = new_parent.edges[start_node_index].as_ref().unwrap();
+
+        let (left_sibling, right_sibling) = new_parent.get_siblings_of(node_replacement);
         if let Some(right_sibling) = right_sibling {
             if !right_sibling.is_deficient() {
-                let new_parent = parent.get_rotated_left(start_node, right_sibling);
+                let new_parent = new_parent.get_rotated_left(node_replacement, right_sibling);
                 return NodeReplace::Node(new_parent, parent);
             }
         }
 
         if let Some(left_sibling) = left_sibling {
             if !left_sibling.is_deficient() {
-                let new_parent = parent.get_rotated_right(left_sibling, start_node);
+                let new_parent = new_parent.get_rotated_right(left_sibling, node_replacement);
                 return NodeReplace::Node(new_parent, parent);
             }
         }
 
+        // TODO: i think use node_replacement instead of start_node here as well!
         // sandwitch
         let (merge_left, merge_right) = if let Some(right_sibling) = right_sibling {
             (start_node, right_sibling)

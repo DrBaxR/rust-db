@@ -16,6 +16,10 @@ mod tests;
 /// - `value[i]`: the value of the *ith* element in the node
 /// - `edges[i]`: the left child of the *ith* element in the node
 /// - `edges[i + 1]`: the right child of the *ith* element in the node
+/// 
+/// ### I Fucked Up
+/// The node's element min and max counts were all fucked up and I just made a quick fix for them. So the result is that they work, but they don't make much sense
+/// and I'm too lazy to rethink the whole thing so I left them like this :)
 #[derive(Clone)]
 pub struct Node {
     pub keys: Vec<usize>,
@@ -373,7 +377,7 @@ impl Node {
 
     /// Returns `true` if the node has less than the min amount of elements.
     pub fn is_deficient(&self) -> bool {
-        self.keys.len() < self.b
+        self.keys.len() < self.b - 1
     }
 
     /// Returns `(left_sibling, right_sibling)` of `child`.
@@ -403,7 +407,7 @@ impl Node {
     ///
     /// # Panics
     /// Panics if `child` is not one of node's children.
-    fn get_child_index(&self, child: *const Node) -> usize {
+    pub fn get_child_index(&self, child: *const Node) -> usize {
         let mut index = None;
         for (i, edge) in self.edges.iter().enumerate() {
             let edge = match edge {
