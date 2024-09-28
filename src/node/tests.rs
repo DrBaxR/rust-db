@@ -323,14 +323,14 @@ fn get_right_child_not_exists() {
 fn largest_key_normal() {
     let node = Node::new(3).push(1, 1).push(2, 2).push(3, 3);
 
-    assert_eq!(node.largest_key().unwrap(), 3);
+    assert_eq!(node.smallest_key().unwrap(), 3);
 }
 
 #[test]
 fn largest_key_empty() {
     let node = Node::new(3);
 
-    assert!(node.largest_key().is_none());
+    assert!(node.smallest_key().is_none());
 }
 
 #[test]

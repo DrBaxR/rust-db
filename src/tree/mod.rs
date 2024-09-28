@@ -137,7 +137,7 @@ impl BTree {
             // unwrap is fine, because found is the node that contains the key
             let right_child = found.get_right_child(key).unwrap();
 
-            let largest_key_right = right_child.largest_key();
+            let largest_key_right = right_child.smallest_key();
             if largest_key_right.is_none() {
                 return Err(());
             }

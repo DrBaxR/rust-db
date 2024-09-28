@@ -358,8 +358,8 @@ impl Node {
     }
 
     /// Returns the largest key in the node. Will return `None` if the node is empty (only possible for root nodes).
-    pub fn largest_key(&self) -> Option<usize> {
-        self.keys.last().cloned()
+    pub fn smallest_key(&self) -> Option<usize> {
+        self.keys.first().cloned()
     }
 
     /// Return new node that has its `key` entry replaced with `new`. Second entry in the tuple is the value what got replaced.

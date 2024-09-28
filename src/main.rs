@@ -2,6 +2,7 @@ mod node;
 mod tree;
 
 fn main() {
+    // this is an example that removes a node from a non-leaf, causing a leaf to rebalance
     let mut tree = tree::BTree::new(3);
 
     tree.insert(1, 1);
@@ -11,22 +12,15 @@ fn main() {
     tree.insert(6, 6);
     tree.insert(7, 7);
     tree.insert(3, 3);
-
-    let _ = tree.remove(7);
-    let _ = tree.remove(6);
-    let _ = tree.remove(1);
+    tree.insert(8, 8);
+    tree.insert(9, 9);
+    tree.insert(10, 10);
+    tree.insert(11, 11);
 
     tree.print_tree();
-    let _ = tree.remove(2);
+
+    let _ = tree.remove(4);
 
     println!();
     tree.print_tree();
-
-    // TODO: test sandwitch as well and other cases except rotate left and right
-    // TODO: fix tests that fail now
-    // TODO: write automated tests
-    // rotate left
-    // rotate right
-    // sandwitch
-    // > remove from non-leaf
 }
