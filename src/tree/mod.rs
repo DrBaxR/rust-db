@@ -196,18 +196,17 @@ impl BTree {
             }
         }
 
-        // TODO: i think use node_replacement instead of start_node here as well!
         // sandwitch
         let (merge_left, merge_right) = if let Some(right_sibling) = right_sibling {
-            (start_node, right_sibling)
+            (node_replacement, right_sibling)
         } else {
             (
                 left_sibling.expect("At least one of the siblings must be present"),
-                start_node,
+                node_replacement,
             )
         };
 
-        let mut new_parent = parent.get_sandwitched_for(merge_left, merge_right);
+        let mut new_parent = new_parent.get_sandwitched_for(merge_left, merge_right);
         if !new_parent.is_deficient() {
             // the good ending
             return NodeReplace::Node(new_parent, parent);

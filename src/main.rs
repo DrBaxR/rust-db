@@ -12,14 +12,21 @@ fn main() {
     tree.insert(7, 7);
     tree.insert(3, 3);
 
-    tree.print_tree();
     let _ = tree.remove(7);
     let _ = tree.remove(6);
+    let _ = tree.remove(1);
+
+    tree.print_tree();
+    let _ = tree.remove(2);
 
     println!();
     tree.print_tree();
 
     // TODO: test sandwitch as well and other cases except rotate left and right
-    // TODO: write automated tests
     // TODO: fix tests that fail now
+    // TODO: write automated tests
+    // rotate left
+    // rotate right
+    // sandwitch
+    // > remove from non-leaf
 }
