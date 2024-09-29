@@ -1,26 +1,21 @@
+use std::{thread, time::Duration};
+
+use disk::LRUKReplacer;
+
 mod node;
 mod tree;
+mod disk;
 
 fn main() {
-    // this is an example that removes a node from a non-leaf, causing a leaf to rebalance
-    let mut tree = tree::BTree::new(3);
+    // TODO: some tests
+    let mut replacer = LRUKReplacer::new(100, 2);
 
-    tree.insert(1, 1);
-    tree.insert(2, 2);
-    tree.insert(4, 4);
-    tree.insert(5, 5);
-    tree.insert(6, 6);
-    tree.insert(7, 7);
-    tree.insert(3, 3);
-    tree.insert(8, 8);
-    tree.insert(9, 9);
-    tree.insert(10, 10);
-    tree.insert(11, 11);
+    let _ = replacer.record_access(2);
+    thread::sleep(Duration::from_millis(100));
+    let _ = replacer.record_access(1);
 
-    tree.print_tree();
+    let _ = replacer.set_evictable(1, true);
+    let _ = replacer.set_evictable(2, true);
 
-    let _ = tree.remove(4);
-
-    println!();
-    tree.print_tree();
+    dbg!(replacer.evict());
 }
