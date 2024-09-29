@@ -320,10 +320,10 @@ fn get_right_child_not_exists() {
 }
 
 #[test]
-fn largest_key_normal() {
+fn smallest_key_normal() {
     let node = Node::new(3).push(1, 1).push(2, 2).push(3, 3);
 
-    assert_eq!(node.smallest_key().unwrap(), 3);
+    assert_eq!(node.smallest_key().unwrap(), 1);
 }
 
 #[test]
@@ -358,7 +358,7 @@ fn is_deficient() {
     assert!(node.is_deficient());
 
     node = node.push(2, 2);
-    assert!(node.is_deficient());
+    assert!(!node.is_deficient());
     
     node = node.push(3, 3);
     assert!(!node.is_deficient());
