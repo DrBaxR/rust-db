@@ -32,7 +32,19 @@ The interface (i.e. the functionalities that it implements) exposed by the repla
 
 ## Disk Scheduler
 
-TODO
+This component can be used by other components in the system to queue disk requests. The disk scheduler will maintain a background worker thread that will be responsible for processing scheduled requests.
+
+### Interface
+
+The interface exposed by the disk scheduler looks like this:
+- `schedule(r: DiskRequest)`: Schedules a request for the disk scheduler to execute
+- `start_worker_thread()`: Starts the background worker thread that takes and executes the scheduled requests.
+
+### Constraints
+
+The implementation needs to be thread safe, as the disk scheduler is shared between multuple threads.
+
+**Note:** The disk sheduler uses a **disk manager** that can read and write pages to the disk.
 
 ## Buffer Pool Manager
 
