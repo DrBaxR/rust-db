@@ -3,7 +3,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-type FrameID = i32;
+type FrameID = u32;
 
 /// LRU-K frame that tracks the last `k` timestamps when it has been accessed. First entry in the `history` vector represents the *oldest* tracked
 /// access and last entry represents the *most recent* access to the frame.
@@ -77,8 +77,8 @@ impl LRUKReplacer {
             .collect();
 
         let (candidates_with_k, candidates_with_less): (
-            Vec<(&i32, Result<u128, u128>)>,
-            Vec<(&i32, Result<u128, u128>)>,
+            Vec<(&u32, Result<u128, u128>)>,
+            Vec<(&u32, Result<u128, u128>)>,
         ) = eviction_candidates_distances
             .iter()
             .partition(|(_, k_dist)| k_dist.is_ok());

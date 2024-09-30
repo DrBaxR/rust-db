@@ -1,21 +1,18 @@
-use std::{thread, time::Duration};
+use disk::disk_manager::DiskManager;
 
-use disk::lruk_replacer::LRUKReplacer;
+const DB_PAGE_SIZE: u32 = 4096;
 
 mod node;
 mod tree;
 mod disk;
 
 fn main() {
-    // TODO: some tests
-    let mut replacer = LRUKReplacer::new(100, 2);
+    let dm = DiskManager::new("test.db".to_string());
 
-    let _ = replacer.record_access(2);
-    thread::sleep(Duration::from_millis(100));
-    let _ = replacer.record_access(1);
+    let page_id = 1;
+    let mut page = dm.read_page(page_id);
+    println!("{}", String::from_utf8(page.clone()).unwrap());
 
-    let _ = replacer.set_evictable(1, true);
-    let _ = replacer.set_evictable(2, true);
-
-    dbg!(replacer.evict());
+    page[4095] = 69 as u8;
+    dm.write_page(page_id, &page);
 }
