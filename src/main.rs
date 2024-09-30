@@ -1,6 +1,6 @@
 use std::{thread, time::Duration};
 
-use disk::LRUKReplacer;
+use disk::lruk_replacer::LRUKReplacer;
 
 mod node;
 mod tree;
