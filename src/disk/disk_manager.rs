@@ -1,28 +1,48 @@
 use std::{fs::File, io::Read, os::unix::fs::FileExt};
 
-use crate::DB_PAGE_SIZE;
+use crate::{DB_DEFAULT_SIZE, DB_PAGE_SIZE};
 
 type PageID = u32;
 
 pub struct DiskManager {
     db_file: File,
+    pages_capacity: usize,
 }
 
 impl DiskManager {
     pub fn new(db_file_path: String) -> Self {
+        let db_file = File::options()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(db_file_path)
+            .expect("Database file couldn't be opened");
+        let pages_capacity = DB_DEFAULT_SIZE;
+
+        // TODO: only set file size if file was created, otherwise might lose data
+        db_file
+            .set_len(pages_capacity as u64 * DB_PAGE_SIZE as u64)
+            .expect("Database file not opened for writing while initializing");
+
         Self {
-            db_file: File::options()
-                .read(true)
-                .write(true)
-                .create(true)
-                .open(db_file_path)
-                .expect("Database file couldn't be opened"),
+            db_file,
+            pages_capacity,
         }
     }
 
-    pub fn increase_disk_size(pages_amount: usize) {
-        // TODO: works like dynamic array where size doubled until all pages can fit
-        todo!("increase size of file so it fits number of pages"); 
+    pub fn increase_disk_size(&mut self, pages_amount: usize) {
+        // TODO: make thread safe (probably just throw the file behind a mutex)
+        if pages_amount < self.pages_capacity {
+            return;
+        }
+
+        while self.pages_capacity < pages_amount {
+            self.pages_capacity *= 2;
+        }
+
+        self.db_file
+            .set_len(self.pages_capacity as u64 * DB_PAGE_SIZE as u64)
+            .expect("Database file not opened for writing while increasing disk size");
     }
 
     pub fn read_page(&self, id: PageID) -> Vec<u8> {
