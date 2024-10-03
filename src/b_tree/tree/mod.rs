@@ -1,4 +1,4 @@
-use crate::node::{Node, NodeSplit};
+use super::node::{Node, NodeSplit};
 
 #[cfg(test)]
 mod tests;
