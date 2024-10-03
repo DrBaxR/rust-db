@@ -1,30 +1,48 @@
 use std::{sync::Arc, thread};
 
-use disk::disk_manager::DiskManager;
+use disk::disk_scheduler::{DiskRequest, DiskRequestType, DiskScheduler};
 
-const DB_PAGE_SIZE: u32 = 4096;
-const DB_DEFAULT_PAGES_AMOUNT: usize = 16;
-
+mod config;
+mod disk;
 mod node;
 mod tree;
-mod disk;
 
 fn main() {
-    let dm = DiskManager::new("db/test.db".to_string());
-    let dm = Arc::new(dm);
+    let ds = Arc::new(DiskScheduler::new());
 
     let mut handles = vec![];
     for i in 0..10 {
-        let dm_clone = Arc::clone(&dm);
+        let ds = Arc::clone(&ds);
+
         let handle = thread::spawn(move || {
-            println!("Writing page with ID={}", i);
-            dm_clone.write_page(i, &[i as u8; DB_PAGE_SIZE as usize]);
-            let _ = dm_clone.read_page(i);
+            let req_type = if i % 2 == 0 {
+                DiskRequestType::Read
+            } else {
+                DiskRequestType::Write(Vec::new())
+            };
+
+            let rx = ds.schedule(DiskRequest {
+                page_id: i,
+                req_type,
+            });
+            rx.recv().unwrap();
+
+            println!("Executed {}", i);
         });
+
         handles.push(handle);
     }
 
     for handle in handles {
         handle.join().unwrap();
     }
+
+    let ds = match Arc::try_unwrap(ds) {
+        Ok(ds) => ds,
+        Err(_) => {
+            panic!("Disk scheduler Arc has more than 1 strong reference left, can't shutdown")
+        }
+    };
+
+    ds.shutdown();
 }

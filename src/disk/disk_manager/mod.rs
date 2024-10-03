@@ -1,11 +1,11 @@
 use std::{fs::File, os::unix::fs::FileExt, sync::Mutex};
 
-use crate::{DB_DEFAULT_PAGES_AMOUNT, DB_PAGE_SIZE};
+use crate::config::{DB_DEFAULT_PAGES_AMOUNT, DB_PAGE_SIZE};
 
 #[cfg(test)]
 mod tests;
 
-type PageID = u32;
+pub type PageID = u32;
 
 pub struct DiskManager {
     db_file: Mutex<File>,
