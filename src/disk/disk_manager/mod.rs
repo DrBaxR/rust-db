@@ -21,7 +21,7 @@ impl DiskManager {
             .create(true)
             .open(db_file_path)
             .expect("Database file couldn't be opened");
-        let pages_capacity = DB_DEFAULT_PAGES_AMOUNT;
+        let pages_capacity = DB_DEFAULT_PAGES_AMOUNT; // TODO: properly init the pages capacity from the current size of the database file
 
         let new_dm = Self {
             db_file: Mutex::new(db_file),
