@@ -1,4 +1,4 @@
-use std::{fs::File, os::unix::fs::FileExt, sync::Mutex};
+use std::{fs::File, os::unix::fs::FileExt, sync::{atomic::{AtomicUsize, Ordering}, Mutex}};
 
 use crate::config::{DB_DEFAULT_PAGES_AMOUNT, DB_PAGE_SIZE};
 
@@ -9,7 +9,7 @@ pub type PageID = u32;
 
 pub struct DiskManager {
     db_file: Mutex<File>,
-    pages_capacity: usize,
+    pages_capacity: AtomicUsize,
 }
 
 impl DiskManager {
@@ -21,15 +21,16 @@ impl DiskManager {
             .create(true)
             .open(db_file_path)
             .expect("Database file couldn't be opened");
-        let pages_capacity = DB_DEFAULT_PAGES_AMOUNT; // TODO: properly init the pages capacity from the current size of the database file
+        let pages_capacity = DB_DEFAULT_PAGES_AMOUNT;
 
         let new_dm = Self {
             db_file: Mutex::new(db_file),
-            pages_capacity,
+            pages_capacity: AtomicUsize::new(pages_capacity),
         };
 
         let default_db_size = pages_capacity as u64 * DB_PAGE_SIZE as u64;
-        if new_dm.get_file_size() < default_db_size {
+        let db_file_size = new_dm.get_file_size();
+        if db_file_size < default_db_size {
             // resize db file in case it was just created
             new_dm
                 .db_file
@@ -37,26 +38,32 @@ impl DiskManager {
                 .unwrap()
                 .set_len(default_db_size)
                 .expect("Database file not opened for writing while initializing");
+        } else {
+            // set pages capacity to size of the file
+            new_dm.pages_capacity.store(db_file_size as usize, Ordering::SeqCst);
         }
 
         new_dm
     }
 
     /// Increase disk size of the database file so it is capable of holding `pages_amount` pages. Will do nothing if database file is already large enough.
-    pub fn increase_disk_size(&mut self, pages_amount: usize) {
-        // TODO: this is not actually thread safe! either make atomic or lock earlier
-        if pages_amount < self.pages_capacity {
+    pub fn increase_disk_size(&self, pages_amount: usize) {
+        let db_file = self.db_file.lock().unwrap();
+
+        // I think it would be more efficient to use a mutex for capacity
+        let current_capacity = self.pages_capacity.load(Ordering::SeqCst);
+        if pages_amount < current_capacity {
             return;
         }
 
-        while self.pages_capacity < pages_amount {
-            self.pages_capacity *= 2;
+        let mut new_capacity = current_capacity;
+        while new_capacity < pages_amount {
+            new_capacity *= 2;
         }
+        self.pages_capacity.store(new_capacity, Ordering::SeqCst);
 
-        self.db_file
-            .lock()
-            .unwrap()
-            .set_len(self.pages_capacity as u64 * DB_PAGE_SIZE as u64)
+        db_file
+            .set_len(new_capacity as u64 * DB_PAGE_SIZE as u64)
             .expect("Database file not opened for writing while increasing disk size");
     }
 
