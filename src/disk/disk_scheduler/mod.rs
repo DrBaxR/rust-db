@@ -8,6 +8,9 @@ use std::{
 
 use super::disk_manager::{DiskManager, PageID};
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Debug)]
 pub enum DiskRequestType {
     Read,

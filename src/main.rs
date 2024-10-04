@@ -16,7 +16,6 @@ fn main() {
         let ds = Arc::clone(&ds);
 
         let handle = thread::spawn(move || {
-            // TODO: make this a test where you also do reads on the data you saved
             let req_type = DiskRequestType::Write([i as u8; DB_PAGE_SIZE as usize].to_vec());
 
             let rx = ds.schedule(DiskRequest {
