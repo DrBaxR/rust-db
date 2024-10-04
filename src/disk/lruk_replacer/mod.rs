@@ -3,6 +3,8 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+mod tests;
+
 type FrameID = u32;
 
 /// LRU-K frame that tracks the last `k` timestamps when it has been accessed. First entry in the `history` vector represents the *oldest* tracked

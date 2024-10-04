@@ -52,7 +52,7 @@ fn increase_disk_size() {
     let db_file_path = db_path.to_str().unwrap().to_string();
 
     // check size of created db file
-    let mut dm = DiskManager::new(db_file_path.clone());
+    let dm = DiskManager::new(db_file_path.clone());
     dm.increase_disk_size(33); // 33 > 16 * 2, means that size of file should double twice (64 pages)
 
     let db_file_len = File::open(db_file_path).unwrap().metadata().unwrap().len();
