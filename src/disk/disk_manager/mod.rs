@@ -44,6 +44,7 @@ impl DiskManager {
 
     /// Increase disk size of the database file so it is capable of holding `pages_amount` pages. Will do nothing if database file is already large enough.
     pub fn increase_disk_size(&mut self, pages_amount: usize) {
+        // TODO: this is not actually thread safe! either make atomic or lock earlier
         if pages_amount < self.pages_capacity {
             return;
         }

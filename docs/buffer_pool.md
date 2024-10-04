@@ -48,4 +48,25 @@ The implementation needs to be thread safe, as the disk scheduler is shared betw
 
 ## Buffer Pool Manager
 
-TODO
+This component is responsible of moving physical pages back and forth between memory (buffers) and disk. It also behaves as a cache, keeping frequently accessed pages in memory for faster access, and evicting unused/cold pages back out to storage.
+
+This component uses both the *LRU-K Replacement Policy* and the *Disk Scheduler* to achieve its purpose.
+
+## Characteristics
+
+## Interface
+
+The interface exposed by this component looks like this:
+- `fetch_page(page_id)`: This fetch can be of two types: *read* and *write* (depending on what the page is going to be used for) - check constraints section for more details.
+- `flush_page(page_id) -> bool`: Flush a page's data out to disk. Will return `false` if the given page is not in memory.
+- `new_page() -> page_id`: Allocate a new page on disk. Keeps track of the page id (simple implementation is to constantly increase it via a counter) and will also increase the disk size of the database file in case the current id is greater than the allocated disk size.
+- `delete_page(page_id) -> bool`: Removes page from database (both disk and memory). Returns `false` if the page is pinned.
+- `flush_all_pages()`: Flushes all the pages in memory to disk.
+
+## Constraints
+
+This implementation needs to be thread-safe, as it will be used across multiple worker threads.
+
+For each of the pages that are being stored in the buffer, only a single thread should be able to have **write access** to it at one time, but multiple threads can have access to it if they only need **read access** to the page. The logic should be similar to the logic of the borrowing rules of Rust, or or a [shared_mutex](https://en.cppreference.com/w/cpp/thread/shared_mutex) in C++.
+
+**Note:** Here is some book about concurrency in Rust that seems pretty good for establishing foundamentals: [https://marabos.nl/atomics/](https://marabos.nl/atomics/)
