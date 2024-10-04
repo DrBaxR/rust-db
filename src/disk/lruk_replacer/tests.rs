@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn evict_no_evictables() {
     let mut replacer = LRUKReplacer::new(10, 2);
-    
+
     // by default new frames are non-evictable
     replacer.record_access_at(1, 1).unwrap();
     replacer.record_access_at(2, 2).unwrap();
@@ -91,7 +91,7 @@ fn evict_complex() {
 #[test]
 fn size() {
     let mut replacer = LRUKReplacer::new(10, 2);
-    
+
     replacer.record_access_at(1, 1).unwrap();
     replacer.record_access_at(2, 2).unwrap();
 
@@ -103,7 +103,7 @@ fn size() {
 #[test]
 fn record_access_full() {
     let mut replacer = LRUKReplacer::new(2, 2);
-    
+
     replacer.record_access_at(1, 1).unwrap();
     replacer.record_access_at(2, 2).unwrap();
 
@@ -114,14 +114,14 @@ fn record_access_full() {
 #[test]
 fn set_evictable_non_existent() {
     let mut replacer = LRUKReplacer::new(2, 2);
-    
+
     assert!(replacer.set_evictable(1, true).is_err());
 }
 
 #[test]
 fn remove_evictable() {
     let mut replacer = LRUKReplacer::new(2, 2);
-    
+
     replacer.record_access_at(1, 1).unwrap();
     replacer.record_access_at(2, 2).unwrap();
 
@@ -136,7 +136,7 @@ fn remove_evictable() {
 #[test]
 fn remove_non_evictable() {
     let mut replacer = LRUKReplacer::new(2, 2);
-    
+
     replacer.record_access_at(1, 1).unwrap();
     replacer.record_access_at(2, 2).unwrap();
 

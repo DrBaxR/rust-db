@@ -38,14 +38,21 @@ impl LRUKFrame {
     }
 
     /// Returns the (backward) k-distance of the frame, which represents the difference between the timestamps of the most recent access and oldest (`k`th) recorded access.
+    ///
+    /// # Errors
     /// Will return `Err` with the latest access timestamp if there are less than `k` recorded accesses.
+    /// 
+    /// # Undefined
+    /// Calling `k_distance` on a frame that has no accesses is undefined behaviour, as you need to have at least one access to store a frame in the replacer's tracked frames.
     fn k_distance(&self) -> Result<u128, u128> {
-        // TODO: make this not crash when it gets called on no recorded values - or just think about this case
         if self.history.len() == self.k && self.k >= 2 {
             return Ok(self.history.last().unwrap() - self.history.first().unwrap());
         }
 
-        Err(*self.history.last().unwrap())
+        Err(*self
+            .history
+            .last()
+            .expect("History of a frame should have at least one recorded access"))
     }
 }
 
@@ -121,7 +128,7 @@ impl LRUKReplacer {
     }
 
     /// Records an access for frame with `id` at `timestamp`. If frame is not already tracked, adds to tracked frames.
-    /// 
+    ///
     /// # Errors
     /// Returns `Err` if trying frame not already recorded and replacer tracked frames already reached the max.
     fn record_access_at(&mut self, id: FrameID, timestamp: u128) -> Result<(), ()> {
@@ -147,7 +154,7 @@ impl LRUKReplacer {
     }
 
     /// Sets frame with `id`'s evictable state to the `evictable` value.
-    /// 
+    ///
     /// # Errors
     /// Returns `Err` if trying to call for a frame id that is not tracked.
     pub fn set_evictable(&mut self, id: FrameID, evictable: bool) -> Result<(), ()> {
@@ -162,7 +169,7 @@ impl LRUKReplacer {
     }
 
     /// Remove an evictable frame from the replacer. Will do nothing if the frame with `id` doesn't exist in the replacer.
-    /// 
+    ///
     /// # Errors
     /// Returns `Err` if trying to remove a frame that is not evictable.
     pub fn remove(&mut self, id: FrameID) -> Result<(), ()> {
