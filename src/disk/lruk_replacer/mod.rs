@@ -3,6 +3,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+#[cfg(test)]
 mod tests;
 
 type FrameID = u32;
@@ -28,17 +29,12 @@ impl LRUKFrame {
     }
 
     /// Records access at the current timestamp for the frame.
-    fn record_access(&mut self) {
+    fn record_access(&mut self, timestamp: u128) {
         if self.history.len() >= self.k {
             self.history.remove(0);
         }
 
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards?!")
-            .as_millis();
-
-        self.history.push(now);
+        self.history.push(timestamp);
     }
 
     /// Returns the (backward) k-distance of the frame, which represents the difference between the timestamps of the most recent access and oldest (`k`th) recorded access.
@@ -114,9 +110,21 @@ impl LRUKReplacer {
         None
     }
 
-    /// Records an access for frame with `id`. If frame is not already tracked, adds to tracked frames.
-    /// Returns `Err` if trying frame not already recorded and replacer tracked frames already reached the max.
+    /// Wrapper around the `record_access_at` with the current time as `timestamp`.
     pub fn record_access(&mut self, id: FrameID) -> Result<(), ()> {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time moved backwards?!!")
+            .as_millis();
+
+        self.record_access_at(id, now)
+    }
+
+    /// Records an access for frame with `id` at `timestamp`. If frame is not already tracked, adds to tracked frames.
+    /// 
+    /// # Errors
+    /// Returns `Err` if trying frame not already recorded and replacer tracked frames already reached the max.
+    fn record_access_at(&mut self, id: FrameID, timestamp: u128) -> Result<(), ()> {
         let frame = self.frames.get_mut(&id);
 
         let frame = match frame {
@@ -133,12 +141,14 @@ impl LRUKReplacer {
             }
         };
 
-        frame.record_access();
+        frame.record_access(timestamp);
 
         Ok(())
     }
 
     /// Sets frame with `id`'s evictable state to the `evictable` value.
+    /// 
+    /// # Errors
     /// Returns `Err` if trying to call for a frame id that is not tracked.
     pub fn set_evictable(&mut self, id: FrameID, evictable: bool) -> Result<(), ()> {
         let frame = self
@@ -152,6 +162,8 @@ impl LRUKReplacer {
     }
 
     /// Remove an evictable frame from the replacer. Will do nothing if the frame with `id` doesn't exist in the replacer.
+    /// 
+    /// # Errors
     /// Returns `Err` if trying to remove a frame that is not evictable.
     pub fn remove(&mut self, id: FrameID) -> Result<(), ()> {
         let frame = match self.frames.get(&id) {
