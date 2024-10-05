@@ -110,16 +110,6 @@ impl BufferPoolManager {
 
     /// Brings to memory page that is **NOT** in memory. Returns index in the `frames` array of the page.
     fn bring_page_in_memory(&self, page_id: PageID) -> usize {
-        // TODO: move to method
-        let mut free_frames = self.free_frames.lock().unwrap();
-        let free_frame_index = if let Some(i) = free_frames.first().cloned() {
-            free_frames.remove(i);
-            Some(i)
-        } else {
-            None
-        };
-        drop(free_frames);
-
         let response = self
             .disk_scheduler
             .schedule(DiskRequest {
@@ -136,24 +126,11 @@ impl BufferPoolManager {
             DiskResponse::WriteResponse => panic!("Wrong response type"),
         };
 
+        let free_frame_index = self.get_first_free_frame();
+
         if let Some(free_frame_index) = free_frame_index {
-            // TODO: move to separate method and reevaluate after that if this is thread-safe
             // there are free slots, do a disk read for page id and store it in frames
-            let frame = self.frames.get(free_frame_index).expect(&format!(
-                "Incorrect free frame index: {} (frames size is {})",
-                free_frame_index,
-                self.frames.len()
-            ));
-
-            let mut page = frame.page.write().unwrap();
-            let _ = page.insert(Page {
-                page_id,
-                data: page_data,
-            });
-
-            // update page table
-            let mut page_table = self.page_table.write().unwrap();
-            page_table.insert(page_id, free_frame_index);
+            self.associate_page_to_frame(page_id, page_data, free_frame_index);
 
             free_frame_index
         } else {
@@ -161,6 +138,36 @@ impl BufferPoolManager {
             // will need to protect the replacer since it's not thread-safe
             todo!()
         }
+    }
+
+    /// Returns the index of the first free frame and removes it from the free frames. Will return `None` if there are no free frames.
+    fn get_first_free_frame(&self) -> Option<usize> {
+        // TODO: check if actually thread safe
+        let mut free_frames = self.free_frames.lock().unwrap();
+
+        if let Some(i) = free_frames.first().cloned() {
+            free_frames.remove(i);
+            Some(i)
+        } else {
+            None
+        }
+    }
+
+    /// Updates the page data in the frame with `frame_index` and creates a mapping `page_id -> frame_index` in the `page_table`.
+    fn associate_page_to_frame(&self, page_id: PageID, data: Vec<u8>, frame_index: usize) {
+        // TODO: check if acatually thread safe
+        let frame = self.frames.get(frame_index).expect(&format!(
+            "Incorrect free frame index: {} (frames size is {})",
+            frame_index,
+            self.frames.len()
+        ));
+
+        let mut page = frame.page.write().unwrap();
+        let _ = page.insert(Page { page_id, data });
+
+        // update page table
+        let mut page_table = self.page_table.write().unwrap();
+        page_table.insert(page_id, frame_index);
     }
 
     // TODO: option
