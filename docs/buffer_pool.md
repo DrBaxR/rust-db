@@ -18,7 +18,7 @@ This component is responsible of tracking page usage in the buffer poola manager
 ### Characteristics
 
 There are two properties that describe a LRU-K replacement policy:
-1. `num_frames: usize`: the maximum number of frames that the replacer will be required to store
+1. `num_frames`: the maximum number of frames that the replacer will be required to store
 2. `k`: How many historical access timestamps get recorded for each frame
 
 ### Interface
@@ -53,6 +53,10 @@ This component is responsible of moving physical pages back and forth between me
 This component uses both the *LRU-K Replacement Policy* and the *Disk Scheduler* to achieve its purpose.
 
 ## Characteristics
+
+The properties that describe a buffer pool manager are:
+- `frames`: The number of frames it has
+- `k_dist`: The k-distance used for the replacement policy
 
 ## Interface
 

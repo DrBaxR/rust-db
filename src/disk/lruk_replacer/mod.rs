@@ -6,7 +6,7 @@ use std::{
 #[cfg(test)]
 mod tests;
 
-type FrameID = u32;
+pub type FrameID = u32;
 
 /// LRU-K frame that tracks the last `k` timestamps when it has been accessed. First entry in the `history` vector represents the *oldest* tracked
 /// access and last entry represents the *most recent* access to the frame.
