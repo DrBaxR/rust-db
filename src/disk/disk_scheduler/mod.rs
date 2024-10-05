@@ -24,6 +24,7 @@ pub struct DiskRequest {
 }
 
 pub enum DiskResponse {
+    /// Response payload will be `None` if trying to read from address that is beyond allocated space.
     ReadResponse(Option<Vec<u8>>),
     WriteResponse,
 }
