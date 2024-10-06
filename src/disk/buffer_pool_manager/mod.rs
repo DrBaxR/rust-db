@@ -71,6 +71,39 @@ impl<'a> PageReadGuard<'a> {
     // TODO: a way to access data inside page
 }
 
+pub struct PageWriteGuard<'a> {
+    page: RwLockWriteGuard<'a, Option<Page>>,
+    frame: &'a Frame,
+    replacer: &'a Mutex<LRUKReplacer>,
+}
+
+impl<'a> Drop for PageWriteGuard<'a> {
+    fn drop(&mut self) {
+        let prev_pin_count = self.frame.pin_count.fetch_sub(1, Ordering::SeqCst);
+
+        let mut replacer = self.replacer.lock().unwrap();
+        if prev_pin_count == 1 {
+            let _ = replacer.set_evictable(self.frame.frame_id, true); // result ignored, beacause already evicted
+        }
+    }
+}
+
+impl<'a> PageWriteGuard<'a> {
+    fn new(
+        page: RwLockWriteGuard<'a, Option<Page>>,
+        frame: &'a Frame,
+        replacer: &'a Mutex<LRUKReplacer>,
+    ) -> Self {
+        Self {
+            page,
+            frame,
+            replacer,
+        }
+    }
+
+    // TODO: a way to access data inside page
+}
+
 // TODO: for simplicity sake, at the moment manager assumes that database is empty every time it gets constructed. change this
 struct BufferPoolManager {
     disk_scheduler: DiskScheduler,
@@ -107,6 +140,20 @@ impl BufferPoolManager {
     }
 
     pub fn get_read_page(&self, page_id: PageID) -> PageReadGuard {
+        let frame = self.fetch_page(page_id);
+
+        let page = frame
+            .page
+            .read()
+            .expect("Page table entry points to empty frame");
+
+        self.record_frame_access(frame);
+
+        PageReadGuard::new(page, &frame, &self.replacer)
+    }
+
+    /// Returns a reference to a frame that contains the page with `page_id`. Will also bring the page in memory if not already there.
+    fn fetch_page(&self, page_id: PageID) -> &Frame {
         // get frame index
         let page_table = self.page_table.read().unwrap();
         let frame_index = page_table.get(&page_id).cloned();
@@ -121,17 +168,12 @@ impl BufferPoolManager {
         };
 
         // get frame from memory
-        let frame = self
-            .frames
+        self.frames
             .get(frame_index)
-            .expect("Wrong value in page table or frames not properly allocated");
+            .expect("Wrong value in page table or frames not properly allocated")
+    }
 
-        // get page from frame
-        let page = frame
-            .page
-            .read()
-            .expect("Page table entry points to empty frame");
-
+    fn record_frame_access(&self, frame: &Frame) {
         // record access to the frame
         let mut replacer = self.replacer.lock().unwrap();
         replacer
@@ -144,8 +186,6 @@ impl BufferPoolManager {
         drop(replacer);
 
         frame.pin_count.fetch_add(1, Ordering::SeqCst); // pin decrease handled on page read guard drop
-
-        PageReadGuard::new(page, &frame, &self.replacer)
     }
 
     /// Brings to memory page that is **NOT** in memory. Returns index in the `frames` array of the page. Will return `None` if the buffer is full and can't evict anything.
@@ -216,9 +256,17 @@ impl BufferPoolManager {
         page_table.insert(page_id, frame_index);
     }
 
-    // TODO: option
-    pub fn get_write_page(&self, page_id: PageID) -> RwLockWriteGuard<Page> {
-        todo!()
+    pub fn get_write_page(&self, page_id: PageID) -> PageWriteGuard {
+        let frame = self.fetch_page(page_id);
+
+        let page = frame
+            .page
+            .write()
+            .expect("Page table entry points to empty frame");
+
+        self.record_frame_access(frame);
+
+        PageWriteGuard::new(page, &frame, &self.replacer)
     }
 
     pub fn flush_page(&self, page_id: PageID) -> bool {
