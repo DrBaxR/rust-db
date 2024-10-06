@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     sync::{
-        atomic::{AtomicBool, AtomicUsize},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
         Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
     },
 };
@@ -38,10 +38,43 @@ struct Page {
     data: Vec<u8>,
 }
 
+pub struct PageReadGuard<'a> {
+    page: RwLockReadGuard<'a, Option<Page>>,
+    frame: &'a Frame,
+    replacer: &'a Mutex<LRUKReplacer>,
+}
+
+impl<'a> Drop for PageReadGuard<'a> {
+    fn drop(&mut self) {
+        let prev_pin_count = self.frame.pin_count.fetch_sub(1, Ordering::SeqCst);
+
+        let mut replacer = self.replacer.lock().unwrap();
+        if prev_pin_count == 1 {
+            let _ = replacer.set_evictable(self.frame.frame_id, true); // result ignored, beacause already evicted
+        }
+    }
+}
+
+impl<'a> PageReadGuard<'a> {
+    fn new(
+        page: RwLockReadGuard<'a, Option<Page>>,
+        frame: &'a Frame,
+        replacer: &'a Mutex<LRUKReplacer>,
+    ) -> Self {
+        Self {
+            page,
+            frame,
+            replacer,
+        }
+    }
+
+    // TODO: a way to access data inside page
+}
+
 // TODO: for simplicity sake, at the moment manager assumes that database is empty every time it gets constructed. change this
 struct BufferPoolManager {
     disk_scheduler: DiskScheduler,
-    replacer: LRUKReplacer, // TODO: this is not thread-safe, will need to wrap it in a mutex
+    replacer: Mutex<LRUKReplacer>,
     /// Statically allocated on construct, does not grow or shrink
     frames: Vec<Frame>,
     /// Indexes of free frames in `frames` vec
@@ -66,15 +99,14 @@ impl BufferPoolManager {
 
         Self {
             disk_scheduler,
-            replacer,
+            replacer: Mutex::new(replacer),
             frames,
             free_frames: Mutex::new(free_frames),
             page_table,
         }
     }
 
-    // TODO: make this be an option once implementing other non-trivial cases
-    pub fn get_read_page(&self, page_id: PageID) -> RwLockReadGuard<Option<Page>> {
+    pub fn get_read_page(&self, page_id: PageID) -> PageReadGuard {
         // get frame index
         let page_table = self.page_table.read().unwrap();
         let frame_index = page_table.get(&page_id).cloned();
@@ -85,6 +117,7 @@ impl BufferPoolManager {
         } else {
             // the page id is not in memory
             self.bring_page_in_memory(page_id)
+                .expect("Buffer full and can't evict anything")
         };
 
         // get frame from memory
@@ -100,16 +133,23 @@ impl BufferPoolManager {
             .expect("Page table entry points to empty frame");
 
         // record access to the frame
-        // TODO: also record access to the frame
-        // TODO: also set frame not evictable
-        // TODO: also pin page
-        // TODO: how do you decrease pin??
+        let mut replacer = self.replacer.lock().unwrap();
+        replacer
+            .record_access(frame.frame_id)
+            .expect("Replacer frame buffer full, internal frames not synced with manager frames");
 
-        page
+        replacer
+            .set_evictable(frame.frame_id, false)
+            .expect("Trying to set evictable value for untracked frame");
+        drop(replacer);
+
+        frame.pin_count.fetch_add(1, Ordering::SeqCst); // pin decrease handled on page read guard drop
+
+        PageReadGuard::new(page, &frame, &self.replacer)
     }
 
-    /// Brings to memory page that is **NOT** in memory. Returns index in the `frames` array of the page.
-    fn bring_page_in_memory(&self, page_id: PageID) -> usize {
+    /// Brings to memory page that is **NOT** in memory. Returns index in the `frames` array of the page. Will return `None` if the buffer is full and can't evict anything.
+    fn bring_page_in_memory(&self, page_id: PageID) -> Option<usize> {
         let response = self
             .disk_scheduler
             .schedule(DiskRequest {
@@ -132,11 +172,17 @@ impl BufferPoolManager {
             // there are free slots, do a disk read for page id and store it in frames
             self.associate_page_to_frame(page_id, page_data, free_frame_index);
 
-            free_frame_index
+            Some(free_frame_index)
         } else {
-            // TODO there are NOT free slots, evict something, do disk read for page id and store it in frames
-            // will need to protect the replacer since it's not thread-safe
-            todo!()
+            // there are no free slots, evict a frame
+            let mut replacer = self.replacer.lock().unwrap();
+            let evicted_frame_id = replacer.evict()? as usize;
+            drop(replacer);
+
+            // frame id is equal to index in frames vec, check constructor
+            self.associate_page_to_frame(page_id, page_data, evicted_frame_id);
+
+            Some(evicted_frame_id)
         }
     }
 
