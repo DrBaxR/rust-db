@@ -1,3 +1,4 @@
+// TODO: split in mode modules
 use std::{
     collections::HashMap,
     sync::{
@@ -40,7 +41,7 @@ impl Frame {
         self.pin_count.store(0, Ordering::SeqCst);
         self.is_dirty.store(false, Ordering::SeqCst);
 
-        self.page.write().unwrap().insert(page);
+        let _ = self.page.write().unwrap().insert(page);
     }
 }
 
@@ -113,10 +114,14 @@ impl<'a> PageWriteGuard<'a> {
     }
 
     // TODO: a way to access data inside page
+    pub fn write(&mut self, data: Vec<u8>) {
+        self.page.as_mut().unwrap().data = data;
+        self.frame.is_dirty.store(true, Ordering::SeqCst);
+    }
 }
 
-// TODO: for simplicity sake, at the moment manager assumes that database is empty every time it gets constructed. change this
-struct BufferPoolManager {
+// TODO: for simplicity sake, at the moment manager assumes that database is empty every time it gets constructed. Change this in the future
+pub struct BufferPoolManager {
     disk_scheduler: DiskScheduler,
     replacer: Mutex<LRUKReplacer>,
     /// Statically allocated on construct, does not grow or shrink
@@ -388,6 +393,7 @@ impl BufferPoolManager {
 
     /// Writes all dirty pages to disk.
     pub fn flush_all_pages(&self) {
+        // TODO: i think this should lock all operations (maybe? - idk)
         let pages: Vec<(PageID, usize)> = self
             .page_table
             .read()
