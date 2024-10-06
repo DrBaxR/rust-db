@@ -32,18 +32,21 @@ pub enum DiskResponse {
 pub struct DiskScheduler {
     sender: Arc<mpsc::Sender<(DiskRequest, mpsc::Sender<DiskResponse>)>>,
     worker_handle: JoinHandle<()>,
+    disk_manager: Arc<DiskManager>,
 }
 
 impl DiskScheduler {
     /// Creates a new disk scheduler, which spawns a background worker thread that processes the scheduled requests.
     pub fn new(disk_manager: DiskManager) -> Self {
         let (sender, receiver) = mpsc::channel::<(DiskRequest, mpsc::Sender<DiskResponse>)>();
+        let disk_manager = Arc::new(disk_manager);
 
         // At the moment this doesn't bring any performance boost, since there is a single worker thread that blocks on access
         // of the database file. This will be improved later.
+        let disk_manager_clone = Arc::clone(&disk_manager);
         let worker_handle = thread::spawn(move || {
             for (request, notification) in receiver {
-                let response = DiskScheduler::process_request(&disk_manager, request);
+                let response = DiskScheduler::process_request(&disk_manager_clone, request);
 
                 notification
                     .send(response)
@@ -54,6 +57,7 @@ impl DiskScheduler {
         Self {
             sender: Arc::new(sender),
             worker_handle,
+            disk_manager,
         }
     }
 
@@ -63,7 +67,7 @@ impl DiskScheduler {
                 let page = disk_manager.read_page(request.page_id);
 
                 DiskResponse::ReadResponse(page)
-            },
+            }
             DiskRequestType::Write(vec) => {
                 disk_manager.write_page(request.page_id, &vec);
 
@@ -90,5 +94,9 @@ impl DiskScheduler {
         self.worker_handle
             .join()
             .expect("Failed to join the background worker thread");
+    }
+
+    pub fn increase_disk_size(&self, pages_amount: usize) {
+        self.disk_manager.increase_disk_size(pages_amount);
     }
 }

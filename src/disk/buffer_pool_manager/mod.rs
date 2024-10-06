@@ -6,7 +6,10 @@ use std::{
     },
 };
 
-use crate::disk::disk_scheduler::{DiskRequest, DiskRequestType, DiskResponse};
+use crate::{
+    config::DB_PAGE_SIZE,
+    disk::disk_scheduler::{DiskRequest, DiskRequestType, DiskResponse},
+};
 
 use super::{
     disk_manager::{DiskManager, PageID},
@@ -30,6 +33,14 @@ impl Frame {
             is_dirty: AtomicBool::new(false),
             page: RwLock::new(None),
         }
+    }
+
+    /// Empties all data in frame, setting page data to `page`.
+    fn reset(&self, page: Page) {
+        self.pin_count.store(0, Ordering::SeqCst);
+        self.is_dirty.store(false, Ordering::SeqCst);
+
+        self.page.write().unwrap().insert(page);
     }
 }
 
@@ -114,6 +125,8 @@ struct BufferPoolManager {
     free_frames: Mutex<Vec<usize>>,
     /// Maps id of a page to an index in the frames vec
     page_table: RwLock<HashMap<PageID, usize>>,
+    /// ID of the next page that will get allocated
+    next_page_id: AtomicUsize,
 }
 
 impl BufferPoolManager {
@@ -136,6 +149,7 @@ impl BufferPoolManager {
             frames,
             free_frames: Mutex::new(free_frames),
             page_table,
+            next_page_id: AtomicUsize::new(0),
         }
     }
 
@@ -297,7 +311,7 @@ impl BufferPoolManager {
         }
 
         // reaches here if is in memory AND is dirty
-        let page_guard = self.get_write_page(page_id);
+        let page_guard = self.get_read_page(page_id);
         let page = page_guard.page.as_ref().unwrap();
 
         // write page contents to disk
@@ -311,12 +325,65 @@ impl BufferPoolManager {
             .unwrap();
     }
 
+    /// Allocates a new page in memory and on disk and returns the id you can use to get it. Access to the page has to be done via the `get_read_page` or `get_write_page` methods.
     pub fn new_page(&self) -> PageID {
-        todo!()
+        let new_page_id = self.next_page_id.fetch_add(1, Ordering::SeqCst) as PageID;
+        let new_page = Page {
+            page_id: new_page_id,
+            data: [0 as u8; DB_PAGE_SIZE as usize].to_vec(),
+        };
+
+        // allocate the new page on disk and overwrite previous data
+        self.disk_scheduler.increase_disk_size(new_page_id as usize);
+        self.disk_scheduler
+            .schedule(DiskRequest {
+                page_id: new_page_id,
+                req_type: DiskRequestType::Write([0 as u8; DB_PAGE_SIZE as usize].to_vec()),
+            })
+            .recv()
+            .unwrap();
+
+        // read the page and store it in the page table and frames array in memory
+        let new_page_index = self
+            .bring_page_in_memory(new_page_id)
+            .expect("Buffer full and can't evict anything");
+
+        self.free_frames.lock().unwrap().push(new_page_index);
+
+        let new_page_frame = self.frames.get(new_page_index).unwrap();
+        new_page_frame.reset(new_page);
+
+        new_page_id
     }
 
+    /// Deallocates page with `page_id`.
     pub fn delete_page(&self, page_id: PageID) -> bool {
-        todo!()
+        // deallocate from disk no necessary since old data overwritten by allocating page
+        // deallocate from the page table: add frame index to free_frames, remove entry from the page_table
+        let mut page_table = self.page_table.write().unwrap();
+        let frame_index = match page_table.get(&page_id) {
+            Some(index) => *index,
+            None => return false,
+        };
+
+        // lock on page is acquired so nobody does anything with page while it is being deleted
+        let page = self.get_write_page(page_id);
+
+        // delete all metadata for frame where page was
+        self.free_frames.lock().unwrap().push(frame_index);
+        page_table.remove(&page_id);
+
+        // delete access history from the replacer
+        let mut replacer = self.replacer.lock().unwrap();
+        let _ = replacer.set_evictable(frame_index as FrameID, true);
+        replacer
+            .remove(frame_index as FrameID)
+            .expect("Frame was just set as evictable!");
+
+        drop(replacer);
+        drop(page);
+
+        true
     }
 
     /// Writes all dirty pages to disk.
