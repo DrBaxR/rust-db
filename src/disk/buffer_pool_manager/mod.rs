@@ -269,8 +269,46 @@ impl BufferPoolManager {
         PageWriteGuard::new(page, &frame, &self.replacer)
     }
 
+    /// Returns `false` if the page is not in memory. Will write the page to disk if it's dirty.
     pub fn flush_page(&self, page_id: PageID) -> bool {
-        todo!()
+        let frame_index = self.page_table.read().unwrap().get(&page_id).cloned();
+        let frame_index = match frame_index {
+            Some(index) => index,
+            None => return false,
+        };
+
+        self.flush_frame_to_disk(frame_index, page_id);
+
+        true
+    }
+
+    /// Flush page with `page_id` to disk **IF** frame with `frame_index` is marked as dirty. This means that in order to behave correctly
+    /// this method expects that the frame and page are correctly mapped in `page_table`.
+    fn flush_frame_to_disk(&self, frame_index: usize, page_id: PageID) {
+        let frame_is_dirty = self
+            .frames
+            .get(frame_index)
+            .expect("Page table points to invalid frame")
+            .is_dirty
+            .load(Ordering::SeqCst);
+
+        if !frame_is_dirty {
+            return;
+        }
+
+        // reaches here if is in memory AND is dirty
+        let page_guard = self.get_write_page(page_id);
+        let page = page_guard.page.as_ref().unwrap();
+
+        // write page contents to disk
+        let _ = self
+            .disk_scheduler
+            .schedule(DiskRequest {
+                page_id: page.page_id,
+                req_type: DiskRequestType::Write(page.data.clone()),
+            })
+            .recv()
+            .unwrap();
     }
 
     pub fn new_page(&self) -> PageID {
@@ -281,7 +319,18 @@ impl BufferPoolManager {
         todo!()
     }
 
+    /// Writes all dirty pages to disk.
     pub fn flush_all_pages(&self) {
-        todo!()
+        let pages: Vec<(PageID, usize)> = self
+            .page_table
+            .read()
+            .unwrap()
+            .iter()
+            .map(|(p, f)| (p.clone(), f.clone()))
+            .collect();
+
+        for (page_id, frame_index) in pages {
+            self.flush_frame_to_disk(frame_index, page_id);
+        }
     }
 }
