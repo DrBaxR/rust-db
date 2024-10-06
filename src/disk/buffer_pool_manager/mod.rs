@@ -142,7 +142,6 @@ impl BufferPoolManager {
 
     /// Returns the index of the first free frame and removes it from the free frames. Will return `None` if there are no free frames.
     fn get_first_free_frame(&self) -> Option<usize> {
-        // TODO: check if actually thread safe
         let mut free_frames = self.free_frames.lock().unwrap();
 
         if let Some(i) = free_frames.first().cloned() {
@@ -155,7 +154,7 @@ impl BufferPoolManager {
 
     /// Updates the page data in the frame with `frame_index` and creates a mapping `page_id -> frame_index` in the `page_table`.
     fn associate_page_to_frame(&self, page_id: PageID, data: Vec<u8>, frame_index: usize) {
-        // TODO: check if acatually thread safe
+        // set page data for frame
         let frame = self.frames.get(frame_index).expect(&format!(
             "Incorrect free frame index: {} (frames size is {})",
             frame_index,
@@ -164,6 +163,7 @@ impl BufferPoolManager {
 
         let mut page = frame.page.write().unwrap();
         let _ = page.insert(Page { page_id, data });
+        drop(page);
 
         // update page table
         let mut page_table = self.page_table.write().unwrap();
