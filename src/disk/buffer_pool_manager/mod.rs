@@ -1,18 +1,14 @@
-// TODO: split in mode modules
 use std::{
     collections::HashMap,
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
-        Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard,
+        Mutex, RwLock,
     },
 };
 
 use page::{Page, PageReadGuard, PageWriteGuard};
 
-use crate::{
-    config::DB_PAGE_SIZE,
-    disk::disk_scheduler::{DiskRequest, DiskRequestType, DiskResponse},
-};
+use crate::disk::disk_scheduler::{DiskRequest, DiskRequestType, DiskResponse};
 
 use super::{
     disk_manager::{DiskManager, PageID},
@@ -47,8 +43,12 @@ impl Frame {
 
         let _ = self.page.write().unwrap().insert(page);
     }
-}
 
+    /// Returns the id of the stored page.
+    fn page_id(&self) -> Option<PageID> {
+        self.page.read().unwrap().as_ref().map(|p| p.page_id)
+    }
+}
 
 // TODO: for simplicity sake, at the moment manager assumes that database is empty every time it gets constructed. Change this in the future
 pub struct BufferPoolManager {
@@ -112,7 +112,6 @@ impl BufferPoolManager {
             index
         } else {
             // the page id is not in memory
-            // TODO (1): write page that was evicted to disk
             self.bring_page_in_memory(page_id)
                 .expect("Buffer full and can't evict anything")
         };
@@ -169,6 +168,15 @@ impl BufferPoolManager {
             let evicted_frame_id = replacer.evict()? as usize;
             drop(replacer);
 
+            // flush evicted frame to disk
+            let evicted_page_id = self
+                .frames
+                .get(evicted_frame_id)
+                .unwrap()
+                .page_id()
+                .unwrap();
+            self.flush_frame_to_disk(evicted_frame_id, evicted_page_id);
+
             // frame id is equal to index in frames vec, check constructor
             self.associate_page_to_frame(page_id, page_data, evicted_frame_id);
 
@@ -181,7 +189,7 @@ impl BufferPoolManager {
         let mut free_frames = self.free_frames.lock().unwrap();
 
         if let Some(i) = free_frames.first().cloned() {
-            free_frames.remove(i);
+            free_frames.remove(0);
             Some(i)
         } else {
             None
@@ -197,9 +205,7 @@ impl BufferPoolManager {
             self.frames.len()
         ));
 
-        let mut page = frame.page.write().unwrap();
-        let _ = page.insert(Page { page_id, data });
-        drop(page);
+        frame.reset(Page { page_id, data });
 
         // update page table
         let mut page_table = self.page_table.write().unwrap();
@@ -261,33 +267,13 @@ impl BufferPoolManager {
             .unwrap();
     }
 
-    /// Allocates a new page in memory and on disk and returns the id you can use to get it. Access to the page has to be done via the `get_read_page` or `get_write_page` methods.
+    /// Allocates a new page in memory and on disk and returns the id you can use to get it. Access to the page has to be done via the `get_read_page` or `get_write_page` methods,
+    /// this method **DOES NOT** also bring the page in memory.
     pub fn new_page(&self) -> PageID {
         let new_page_id = self.next_page_id.fetch_add(1, Ordering::SeqCst) as PageID;
-        let new_page = Page {
-            page_id: new_page_id,
-            data: [0 as u8; DB_PAGE_SIZE as usize].to_vec(),
-        };
 
         // allocate the new page on disk and overwrite previous data
         self.disk_scheduler.increase_disk_size(new_page_id as usize);
-        self.disk_scheduler
-            .schedule(DiskRequest {
-                page_id: new_page_id,
-                req_type: DiskRequestType::Write([0 as u8; DB_PAGE_SIZE as usize].to_vec()),
-            })
-            .recv()
-            .unwrap();
-
-        // read the page and store it in the page table and frames array in memory
-        let new_page_index = self
-            .bring_page_in_memory(new_page_id)
-            .expect("Buffer full and can't evict anything");
-
-        self.free_frames.lock().unwrap().push(new_page_index);
-
-        let new_page_frame = self.frames.get(new_page_index).unwrap();
-        new_page_frame.reset(new_page);
 
         new_page_id
     }
@@ -324,7 +310,6 @@ impl BufferPoolManager {
 
     /// Writes all dirty pages to disk.
     pub fn flush_all_pages(&self) {
-        // TODO: i think this should lock all operations (maybe? - idk)
         let pages: Vec<(PageID, usize)> = self
             .page_table
             .read()
