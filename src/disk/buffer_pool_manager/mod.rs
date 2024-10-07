@@ -7,6 +7,8 @@ use std::{
     },
 };
 
+use page::{Page, PageReadGuard, PageWriteGuard};
+
 use crate::{
     config::DB_PAGE_SIZE,
     disk::disk_scheduler::{DiskRequest, DiskRequestType, DiskResponse},
@@ -18,7 +20,9 @@ use super::{
     lruk_replacer::{FrameID, LRUKReplacer},
 };
 
-struct Frame {
+mod page;
+
+pub struct Frame {
     frame_id: FrameID,
     /// Number of workers that require this page to remain in memory
     pin_count: AtomicUsize,
@@ -45,80 +49,6 @@ impl Frame {
     }
 }
 
-struct Page {
-    page_id: PageID,
-    data: Vec<u8>,
-}
-
-pub struct PageReadGuard<'a> {
-    page: RwLockReadGuard<'a, Option<Page>>,
-    frame: &'a Frame,
-    replacer: &'a Mutex<LRUKReplacer>,
-}
-
-impl<'a> Drop for PageReadGuard<'a> {
-    fn drop(&mut self) {
-        let prev_pin_count = self.frame.pin_count.fetch_sub(1, Ordering::SeqCst);
-
-        let mut replacer = self.replacer.lock().unwrap();
-        if prev_pin_count == 1 {
-            let _ = replacer.set_evictable(self.frame.frame_id, true); // result ignored, beacause already evicted
-        }
-    }
-}
-
-impl<'a> PageReadGuard<'a> {
-    fn new(
-        page: RwLockReadGuard<'a, Option<Page>>,
-        frame: &'a Frame,
-        replacer: &'a Mutex<LRUKReplacer>,
-    ) -> Self {
-        Self {
-            page,
-            frame,
-            replacer,
-        }
-    }
-
-    // TODO: a way to access data inside page
-}
-
-pub struct PageWriteGuard<'a> {
-    page: RwLockWriteGuard<'a, Option<Page>>,
-    frame: &'a Frame,
-    replacer: &'a Mutex<LRUKReplacer>,
-}
-
-impl<'a> Drop for PageWriteGuard<'a> {
-    fn drop(&mut self) {
-        let prev_pin_count = self.frame.pin_count.fetch_sub(1, Ordering::SeqCst);
-
-        let mut replacer = self.replacer.lock().unwrap();
-        if prev_pin_count == 1 {
-            let _ = replacer.set_evictable(self.frame.frame_id, true); // result ignored, beacause already evicted
-        }
-    }
-}
-
-impl<'a> PageWriteGuard<'a> {
-    fn new(
-        page: RwLockWriteGuard<'a, Option<Page>>,
-        frame: &'a Frame,
-        replacer: &'a Mutex<LRUKReplacer>,
-    ) -> Self {
-        Self {
-            page,
-            frame,
-            replacer,
-        }
-    }
-
-    // TODO: a way to access data inside page
-    pub fn write(&mut self, data: Vec<u8>) {
-        self.page.as_mut().unwrap().data = data;
-        self.frame.is_dirty.store(true, Ordering::SeqCst);
-    }
-}
 
 // TODO: for simplicity sake, at the moment manager assumes that database is empty every time it gets constructed. Change this in the future
 pub struct BufferPoolManager {
