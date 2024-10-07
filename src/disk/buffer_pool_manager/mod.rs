@@ -112,6 +112,7 @@ impl BufferPoolManager {
             index
         } else {
             // the page id is not in memory
+            // TODO (1): write page that was evicted to disk
             self.bring_page_in_memory(page_id)
                 .expect("Buffer full and can't evict anything")
         };
