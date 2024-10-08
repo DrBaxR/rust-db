@@ -178,6 +178,7 @@ impl BufferPoolManager {
             self.flush_frame_to_disk(evicted_frame_id, evicted_page_id);
 
             // frame id is equal to index in frames vec, check constructor
+            self.page_table.write().unwrap().remove(&evicted_page_id);
             self.associate_page_to_frame(page_id, page_data, evicted_frame_id);
 
             Some(evicted_frame_id)

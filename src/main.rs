@@ -11,7 +11,38 @@ fn main() {
     let bpm = BufferPoolManager::new("db/test.db".to_string(), 2, 2);
 
     // eviction(&bpm);
-    eviction_with_flush(&bpm);
+    // eviction_with_flush(&bpm);
+    reads_and_writes(&bpm);
+}
+
+fn reads_and_writes(bpm: &BufferPoolManager) {
+    let page_id1 = bpm.new_page();
+    let page_id2 = bpm.new_page();
+
+    // writes
+    let mut page2 = bpm.get_write_page(page_id2);
+    page2.write([2 as u8; DB_PAGE_SIZE as usize].to_vec());
+    drop(page2);
+
+    let mut page1 = bpm.get_write_page(page_id1);
+    page1.write([1 as u8; DB_PAGE_SIZE as usize].to_vec());
+    drop(page1);
+
+    let page_id3 = bpm.new_page();
+    let mut page3 = bpm.get_write_page(page_id3);
+    page3.write([3 as u8; DB_PAGE_SIZE as usize].to_vec());
+    drop(page3);
+
+    // reads
+    let page2 = bpm.get_read_page(page_id2);
+    let data = page2.read();
+    dbg!(data[0]);
+    drop(page2);
+
+    let page3 = bpm.get_read_page(page_id3);
+    let data = page3.read();
+    dbg!(data[0]);
+    drop(page3);
 }
 
 fn eviction(bpm: &BufferPoolManager) {
