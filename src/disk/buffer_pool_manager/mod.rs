@@ -16,6 +16,8 @@ use super::{
     lruk_replacer::{FrameID, LRUKReplacer},
 };
 
+#[cfg(test)]
+mod tests;
 mod page;
 
 pub struct Frame {
@@ -175,6 +177,7 @@ impl BufferPoolManager {
                 .unwrap()
                 .page_id()
                 .unwrap();
+            dbg!(evicted_page_id);
             self.flush_frame_to_disk(evicted_frame_id, evicted_page_id);
 
             // frame id is equal to index in frames vec, check constructor
