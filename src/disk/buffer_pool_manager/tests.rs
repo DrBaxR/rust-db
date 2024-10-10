@@ -42,6 +42,51 @@ fn eviction() {
 }
 
 #[test]
+fn delete_memory() {
+    // init
+    let db_path = temp_dir().join("bpm_delete_memory.db");
+    let db_file_path = db_path.to_str().unwrap().to_string();
+    let bpm = BufferPoolManager::new(db_file_path.clone(), 2, 2);
+
+    let page1_data = [1 as u8; DB_PAGE_SIZE as usize].to_vec();
+    let page2_data = [2 as u8; DB_PAGE_SIZE as usize].to_vec();
+    let page3_data = [3 as u8; DB_PAGE_SIZE as usize].to_vec();
+
+    // three pages loaded, means one got evicted and written to
+    let page_id1 = bpm.new_page();
+    let page_id2 = bpm.new_page();
+
+    let mut page2 = bpm.get_write_page(page_id2);
+    page2.write(page2_data.clone());
+    drop(page2);
+
+    let mut page1 = bpm.get_write_page(page_id1);
+    page1.write(page1_data.clone());
+    drop(page1);
+
+    bpm.delete_page(page_id2);
+
+    let page_id3 = bpm.new_page();
+    let mut page3 = bpm.get_write_page(page_id3);
+    page3.write(page3_data.clone());
+    drop(page3);
+
+    // no pages should have been flushed
+    let dm = DiskManager::new(db_file_path);
+    let data1 = dm.read_page(page_id1).unwrap();
+    let data2 = dm.read_page(page_id2).unwrap();
+    let data3 = dm.read_page(page_id3).unwrap();
+
+    let empty = [0 as u8; DB_PAGE_SIZE as usize];
+    assert_eq!(data1, empty);
+    assert_eq!(data2, empty);
+    assert_eq!(data3, empty);
+
+    // cleanup
+    remove_file(db_path).expect("Couldn't remove test DB file");
+}
+
+#[test]
 fn eviction_with_flush_all() {
     // init
     let db_path = temp_dir().join("bpm_eviction_with_flush_all.db");
