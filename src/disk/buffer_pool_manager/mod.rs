@@ -177,7 +177,6 @@ impl BufferPoolManager {
                 .unwrap()
                 .page_id()
                 .unwrap();
-            dbg!(evicted_page_id);
             self.flush_frame_to_disk(evicted_frame_id, evicted_page_id);
 
             // frame id is equal to index in frames vec, check constructor
@@ -282,9 +281,12 @@ impl BufferPoolManager {
         new_page_id
     }
 
-    /// Deallocates page with `page_id`.
+    /// Deallocates page with `page_id`. Will return `false` if the page with `page_id` is not currently in memory
     pub fn delete_page(&self, page_id: PageID) -> bool {
-        // deallocate from disk no necessary since old data overwritten by allocating page
+        // lock on page is acquired so nobody does anything with page while it is being deleted
+        let page = self.get_write_page(page_id);
+
+        // deallocate from disk not necessary since old data overwritten by allocating page
         // deallocate from the page table: add frame index to free_frames, remove entry from the page_table
         let mut page_table = self.page_table.write().unwrap();
         let frame_index = match page_table.get(&page_id) {
@@ -292,12 +294,11 @@ impl BufferPoolManager {
             None => return false,
         };
 
-        // lock on page is acquired so nobody does anything with page while it is being deleted
-        let page = self.get_write_page(page_id);
+        page_table.remove(&page_id);
+        drop(page_table);
 
         // delete all metadata for frame where page was
         self.free_frames.lock().unwrap().push(frame_index);
-        page_table.remove(&page_id);
 
         // delete access history from the replacer
         let mut replacer = self.replacer.lock().unwrap();
