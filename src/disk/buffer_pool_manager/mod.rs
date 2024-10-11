@@ -115,7 +115,7 @@ impl BufferPoolManager {
         } else {
             // the page id is not in memory
             self.bring_page_in_memory(page_id)
-                .expect("Buffer full and can't evict anything")
+                .expect("Buffer full and can't evict anything") // TODO: panicked here once, check how this could have happened with main use case
         };
 
         // get frame from memory
