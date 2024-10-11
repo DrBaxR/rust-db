@@ -16,9 +16,9 @@ use super::{
     lruk_replacer::{FrameID, LRUKReplacer},
 };
 
+mod page;
 #[cfg(test)]
 mod tests;
-mod page;
 
 pub struct Frame {
     frame_id: FrameID,
@@ -61,7 +61,7 @@ pub struct BufferPoolManager {
     /// Indexes of free frames in `frames` vec
     free_frames: Mutex<Vec<usize>>,
     /// Maps id of a page to an index in the frames vec
-    page_table: RwLock<HashMap<PageID, usize>>,
+    page_table: Mutex<HashMap<PageID, usize>>,
     /// ID of the next page that will get allocated
     next_page_id: AtomicUsize,
 }
@@ -78,7 +78,7 @@ impl BufferPoolManager {
             free_frames.push(i);
         }
 
-        let page_table = RwLock::new(HashMap::new());
+        let page_table = Mutex::new(HashMap::new());
 
         Self {
             disk_scheduler,
@@ -106,7 +106,7 @@ impl BufferPoolManager {
     /// Returns a reference to a frame that contains the page with `page_id`. Will also bring the page in memory if not already there.
     fn fetch_page(&self, page_id: PageID) -> &Frame {
         // get frame index
-        let page_table = self.page_table.read().unwrap();
+        let page_table = self.page_table.lock().unwrap(); // TODO: problem is that we are trying to access the page table while bring_page_in_memory is changing it
         let frame_index = page_table.get(&page_id).cloned();
         drop(page_table);
 
@@ -180,7 +180,7 @@ impl BufferPoolManager {
             self.flush_frame_to_disk(evicted_frame_id, evicted_page_id);
 
             // frame id is equal to index in frames vec, check constructor
-            self.page_table.write().unwrap().remove(&evicted_page_id);
+            self.page_table.lock().unwrap().remove(&evicted_page_id);
             self.associate_page_to_frame(page_id, page_data, evicted_frame_id);
 
             Some(evicted_frame_id)
@@ -211,7 +211,7 @@ impl BufferPoolManager {
         frame.reset(Page { page_id, data });
 
         // update page table
-        let mut page_table = self.page_table.write().unwrap();
+        let mut page_table = self.page_table.lock().unwrap();
         page_table.insert(page_id, frame_index);
     }
 
@@ -230,7 +230,7 @@ impl BufferPoolManager {
 
     /// Returns `false` if the page is not in memory. Will write the page to disk if it's dirty.
     pub fn flush_page(&self, page_id: PageID) -> bool {
-        let frame_index = self.page_table.read().unwrap().get(&page_id).cloned();
+        let frame_index = self.page_table.lock().unwrap().get(&page_id).cloned();
         let frame_index = match frame_index {
             Some(index) => index,
             None => return false,
@@ -288,7 +288,7 @@ impl BufferPoolManager {
 
         // deallocate from disk not necessary since old data overwritten by allocating page
         // deallocate from the page table: add frame index to free_frames, remove entry from the page_table
-        let mut page_table = self.page_table.write().unwrap();
+        let mut page_table = self.page_table.lock().unwrap();
         let frame_index = match page_table.get(&page_id) {
             Some(index) => *index,
             None => return false,
@@ -317,7 +317,7 @@ impl BufferPoolManager {
     pub fn flush_all_pages(&self) {
         let pages: Vec<(PageID, usize)> = self
             .page_table
-            .read()
+            .lock()
             .unwrap()
             .iter()
             .map(|(p, f)| (p.clone(), f.clone()))
