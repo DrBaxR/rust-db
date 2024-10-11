@@ -1,4 +1,4 @@
-use std::{sync::{atomic::AtomicU32, Arc}, thread};
+use std::{sync::Arc, thread};
 
 use config::DB_PAGE_SIZE;
 use disk::buffer_pool_manager::BufferPoolManager;
@@ -19,10 +19,8 @@ fn main() {
 
         let handle = thread::spawn(move || {
             let read_page = bpm.get_read_page(page_id);
-            let data = read_page.read().clone();
+            let _ = read_page.read().clone();
             drop(read_page);
-
-            println!("current data: {}", data[0]);
 
             let mut write_page = bpm.get_write_page(page_id);
             let data = write_page.read();

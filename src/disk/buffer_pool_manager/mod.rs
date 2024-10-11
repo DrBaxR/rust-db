@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
-        Mutex, RwLock,
+        Mutex, MutexGuard, RwLock,
     },
 };
 
@@ -52,7 +52,6 @@ impl Frame {
     }
 }
 
-// TODO: for simplicity sake, at the moment manager assumes that database is empty every time it gets constructed. Change this in the future
 pub struct BufferPoolManager {
     disk_scheduler: DiskScheduler,
     replacer: Mutex<LRUKReplacer>,
@@ -106,7 +105,7 @@ impl BufferPoolManager {
     /// Returns a reference to a frame that contains the page with `page_id`. Will also bring the page in memory if not already there.
     fn fetch_page(&self, page_id: PageID) -> &Frame {
         // get frame index
-        let page_table = self.page_table.lock().unwrap(); // TODO: problem is that we are trying to access the page table while bring_page_in_memory is changing it
+        let page_table = self.page_table.lock().unwrap();
         let frame_index = page_table.get(&page_id).cloned();
         drop(page_table);
 
@@ -115,7 +114,7 @@ impl BufferPoolManager {
         } else {
             // the page id is not in memory
             self.bring_page_in_memory(page_id)
-                .expect("Buffer full and can't evict anything") // TODO: panicked here once, check how this could have happened with main use case
+                .expect("Buffer full and can't evict anything")
         };
 
         // get frame from memory
@@ -141,6 +140,7 @@ impl BufferPoolManager {
 
     /// Brings to memory page that is **NOT** in memory. Returns index in the `frames` array of the page. Will return `None` if the buffer is full and can't evict anything.
     fn bring_page_in_memory(&self, page_id: PageID) -> Option<usize> {
+        let mut page_table = self.page_table.lock().unwrap();
         let response = self
             .disk_scheduler
             .schedule(DiskRequest {
@@ -161,7 +161,7 @@ impl BufferPoolManager {
 
         if let Some(free_frame_index) = free_frame_index {
             // there are free slots, do a disk read for page id and store it in frames
-            self.associate_page_to_frame(page_id, page_data, free_frame_index);
+            self.associate_page_to_frame(page_id, page_data, free_frame_index, page_table);
 
             Some(free_frame_index)
         } else {
@@ -180,8 +180,8 @@ impl BufferPoolManager {
             self.flush_frame_to_disk(evicted_frame_id, evicted_page_id);
 
             // frame id is equal to index in frames vec, check constructor
-            self.page_table.lock().unwrap().remove(&evicted_page_id);
-            self.associate_page_to_frame(page_id, page_data, evicted_frame_id);
+            page_table.remove(&evicted_page_id);
+            self.associate_page_to_frame(page_id, page_data, evicted_frame_id, page_table);
 
             Some(evicted_frame_id)
         }
@@ -200,7 +200,13 @@ impl BufferPoolManager {
     }
 
     /// Updates the page data in the frame with `frame_index` and creates a mapping `page_id -> frame_index` in the `page_table`.
-    fn associate_page_to_frame(&self, page_id: PageID, data: Vec<u8>, frame_index: usize) {
+    fn associate_page_to_frame(
+        &self,
+        page_id: PageID,
+        data: Vec<u8>,
+        frame_index: usize,
+        mut page_table: MutexGuard<'_, HashMap<PageID, usize>>,
+    ) {
         // set page data for frame
         let frame = self.frames.get(frame_index).expect(&format!(
             "Incorrect free frame index: {} (frames size is {})",
@@ -211,7 +217,6 @@ impl BufferPoolManager {
         frame.reset(Page { page_id, data });
 
         // update page table
-        let mut page_table = self.page_table.lock().unwrap();
         page_table.insert(page_id, frame_index);
     }
 
