@@ -4,7 +4,6 @@ use super::*;
 use std::{env::temp_dir, fs::remove_file, sync::Arc, thread, time::Duration };
 
 #[test]
-#[ignore = "Deadlock"]
 fn eviction() {
     // init
     let db_path = temp_dir().join("bpm_eviction_test.db");
@@ -88,7 +87,6 @@ fn delete_memory() {
 }
 
 #[test]
-#[ignore = "Deadlock"]
 fn eviction_with_flush_all() {
     // init
     let db_path = temp_dir().join("bpm_eviction_with_flush_all.db");
@@ -133,7 +131,6 @@ fn eviction_with_flush_all() {
 }
 
 #[test]
-#[ignore = "Deadlock"]
 fn writes_and_reads() {
     // init
     let db_path = temp_dir().join("bpm_writes_and_reads.db");

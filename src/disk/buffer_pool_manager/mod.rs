@@ -171,13 +171,18 @@ impl BufferPoolManager {
             drop(replacer);
 
             // flush evicted frame to disk
-            let evicted_page_id = self
+            let evicted_page_lock = self
                 .frames
                 .get(evicted_frame_id)
                 .unwrap()
-                .page_id()
+                .page
+                .read()
                 .unwrap();
-            self.flush_frame_to_disk(evicted_frame_id, evicted_page_id);
+            let evicted_page = evicted_page_lock.as_ref().unwrap();
+            let evicted_page_id = evicted_page.page_id;
+
+            self.write_page_data_to_disk(evicted_page.page_id, evicted_page.data.clone());
+            drop(evicted_page_lock);
 
             // frame id is equal to index in frames vec, check constructor
             page_table.remove(&evicted_page_id);
@@ -265,11 +270,16 @@ impl BufferPoolManager {
         let page = page_guard.page.as_ref().unwrap();
 
         // write page contents to disk
+        self.write_page_data_to_disk(page.page_id, page.data.clone());
+    }
+
+    /// Write `data` to disk for the page with `page_id`.
+    fn write_page_data_to_disk(&self, page_id: PageID, data: Vec<u8>) {
         let _ = self
             .disk_scheduler
             .schedule(DiskRequest {
-                page_id: page.page_id,
-                req_type: DiskRequestType::Write(page.data.clone()),
+                page_id,
+                req_type: DiskRequestType::Write(data),
             })
             .recv()
             .unwrap();
