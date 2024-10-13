@@ -1,7 +1,7 @@
 use crate::config::DB_PAGE_SIZE;
 
 use super::*;
-use std::{env::temp_dir, fs::remove_file, sync::Arc, thread, time::Duration };
+use std::{env::temp_dir, fs::remove_file, sync::Arc, thread, time::Duration};
 
 #[test]
 fn eviction() {
@@ -217,6 +217,73 @@ fn multi_threaded_reads_writes() {
     let actual_data = dm.read_page(page_id).unwrap();
     let expected_data = [10 as u8; DB_PAGE_SIZE as usize];
     assert_eq!(actual_data, expected_data);
+
+    // cleanup
+    remove_file(db_path).expect("Couldn't remove test DB file");
+}
+
+// FUN STATS:
+// NOTE: flushing ALL pages at the end takes around 2ms
+// multi threaded with bp = 2 => 10.716ms, 13.655ms, 10.684ms, 12.176ms, 8.422ms
+// multi threaded with bp = 3 => 2.828ms, 2.456ms, 2.460ms, 2.591ms, 2.553ms
+#[test]
+fn multi_threaded_multi_page_reads_writes() {
+    // init
+    let db_path = temp_dir().join("multi_threaded_multi_page_reads_writes.db");
+    let db_file_path = db_path.to_str().unwrap().to_string();
+    let bpm = Arc::new(BufferPoolManager::new(db_file_path.clone(), 2, 2));
+
+    // run multiple reads and writes that will cause evictions
+    let page_id1 = bpm.new_page();
+    let page_id2 = bpm.new_page();
+    let page_id3 = bpm.new_page();
+
+    let mut handles = vec![];
+    for i in 0..30 {
+        // 10 threads of each category
+        let bpm = Arc::clone(&bpm);
+
+        let handle = thread::spawn(move || {
+            let category = i % 3 + 1;
+            let page_id = match category {
+                1 => page_id1,
+                2 => page_id2,
+                _ => page_id3,
+            };
+
+            let read_page = bpm.get_read_page(page_id);
+            let _ = read_page.read().clone();
+            drop(read_page);
+
+            let mut write_page = bpm.get_write_page(page_id); // TODO: double-check thread safety of this - for cat 3 got 24 instead of 30
+            let data = write_page.read();
+            let new_data = [data[0] + category; DB_PAGE_SIZE as usize].to_vec();
+            write_page.write(new_data);
+            drop(write_page);
+        });
+
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    bpm.flush_all_pages();
+
+    // validate data written to disk
+    let dm = DiskManager::new(db_file_path);
+    let page1_data = dm.read_page(page_id1).unwrap();
+    let page2_data = dm.read_page(page_id2).unwrap();
+    let page3_data = dm.read_page(page_id3).unwrap();
+
+    let expected_page1_data = [10 as u8; DB_PAGE_SIZE as usize]; // 10 workers of category 1
+    let expected_page2_data = [20 as u8; DB_PAGE_SIZE as usize]; // 10 workers of category 2
+    let expected_page3_data = [30 as u8; DB_PAGE_SIZE as usize]; // 10 workers of category 3
+
+    assert_eq!(page1_data, expected_page1_data);
+    assert_eq!(page2_data, expected_page2_data);
+    assert_eq!(page3_data, expected_page3_data);
 
     // cleanup
     remove_file(db_path).expect("Couldn't remove test DB file");
