@@ -52,6 +52,8 @@ impl Frame {
     }
 }
 
+type PageTable = HashMap<PageID, usize>;
+
 pub struct BufferPoolManager {
     disk_scheduler: DiskScheduler,
     replacer: Mutex<LRUKReplacer>,
@@ -60,7 +62,7 @@ pub struct BufferPoolManager {
     /// Indexes of free frames in `frames` vec
     free_frames: Mutex<Vec<usize>>,
     /// Maps id of a page to an index in the frames vec
-    page_table: Mutex<HashMap<PageID, usize>>,
+    page_table: Mutex<PageTable>,
     /// ID of the next page that will get allocated
     next_page_id: AtomicUsize,
 }
@@ -107,14 +109,13 @@ impl BufferPoolManager {
         // get frame index
         let page_table = self.page_table.lock().unwrap();
         let frame_index = page_table.get(&page_id).cloned();
-        drop(page_table);
 
         let frame_index = if let Some(index) = frame_index {
             index
         } else {
             // the page id is not in memory
-            self.bring_page_in_memory(page_id)
-                .expect("Buffer full and can't evict anything")
+            self.bring_page_in_memory(page_id, page_table)
+                .expect("Buffer full and can't evict anything") // todo got here
         };
 
         // get frame from memory
@@ -139,8 +140,7 @@ impl BufferPoolManager {
     }
 
     /// Brings to memory page that is **NOT** in memory. Returns index in the `frames` array of the page. Will return `None` if the buffer is full and can't evict anything.
-    fn bring_page_in_memory(&self, page_id: PageID) -> Option<usize> {
-        let mut page_table = self.page_table.lock().unwrap();
+    fn bring_page_in_memory(&self, page_id: PageID, mut page_table: MutexGuard<'_, PageTable>) -> Option<usize> {
         let response = self
             .disk_scheduler
             .schedule(DiskRequest {
@@ -210,7 +210,7 @@ impl BufferPoolManager {
         page_id: PageID,
         data: Vec<u8>,
         frame_index: usize,
-        mut page_table: MutexGuard<'_, HashMap<PageID, usize>>,
+        mut page_table: MutexGuard<'_, PageTable>,
     ) {
         // set page data for frame
         let frame = self.frames.get(frame_index).expect(&format!(

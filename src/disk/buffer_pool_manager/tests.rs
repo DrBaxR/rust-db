@@ -255,7 +255,7 @@ fn multi_threaded_multi_page_reads_writes() {
             let _ = read_page.read().clone();
             drop(read_page);
 
-            let mut write_page = bpm.get_write_page(page_id); // TODO: double-check thread safety of this - for cat 3 got 24 instead of 30
+            let mut write_page = bpm.get_write_page(page_id);
             let data = write_page.read();
             let new_data = [data[0] + category; DB_PAGE_SIZE as usize].to_vec();
             write_page.write(new_data);
