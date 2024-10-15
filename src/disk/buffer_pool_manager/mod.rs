@@ -20,6 +20,14 @@ mod page;
 #[cfg(test)]
 mod tests;
 
+pub trait DiskRead {
+    fn read(&self) -> &Vec<u8>;
+}
+
+pub trait DiskWrite {
+    fn write(&mut self, data: Vec<u8>);
+}
+
 pub struct Frame {
     frame_id: FrameID,
     /// Number of workers that require this page to remain in memory

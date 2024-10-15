@@ -1,7 +1,7 @@
 use std::{sync::Arc, thread};
 
 use config::DB_PAGE_SIZE;
-use disk::buffer_pool_manager::BufferPoolManager;
+use disk::buffer_pool_manager::{BufferPoolManager, DiskRead, DiskWrite};
 
 mod b_tree;
 mod config;

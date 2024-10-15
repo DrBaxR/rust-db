@@ -2,7 +2,7 @@ use std::sync::{atomic::Ordering, Mutex, RwLockReadGuard, RwLockWriteGuard};
 
 use crate::disk::{disk_manager::PageID, lruk_replacer::LRUKReplacer};
 
-use super::Frame;
+use super::{DiskRead, DiskWrite, Frame};
 
 pub struct Page {
     pub page_id: PageID,
@@ -38,8 +38,10 @@ impl<'a> PageReadGuard<'a> {
             replacer,
         }
     }
+}
 
-    pub fn read(&'a self) -> &'a Vec<u8> {
+impl<'a> DiskRead for PageReadGuard<'a> {
+    fn read(&self) -> &Vec<u8> {
         &self.page.as_ref().unwrap().data
     }
 }
@@ -73,12 +75,16 @@ impl<'a> PageWriteGuard<'a> {
             replacer,
         }
     }
+}
 
-    pub fn read(&'a self) -> &'a Vec<u8> {
+impl<'a> DiskRead for PageWriteGuard<'a> {
+    fn read(&self) -> &Vec<u8> {
         &self.page.as_ref().unwrap().data
     }
+}
 
-    pub fn write(&mut self, data: Vec<u8>) {
+impl<'a> DiskWrite for PageWriteGuard<'a> {
+    fn write(&mut self, data: Vec<u8>) {
         self.page.as_mut().unwrap().data = data;
         self.frame.is_dirty.store(true, Ordering::SeqCst);
     }
