@@ -114,7 +114,8 @@ impl HashTableDirectoryPage {
         Ok(previous_page_id)
     }
 
-    // TODO: define what a split image is
+    // Split image refers to the counter part of a bucket that was created when the bucket was split.
+    // Can get a split image by looking at the local depths: find a bucket with the same local depth as the bucket at `bucket_index`.
     fn get_split_image_index(&self, bucket_index: usize) -> usize {
         todo!()
     }
