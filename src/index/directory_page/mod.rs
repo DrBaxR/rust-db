@@ -114,10 +114,16 @@ impl HashTableDirectoryPage {
         Ok(previous_page_id)
     }
 
-    // Split image refers to the counter part of a bucket that was created when the bucket was split.
-    // Can get a split image by looking at the local depths: find a bucket with the same local depth as the bucket at `bucket_index`.
-    fn get_split_image_index(&self, bucket_index: usize) -> usize {
-        todo!()
+    /// Returns the index of the split image of the bucket at index `bucket_index`. Will return `None` if the index is greater than the current size.
+    ///
+    /// # Split Image
+    /// The split image represents the bucket which would have resulted as a split of the current bucket. This means that the split image of a bucket is a
+    /// potential candidate for merging with, in case the current bucket is empty.
+    fn get_split_image_index(&self, bucket_index: usize) -> Option<usize> {
+        let local_depth = self.get_local_depth(bucket_index)?;
+        let split_image_mask = 1u32 << (local_depth - 1);
+
+        Some((bucket_index as u32 ^ split_image_mask) as usize)
     }
 
     /// Returns a mask of `global_depth` 1's and the rest of 0's. This mask is to be used to obtain an index from a hash: `hash & mask`.
