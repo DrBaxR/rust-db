@@ -1,6 +1,6 @@
 use std::{env::temp_dir, fs::remove_file};
 
-use crate::{disk::disk_manager::DiskManager, index::page::HashTableHeaderPage};
+use crate::{disk::disk_manager::DiskManager, index::header_page::HashTableHeaderPage};
 
 #[test]
 fn header_deserialization() {
@@ -109,4 +109,21 @@ fn header_set_directory_page_id() {
     assert_eq!(prev.unwrap(), 1);
 
     assert!(header.set_directory_page_id(4, 44).is_err());
+}
+
+#[test]
+fn header_hash_to_directory_page_index() {
+    let hash = 0xb6000000u32 as i32; // 10110110 00...
+
+    let header = HashTableHeaderPage::new(vec![], 1);
+    assert_eq!(header.hash_to_directory_page_index(hash), 1);
+
+    let header = HashTableHeaderPage::new(vec![], 2);
+    assert_eq!(header.hash_to_directory_page_index(hash), 2);
+
+    let header = HashTableHeaderPage::new(vec![], 3);
+    assert_eq!(header.hash_to_directory_page_index(hash), 5);
+
+    let header = HashTableHeaderPage::new(vec![], 8);
+    assert_eq!(header.hash_to_directory_page_index(hash), 182);
 }

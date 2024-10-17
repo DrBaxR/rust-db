@@ -1,5 +1,7 @@
 use crate::{config::DB_PAGE_SIZE, disk::disk_manager::PageID};
 
+use super::{get_four_bytes_group, get_msb};
+
 #[cfg(test)]
 mod tests;
 
@@ -53,8 +55,8 @@ impl HashTableHeaderPage {
         data
     }
 
-    pub fn hash_to_directory_page_index(&self, hash: u32) -> usize {
-        todo!("Double check how lookup works") // TODO: this :) also read the header indexing section of the assignment
+    pub fn hash_to_directory_page_index(&self, hash: i32) -> usize {
+        get_msb(hash, self.max_depth as usize) as usize
     }
 
     /// Returns the page ID of the directory page with the index `directory_index`. Will return `None` if trying to access index greater than `max_size()`.
@@ -91,11 +93,3 @@ impl HashTableHeaderPage {
     }
 }
 
-fn get_four_bytes_group(data: &[u8], group_index: usize) -> [u8; 4] {
-    [
-        data[group_index * 4],
-        data[group_index * 4 + 1],
-        data[group_index * 4 + 2],
-        data[group_index * 4 + 3],
-    ]
-}

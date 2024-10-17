@@ -1,5 +1,5 @@
 use disk::disk_manager::DiskManager;
-use index::page::HashTableHeaderPage;
+use index::header_page::HashTableHeaderPage;
 
 mod b_tree;
 mod config;
