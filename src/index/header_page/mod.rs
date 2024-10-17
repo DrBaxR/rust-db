@@ -55,7 +55,7 @@ impl HashTableHeaderPage {
         data
     }
 
-    pub fn hash_to_directory_page_index(&self, hash: i32) -> usize {
+    pub fn hash_to_directory_page_index(&self, hash: u32) -> usize {
         get_msb(hash, self.max_depth as usize) as usize
     }
 

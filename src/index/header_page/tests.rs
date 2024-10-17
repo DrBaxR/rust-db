@@ -113,7 +113,7 @@ fn header_set_directory_page_id() {
 
 #[test]
 fn header_hash_to_directory_page_index() {
-    let hash = 0xb6000000u32 as i32; // 10110110 00...
+    let hash = 0xb6000000u32; // 10110110 00...
 
     let header = HashTableHeaderPage::new(vec![], 1);
     assert_eq!(header.hash_to_directory_page_index(hash), 1);

@@ -1,13 +1,11 @@
 pub mod header_page;
+pub mod directory_page;
 
 /// Returns the `count` most significant bits of `input`. If value is greater than or equal with `32`, will return `input`.
-fn get_msb(input: i32, count: usize) -> i32 {
+fn get_msb(input: u32, count: usize) -> u32 {
     let offset = if count > 32 { 32 } else { count };
-    let result = input >> (32 - offset);
 
-    // masking required because of sign extension
-    let mask = (1 << offset) - 1;  // mask with `offset` bits set to 1
-    result & mask
+    input >> (32 - offset)
 }
 
 /// Treads `data` as an array of groups of 4 bytes and returns the group that has the index `group_index`.
