@@ -12,6 +12,10 @@ fn get_msb(input: u32, count: usize) -> u32 {
 }
 
 /// Treads `data` as an array of groups of 4 bytes and returns the group that has the index `group_index`.
+/// 
+/// # Panics
+/// Will panic if trying to index outside of the length of `data`, or if accessing one of the bytes would cause that (e.g. `data.len() == 7`
+/// and calling function with `group_index == 1` => will try to access `data[7]`).
 fn get_four_bytes_group(data: &[u8], group_index: usize) -> [u8; 4] {
     [
         data[group_index * 4],
