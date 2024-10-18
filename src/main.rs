@@ -1,21 +1,10 @@
 use disk::disk_manager::DiskManager;
-use index::header_page::HashTableHeaderPage;
+use index::{header_page::HashTableHeaderPage, serial::{Deserialize, Serialize}};
 
 mod b_tree;
 mod config;
 mod disk;
 mod index;
-
-// TODO: this trait in the index mod, for ekys and values
-trait Serializable {
-    fn serialize(&self) -> Vec<u8>;
-}
-
-impl Serializable for u32 {
-    fn serialize(&self) -> Vec<u8> {
-        self.to_be_bytes().to_vec()
-    }
-}
 
 fn main() {
     // TODO: demo with buffer pool manager of how pages would be used
@@ -25,7 +14,7 @@ fn main() {
 
     // write mock page to disk
     let header_data = get_mock_header_data(2);
-    let header = HashTableHeaderPage::from_serialized(&header_data);
+    let header = HashTableHeaderPage::deserialize(&header_data);
 
     let serialized_data = header.serialize();
     dm.write_page(0, &serialized_data);

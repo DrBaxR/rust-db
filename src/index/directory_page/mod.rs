@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use crate::{config::DB_PAGE_SIZE, disk::disk_manager::PageID};
 
-use super::get_four_bytes_group;
+use super::{
+    get_four_bytes_group,
+    serial::{Deserialize, Serialize},
+};
 
 #[cfg(test)]
 mod tests;
@@ -38,51 +41,6 @@ impl HashTableDirectoryPage {
             max_depth,
             global_depth,
         }
-    }
-
-    pub fn from_serialized(data: &[u8]) -> Self {
-        let mut bucket_page_ids = vec![];
-        for i in 0..HASH_TABLE_DIRECTORY_PAGE_MAX_IDS {
-            bucket_page_ids.push(u32::from_be_bytes(get_four_bytes_group(data, i)));
-        }
-
-        let local_depths_offset = HASH_TABLE_DIRECTORY_PAGE_MAX_IDS * size_of::<PageID>();
-        let mut local_depths = vec![];
-        for i in 0..HASH_TABLE_DIRECTORY_PAGE_MAX_LOCAL_DEPTHS {
-            local_depths.push(data[local_depths_offset + i]);
-        }
-
-        let max_depth = u32::from_be_bytes(get_four_bytes_group(data, MAX_DEPTH_GROUP_INDEX));
-        let global_depth = u32::from_be_bytes(get_four_bytes_group(data, GLOBAL_DEPTH_GROUP_INDEX));
-
-        Self {
-            bucket_page_ids,
-            local_depths,
-            max_depth,
-            global_depth,
-        }
-    }
-
-    pub fn serialize(&self) -> Vec<u8> {
-        let mut data = vec![];
-
-        for i in 0..HASH_TABLE_DIRECTORY_PAGE_MAX_IDS {
-            let page_id = self.bucket_page_ids.get(i).unwrap_or(&0);
-
-            data.extend_from_slice(&page_id.to_be_bytes());
-        }
-
-        for i in 0..HASH_TABLE_DIRECTORY_PAGE_MAX_LOCAL_DEPTHS {
-            let local_depth = self.local_depths.get(i).unwrap_or(&0);
-
-            data.push(*local_depth);
-        }
-
-        data.extend_from_slice(&self.max_depth.to_be_bytes());
-        data.extend_from_slice(&self.global_depth.to_be_bytes());
-        data.resize(DB_PAGE_SIZE as usize, 0);
-
-        return data;
     }
 
     /// Index bucket IDs with `hash`. Will use the `global_depth` LSB's.
@@ -276,5 +234,54 @@ impl HashTableDirectoryPage {
         }
 
         true
+    }
+}
+
+impl Serialize for HashTableDirectoryPage {
+    fn serialize(&self) -> Vec<u8> {
+        let mut data = vec![];
+
+        for i in 0..HASH_TABLE_DIRECTORY_PAGE_MAX_IDS {
+            let page_id = self.bucket_page_ids.get(i).unwrap_or(&0);
+
+            data.extend_from_slice(&page_id.to_be_bytes());
+        }
+
+        for i in 0..HASH_TABLE_DIRECTORY_PAGE_MAX_LOCAL_DEPTHS {
+            let local_depth = self.local_depths.get(i).unwrap_or(&0);
+
+            data.push(*local_depth);
+        }
+
+        data.extend_from_slice(&self.max_depth.to_be_bytes());
+        data.extend_from_slice(&self.global_depth.to_be_bytes());
+        data.resize(DB_PAGE_SIZE as usize, 0);
+
+        return data;
+    }
+}
+
+impl Deserialize for HashTableDirectoryPage {
+    fn deserialize(data: &[u8]) -> Self {
+        let mut bucket_page_ids = vec![];
+        for i in 0..HASH_TABLE_DIRECTORY_PAGE_MAX_IDS {
+            bucket_page_ids.push(u32::from_be_bytes(get_four_bytes_group(data, i)));
+        }
+
+        let local_depths_offset = HASH_TABLE_DIRECTORY_PAGE_MAX_IDS * size_of::<PageID>();
+        let mut local_depths = vec![];
+        for i in 0..HASH_TABLE_DIRECTORY_PAGE_MAX_LOCAL_DEPTHS {
+            local_depths.push(data[local_depths_offset + i]);
+        }
+
+        let max_depth = u32::from_be_bytes(get_four_bytes_group(data, MAX_DEPTH_GROUP_INDEX));
+        let global_depth = u32::from_be_bytes(get_four_bytes_group(data, GLOBAL_DEPTH_GROUP_INDEX));
+
+        Self {
+            bucket_page_ids,
+            local_depths,
+            max_depth,
+            global_depth,
+        }
     }
 }

@@ -1,11 +1,11 @@
-use crate::index::directory_page::HashTableDirectoryPage;
+use crate::index::{directory_page::HashTableDirectoryPage, serial::{Deserialize, Serialize}};
 
 #[test]
 fn directory_serialization() {
     let directory = HashTableDirectoryPage::new(vec![1, 2, 3], vec![2, 2, 2], 9, 10);
 
     let serialized_data = directory.serialize();
-    let directory_deserialized = HashTableDirectoryPage::from_serialized(&serialized_data);
+    let directory_deserialized = HashTableDirectoryPage::deserialize(&serialized_data);
 
     assert_eq!(
         directory.bucket_page_ids,

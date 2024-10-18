@@ -1,6 +1,8 @@
-pub mod header_page;
-pub mod directory_page;
 pub mod bucket_page;
+pub mod directory_page;
+pub mod header_page;
+
+pub mod serial;
 
 /// Returns the `count` most significant bits of `input`. If value is greater than or equal with `32`, will return `input`.
 fn get_msb(input: u32, count: usize) -> u32 {

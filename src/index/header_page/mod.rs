@@ -1,6 +1,9 @@
 use crate::{config::DB_PAGE_SIZE, disk::disk_manager::PageID};
 
-use super::{get_four_bytes_group, get_msb};
+use super::{
+    get_four_bytes_group, get_msb,
+    serial::{Deserialize, Serialize},
+};
 
 #[cfg(test)]
 mod tests;
@@ -22,37 +25,6 @@ impl HashTableHeaderPage {
             directory_page_ids,
             max_depth,
         }
-    }
-
-    /// Create a new `Self` from a byte array that represents its serialized version
-    pub fn from_serialized(data: &[u8]) -> Self {
-        let mut page_ids = vec![];
-        for i in 0..HASH_TABLE_HEADER_PAGE_MAX_IDS {
-            page_ids.push(u32::from_be_bytes(get_four_bytes_group(data, i))); // endian picked here needs to match the one in serialize
-        }
-
-        let max_depth = u32::from_be_bytes(get_four_bytes_group(data, 512));
-
-        Self {
-            directory_page_ids: page_ids,
-            max_depth,
-        }
-    }
-
-    /// Returns `self`'s serialization as a page's bytes.
-    pub fn serialize(&self) -> Vec<u8> {
-        let mut data = vec![];
-
-        for index in 0..HASH_TABLE_HEADER_PAGE_MAX_IDS {
-            let page_id = self.directory_page_ids.get(index).unwrap_or(&0);
-
-            data.extend_from_slice(&page_id.to_be_bytes()); // endian picked here needs to match the one in from_serialized
-        }
-
-        data.extend_from_slice(&self.max_depth.to_be_bytes());
-        data.resize(DB_PAGE_SIZE as usize, 0);
-
-        data
     }
 
     pub fn hash_to_directory_page_index(&self, hash: u32) -> usize {
@@ -93,3 +65,35 @@ impl HashTableHeaderPage {
     }
 }
 
+impl Serialize for HashTableHeaderPage {
+    fn serialize(&self) -> Vec<u8> {
+        let mut data = vec![];
+
+        for index in 0..HASH_TABLE_HEADER_PAGE_MAX_IDS {
+            let page_id = self.directory_page_ids.get(index).unwrap_or(&0);
+
+            data.extend_from_slice(&page_id.to_be_bytes()); // endian picked here needs to match the one in from_serialized
+        }
+
+        data.extend_from_slice(&self.max_depth.to_be_bytes());
+        data.resize(DB_PAGE_SIZE as usize, 0);
+
+        data
+    }
+}
+
+impl Deserialize for HashTableHeaderPage {
+    fn deserialize(data: &[u8]) -> Self {
+        let mut page_ids = vec![];
+        for i in 0..HASH_TABLE_HEADER_PAGE_MAX_IDS {
+            page_ids.push(u32::from_be_bytes(get_four_bytes_group(data, i))); // endian picked here needs to match the one in serialize
+        }
+
+        let max_depth = u32::from_be_bytes(get_four_bytes_group(data, 512));
+
+        Self {
+            directory_page_ids: page_ids,
+            max_depth,
+        }
+    }
+}

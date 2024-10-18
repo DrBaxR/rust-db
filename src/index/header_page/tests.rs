@@ -1,11 +1,11 @@
 use std::{env::temp_dir, fs::remove_file};
 
-use crate::{disk::disk_manager::DiskManager, index::header_page::HashTableHeaderPage};
+use crate::{disk::disk_manager::DiskManager, index::{header_page::HashTableHeaderPage, serial::{Deserialize, Serialize}}};
 
 #[test]
 fn header_deserialization() {
     let header_data = get_mock_header_data(2);
-    let header = HashTableHeaderPage::from_serialized(&header_data);
+    let header = HashTableHeaderPage::deserialize(&header_data);
 
     assert_eq!(header.max_depth, 2);
     assert_eq!(header.get_directory_page_id(0).unwrap(), 1);
@@ -37,10 +37,10 @@ fn get_mock_header_data(max_depth: u8) -> Vec<u8> {
 #[test]
 fn header_serialization() {
     let header_data = get_mock_header_data(2);
-    let header = HashTableHeaderPage::from_serialized(&header_data);
+    let header = HashTableHeaderPage::deserialize(&header_data);
 
     let serialized_data = header.serialize();
-    let header_deserialized = HashTableHeaderPage::from_serialized(&serialized_data);
+    let header_deserialized = HashTableHeaderPage::deserialize(&serialized_data);
 
     assert_eq!(
         header.directory_page_ids,
@@ -58,14 +58,14 @@ fn header_serialization_disk() {
 
     // write mock page to disk
     let header_data = get_mock_header_data(2);
-    let header = HashTableHeaderPage::from_serialized(&header_data);
+    let header = HashTableHeaderPage::deserialize(&header_data);
 
     let serialized_data = header.serialize();
     dm.write_page(0, &serialized_data);
 
     // deserialize from disk
     let deserialized_data = dm.read_page(0).unwrap();
-    let header_deserialized = HashTableHeaderPage::from_serialized(&deserialized_data);
+    let header_deserialized = HashTableHeaderPage::deserialize(&deserialized_data);
 
     assert_eq!(
         header.directory_page_ids,
@@ -79,19 +79,19 @@ fn header_serialization_disk() {
 
 #[test]
 fn header_max_size() {
-    let header = HashTableHeaderPage::from_serialized(&get_mock_header_data(1));
+    let header = HashTableHeaderPage::deserialize(&get_mock_header_data(1));
     assert_eq!(header.max_size(), 2);
 
-    let header = HashTableHeaderPage::from_serialized(&get_mock_header_data(2));
+    let header = HashTableHeaderPage::deserialize(&get_mock_header_data(2));
     assert_eq!(header.max_size(), 4);
 
-    let header = HashTableHeaderPage::from_serialized(&get_mock_header_data(9));
+    let header = HashTableHeaderPage::deserialize(&get_mock_header_data(9));
     assert_eq!(header.max_size(), 512);
 }
 
 #[test]
 fn header_get_directory_page_id() {
-    let header = HashTableHeaderPage::from_serialized(&get_mock_header_data(2));
+    let header = HashTableHeaderPage::deserialize(&get_mock_header_data(2));
 
     assert_eq!(header.get_directory_page_id(0).unwrap(), 1);
     assert_eq!(header.get_directory_page_id(1).unwrap(), 2);
