@@ -6,6 +6,17 @@ mod config;
 mod disk;
 mod index;
 
+// TODO: this trait in the index mod, for ekys and values
+trait Serializable {
+    fn serialize(&self) -> Vec<u8>;
+}
+
+impl Serializable for u32 {
+    fn serialize(&self) -> Vec<u8> {
+        self.to_be_bytes().to_vec()
+    }
+}
+
 fn main() {
     // TODO: demo with buffer pool manager of how pages would be used
 
