@@ -9,6 +9,9 @@ const HASH_TABLE_BUCKET_PAGE_DATA_SIZE: usize = 4088;
 /// - `size` (0-3): The number of key-value pairs in bucket
 /// - `max_size` (4-7): The max number of key-value pairs that the bucket can hold
 /// - `data` (8-4095): The data of the key-value pairs stored, in an array form
+///
+/// # Note
+/// This bucket supports **non-unique** keys.
 pub struct HashTableBucketPage<K, V>
 where
     K: Serialize + Deserialize + Eq,
@@ -34,42 +37,84 @@ where
         Self { max_size, data }
     }
 
-    pub fn lookup(&self, key: K) -> V {
-        todo!()
+    /// Returns the values associated to `key`.
+    pub fn lookup(&self, key: K) -> Vec<&V> {
+        self.data
+            .iter()
+            .filter(|(k, _)| *k == key)
+            .map(|(_, v)| v)
+            .collect()
     }
 
-    pub fn insert(&mut self, key: K, value: V) {
-        todo!()
+    /// Inserts the `key`-`value` pair.
+    ///
+    /// # Errors
+    /// Will return `Err` if trying to insert when bucket is full.
+    pub fn insert(&mut self, key: K, value: V) -> Result<(), ()> {
+        if self.is_full() {
+            return Err(());
+        }
+
+        self.data.push((key, value));
+
+        Ok(())
     }
 
-    pub fn remove(&mut self, key: K) -> Option<V> {
-        todo!()
+    /// Removes all elements associated with `key`. Returns how many elements were removed.
+    pub fn remove(&mut self, key: K) -> usize {
+        let mut count = 0;
+
+        self.data.retain(|(k, _)| {
+            if *k == key {
+                count += 1;
+                false
+            } else {
+                true
+            }
+        });
+
+        count
     }
 
+    /// Removes the entry at `index`. Will return the removed entry, or `None` if trying to index outside of bounds.
     pub fn remove_at(&mut self, index: usize) -> Option<(K, V)> {
-        todo!()
+        if index > self.size() - 1 {
+            return None;
+        }
+
+        Some(self.data.remove(index))
     }
 
+    /// Returns key at `index`.
     pub fn key_at(&self, index: usize) -> Option<&K> {
-        todo!()
+        Some(&self.entry_at(index)?.0)
     }
 
+    /// Returns value at `index`.
     pub fn value_at(&self, index: usize) -> Option<&V> {
-        todo!()
+        Some(&self.entry_at(index)?.1)
     }
 
-    pub fn entry_at(&self, index: usize) -> Option<(&K, &V)> {
-        todo!()
+    /// Returns the entry a
+    pub fn entry_at(&self, index: usize) -> Option<&(K, V)> {
+        if index > self.size() - 1 {
+            return None;
+        }
+
+        self.data.get(index)
     }
 
-    pub fn size(&self) -> u32 {
-        todo!()
+    /// Returns current number of key-value pairs in the bucket.
+    pub fn size(&self) -> usize {
+        self.data.len()
     }
 
+    /// Returns `true` if the bucket is full.
     pub fn is_full(&self) -> bool {
-        todo!()
+        self.data.len() as u32 >= self.max_size
     }
 
+    /// Returns `true` if the current size of the bucket is `0`.
     pub fn is_empty(&self) -> bool {
         todo!()
     }
