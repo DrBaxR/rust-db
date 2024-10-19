@@ -1,4 +1,4 @@
-use disk::disk_manager::DiskManager;
+use disk::{buffer_pool_manager::{BufferPoolManager, DiskRead, DiskWrite}, disk_manager::DiskManager};
 use index::{bucket_page::HashTableBucketPage, serial::{Deserialize, Serialize}};
 
 mod b_tree;
@@ -7,15 +7,19 @@ mod disk;
 mod index;
 
 fn main() {
-    // TODO: demo with buffer pool manager of how pages would be used
+    let bpm = BufferPoolManager::new(String::from("db/test.db"), 2, 2);
+    let page_id = bpm.new_page();
 
-    // init
-    let dm = DiskManager::new(String::from("db/test.db"));
+    let mut page = bpm.get_write_page(page_id);
+    let mut bucket = HashTableBucketPage::<u32, u8>::new(vec![(1, 2), (2, 3), (3, 4), (3, 5), (4, 5)]);
+    bucket.insert(4, 10).unwrap();
+    page.write(bucket.serialize());
+    drop(page);
 
-    // write mock page to disk
-    let bucket = HashTableBucketPage::<u32, u8>::new(vec![(1, 2), (2, 3), (3, 4), (3, 5), (4, 5)]);
-    dm.write_page(0, &bucket.serialize());
+    let page = bpm.get_read_page(page_id);
+    let bucket = HashTableBucketPage::<u32, u8>::deserialize(page.read());
+    println!("{:?}", bucket.lookup(4));
+    drop(page);
 
-    let bucket = HashTableBucketPage::<u32, u8>::deserialize(&dm.read_page(0).unwrap());
-    dbg!(bucket);
+    bpm.flush_all_pages();
 }
