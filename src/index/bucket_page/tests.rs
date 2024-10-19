@@ -1,3 +1,5 @@
+use crate::index::serial::{Deserialize, Serialize};
+
 use super::HashTableBucketPage;
 
 #[test]
@@ -6,7 +8,6 @@ fn new_max_size() {
     assert_eq!(bucket.max_size, 511); // (i32, i32) = 8 => max_size = 4088 / 8 = 511
 
     let bucket = HashTableBucketPage::new(vec![(1u32, 2u8)]);
-    dbg!(size_of::<(u32, u8)>());
     assert_eq!(bucket.max_size, 817); // (u32, u8) = 5 => max_size = 4088 / 5 = 817
 }
 
@@ -48,7 +49,7 @@ fn insert() {
 
 #[test]
 fn remove() {
-    let mut bucket = HashTableBucketPage::<i32, i32>::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)]);
+    let mut bucket = HashTableBucketPage::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)]);
 
     let removed = bucket.remove(1);
     assert_eq!(removed, 3);
@@ -65,7 +66,7 @@ fn remove() {
 
 #[test]
 fn remove_at() {
-    let mut bucket = HashTableBucketPage::<i32, i32>::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)]);
+    let mut bucket = HashTableBucketPage::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)]);
 
     let res = bucket.remove_at(1).unwrap();
     assert_eq!(res, (1, 2));
@@ -77,11 +78,20 @@ fn remove_at() {
 
 #[test]
 fn entry_key_value_at() {
-    let bucket = HashTableBucketPage::<i32, i32>::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)]);
+    let bucket = HashTableBucketPage::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)]);
 
     assert_eq!(*bucket.entry_at(3).unwrap(), (3, 4));
     assert!(bucket.entry_at(4).is_none());
 
     assert_eq!(*bucket.key_at(3).unwrap(), 3);
     assert_eq!(*bucket.value_at(3).unwrap(), 4);
+}
+
+#[test]
+fn serialization() {
+    let bucket = HashTableBucketPage::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)]);
+    let bucked_deserialized = HashTableBucketPage::<i32, i32>::deserialize(&bucket.serialize());
+
+    assert_eq!(bucket.max_size, bucked_deserialized.max_size);
+    assert_eq!(bucket.data, bucked_deserialized.data);
 }

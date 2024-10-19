@@ -1,4 +1,9 @@
-use super::serial::{Deserialize, Serialize};
+use crate::config::DB_PAGE_SIZE;
+
+use super::{
+    get_four_bytes_group,
+    serial::{Deserialize, Serialize},
+};
 
 #[cfg(test)]
 mod tests;
@@ -6,12 +11,13 @@ mod tests;
 const HASH_TABLE_BUCKET_PAGE_DATA_SIZE: usize = 4088;
 
 /// Bucket page for extendinble hashing index. Its structure looks like this on disk:
-/// - `size` (0-3): The number of key-value pairs in bucket
-/// - `max_size` (4-7): The max number of key-value pairs that the bucket can hold
+/// - `max_size` (0-3): The number of key-value pairs in bucket
+/// - `size` (4-7): The max number of key-value pairs that the bucket can hold
 /// - `data` (8-4095): The data of the key-value pairs stored, in an array form
 ///
 /// # Note
 /// This bucket supports **non-unique** keys.
+#[derive(Debug)]
 pub struct HashTableBucketPage<K, V>
 where
     K: Serialize + Deserialize + Eq,
@@ -116,7 +122,7 @@ where
 
     /// Returns `true` if the current size of the bucket is `0`.
     pub fn is_empty(&self) -> bool {
-        todo!()
+        self.data.len() == 0
     }
 }
 
@@ -126,9 +132,23 @@ where
     V: Serialize + Deserialize,
 {
     fn serialize(&self) -> Vec<u8> {
-        todo!()
+        let mut data = vec![];
+
+        data.extend_from_slice(&self.max_size.to_be_bytes());
+        data.extend_from_slice(&(self.size() as u32).to_be_bytes()); // usize needs cast to u32 for serialization
+
+        for (key, value) in self.data.iter() {
+            data.extend_from_slice(&key.serialize());
+            data.extend_from_slice(&value.serialize());
+        }
+
+        data.resize(DB_PAGE_SIZE as usize, 0);
+
+        data
     }
 }
+
+const DATA_OFFSET: usize = 8;
 
 impl<K, V> Deserialize for HashTableBucketPage<K, V>
 where
@@ -136,6 +156,24 @@ where
     V: Serialize + Deserialize,
 {
     fn deserialize(data: &[u8]) -> Self {
-        todo!()
+        let max_size = u32::from_be_bytes(get_four_bytes_group(data, 0));
+        let size = u32::from_be_bytes(get_four_bytes_group(data, 1));
+        let mut entries = vec![];
+
+        let key_size = size_of::<K>();
+        let value_size = size_of::<V>();
+        let entry_size = key_size + value_size;
+        for i in 0..size {
+            let pair_offset = DATA_OFFSET + i as usize * entry_size;
+
+            let key = K::deserialize(&data[pair_offset..pair_offset + key_size]);
+            let value = V::deserialize(&data[pair_offset + key_size..pair_offset + entry_size]);
+            entries.push((key, value));
+        }
+
+        Self {
+            max_size,
+            data: entries,
+        }
     }
 }

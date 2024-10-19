@@ -1,5 +1,5 @@
 use disk::disk_manager::DiskManager;
-use index::{header_page::HashTableHeaderPage, serial::{Deserialize, Serialize}};
+use index::{bucket_page::HashTableBucketPage, serial::{Deserialize, Serialize}};
 
 mod b_tree;
 mod config;
@@ -13,36 +13,9 @@ fn main() {
     let dm = DiskManager::new(String::from("db/test.db"));
 
     // write mock page to disk
-    let header_data = get_mock_header_data(2);
-    let header = HashTableHeaderPage::deserialize(&header_data);
+    let bucket = HashTableBucketPage::<u32, u8>::new(vec![(1, 2), (2, 3), (3, 4), (3, 5), (4, 5)]);
+    dm.write_page(0, &bucket.serialize());
 
-    let serialized_data = header.serialize();
-    dm.write_page(0, &serialized_data);
-}
-
-fn get_mock_header_data(max_depth: u8) -> Vec<u8>  {
-    let mut header_data = vec![];
-    let mut page_id = 0;
-
-    for i in 0..4096 {
-        let val = if i % 4 == 3 {
-            if i > 2048 {
-                max_depth
-            } else {
-                page_id = if page_id < 255 {
-                    page_id + 1
-                } else {
-                    page_id
-                };
-
-                page_id
-            }
-        } else {
-            0
-        };
-
-        header_data.push(val);
-    }
-
-    header_data
+    let bucket = HashTableBucketPage::<u32, u8>::deserialize(&dm.read_page(0).unwrap());
+    dbg!(bucket);
 }
