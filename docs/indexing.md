@@ -33,7 +33,15 @@ The structore of this page type's data is as follows:
 
 ## Extendible Hashing
 
-TODO
+The implementation details of the extendible hashing scheme used in this project can be found in task #3 of the [CMU Fall 2023 Index Assignment](https://15445.courses.cs.cmu.edu/fall2023/project2/).
+
+### Interface
+
+The interface that the extendible hash index consists of these methods:
+- `insert(key, value)`: Inserts `key`-`value` into the index.
+- `remove(key)`: Removes all entries from that index that have `key`.
+- `lookup(key)`: Look up all values associated to `key`.
+
 
 ## Concurrency Control
 
