@@ -13,14 +13,29 @@ const HASH_TABLE_HEADER_PAGE_MAX_IDS: usize = 512;
 /// Header page for extendible hashing index. The data structure looks like this:
 /// - `directory_page_ids` (0-2047): An array of directory page IDs (4 bytes each)
 /// - `max_depth` (2048-2051): The max depth the header can handle - configured on index creation
+
+// OPTIMIZATION: don't deserialize/re-serialize every time you need a page, just directly operate on the 4096 bytes for each of the methods
+// just get rid of internal struct fields and update serialization to be trivial
 #[derive(Debug)]
 pub struct HashTableHeaderPage {
-    directory_page_ids: Vec<PageID>,
+    directory_page_ids: Vec<Option<PageID>>,
     max_depth: u32,
 }
 
 impl HashTableHeaderPage {
-    pub fn new(directory_page_ids: Vec<PageID>, max_depth: u32) -> Self {
+    pub fn new(max_depth: u32) -> Self {
+        assert!(max_depth <= 9);
+
+        let mut directory_page_ids = vec![];
+        directory_page_ids.resize(1 << max_depth, None);
+
+        Self {
+            directory_page_ids,
+            max_depth,
+        }
+    }
+
+    fn new_with_ids(directory_page_ids: Vec<Option<PageID>>, max_depth: u32) -> Self {
         Self {
             directory_page_ids,
             max_depth,
@@ -31,13 +46,12 @@ impl HashTableHeaderPage {
         get_msb(hash, self.max_depth as usize) as usize
     }
 
-    /// Returns the page ID of the directory page with the index `directory_index`. Will return `None` if trying to access index greater than `max_size()`.
+    /// Returns the page ID of the directory page with the index `directory_index`. Will return `None` if there is no directory page for that index.
+    /// 
+    /// # Panics
+    /// Will panic if trying to index outside of bounds.
     pub fn get_directory_page_id(&self, directory_index: usize) -> Option<PageID> {
-        if directory_index > self.max_size() - 1 {
-            return None;
-        }
-
-        Some(self.directory_page_ids[directory_index])
+        self.directory_page_ids[directory_index]
     }
 
     /// Returns the page ID of the replaced page.
@@ -48,13 +62,13 @@ impl HashTableHeaderPage {
         &mut self,
         directory_index: usize,
         directory_page_id: PageID,
-    ) -> Result<PageID, ()> {
+    ) -> Result<Option<PageID>, ()> {
         if directory_index > self.max_size() - 1 {
             return Err(());
         }
 
-        let previous_page_id = self.get_directory_page_id(directory_index).unwrap();
-        self.directory_page_ids[directory_index] = directory_page_id;
+        let previous_page_id = self.get_directory_page_id(directory_index);
+        self.directory_page_ids[directory_index] = Some(directory_page_id);
 
         Ok(previous_page_id)
     }
@@ -70,9 +84,9 @@ impl Serialize for HashTableHeaderPage {
         let mut data = vec![];
 
         for index in 0..HASH_TABLE_HEADER_PAGE_MAX_IDS {
-            let page_id = self.directory_page_ids.get(index).unwrap_or(&0);
+            let page_id = self.directory_page_ids.get(index).unwrap_or(&Some(0));
 
-            data.extend_from_slice(&page_id.to_be_bytes()); // endian picked here needs to match the one in from_serialized
+            data.extend_from_slice(&page_id.unwrap_or(0).to_be_bytes()); // endian picked here needs to match the one in from_serialized
         }
 
         data.extend_from_slice(&self.max_depth.to_be_bytes());
@@ -86,7 +100,9 @@ impl Deserialize for HashTableHeaderPage {
     fn deserialize(data: &[u8]) -> Self {
         let mut page_ids = vec![];
         for i in 0..HASH_TABLE_HEADER_PAGE_MAX_IDS {
-            page_ids.push(u32::from_be_bytes(get_four_bytes_group(data, i))); // endian picked here needs to match the one in serialize
+            let page_id = u32::from_be_bytes(get_four_bytes_group(data, i)); // endian picked here needs to match the one in serialize
+
+            page_ids.push(if page_id == 0 { None } else { Some(page_id) });
         }
 
         let max_depth = u32::from_be_bytes(get_four_bytes_group(data, 512));

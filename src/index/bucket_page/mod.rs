@@ -43,6 +43,10 @@ where
         Self { max_size, data }
     }
 
+    pub fn new_empty() -> Self {
+        HashTableBucketPage::<K, V>::new(vec![])
+    }
+
     /// Returns the values associated to `key`.
     pub fn lookup(&self, key: K) -> Vec<&V> {
         self.data

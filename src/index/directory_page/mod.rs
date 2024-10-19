@@ -43,6 +43,15 @@ impl HashTableDirectoryPage {
         }
     }
 
+    pub fn new_empty(empty_bucket_id: PageID, max_depth: u32) -> Self {
+        Self {
+            bucket_page_ids: vec![empty_bucket_id],
+            local_depths: vec![0],
+            max_depth,
+            global_depth: 0,
+        }
+    }
+
     /// Index bucket IDs with `hash`. Will use the `global_depth` LSB's.
     pub fn hash_to_bucket_index(&self, hash: u32) -> usize {
         (hash & self.get_global_depth_mask()) as usize
@@ -61,7 +70,7 @@ impl HashTableDirectoryPage {
     ///
     /// # Errors
     /// Will return `Err` if trying to replace invalid index.
-    fn set_bucket_page_id(
+    pub fn set_bucket_page_id(
         &mut self,
         bucket_index: usize,
         bucket_page_id: PageID,
@@ -77,7 +86,7 @@ impl HashTableDirectoryPage {
     /// # Split Image
     /// The split image represents the bucket which would have resulted as a split of the current bucket. This means that the split image of a bucket is a
     /// potential candidate for merging with, in case the current bucket is empty.
-    fn get_split_image_index(&self, bucket_index: usize) -> Option<usize> {
+    pub fn get_split_image_index(&self, bucket_index: usize) -> Option<usize> {
         let local_depth = self.get_local_depth(bucket_index)?;
         let split_image_mask = 1u32 << (local_depth - 1);
 
@@ -102,11 +111,42 @@ impl HashTableDirectoryPage {
         self.max_depth
     }
 
-    pub fn increment_global_depth(&mut self) {
+    /// Doubles the size of the directory and increments the global depth. Returns new global depth.
+    ///
+    /// ## Errors
+    /// Will return `Err` if the global depth is already equal to `max_depth`.
+    // TODO: add more tests
+    pub fn increment_global_depth(&mut self) -> Result<u32, ()> {
+        if self.global_depth() >= self.max_depth() {
+            return Err(());
+        }
+
+        // if initial is [1, 2], then doubled should be `[1, 2, 1, 2]`
+        let doubled_bucket_page_ids: Vec<_> = self
+            .bucket_page_ids
+            .iter()
+            .cycle()
+            .take(2 * self.size())
+            .map(|x| *x)
+            .collect();
+
+        let doubled_local_depths: Vec<_> = self
+            .local_depths
+            .iter()
+            .cycle()
+            .take(2 * self.size())
+            .map(|x| *x)
+            .collect();
+
+        self.bucket_page_ids = doubled_bucket_page_ids;
+        self.local_depths = doubled_local_depths;
         self.global_depth += 1;
+
+        Ok(self.global_depth)
     }
 
     pub fn decrement_global_depth(&mut self) {
+        // TODO: correct this (when implementing remove)
         self.global_depth -= 1;
     }
 
@@ -132,7 +172,7 @@ impl HashTableDirectoryPage {
     }
 
     /// Returns local depth of bucket with index `bucket_index`. Will return `None` if bucket index larger than size.
-    fn get_local_depth(&self, bucket_index: usize) -> Option<u8> {
+    pub fn get_local_depth(&self, bucket_index: usize) -> Option<u8> {
         if bucket_index > self.size() - 1 {
             return None;
         }
@@ -144,7 +184,7 @@ impl HashTableDirectoryPage {
     ///
     /// # Errors
     /// Returns `Err` if bucket index is greater than size.
-    fn set_local_depth(&mut self, bucket_index: usize, local_depth: u8) -> Result<u8, ()> {
+    pub fn set_local_depth(&mut self, bucket_index: usize, local_depth: u8) -> Result<u8, ()> {
         let previous_depth = self.get_local_depth(bucket_index).ok_or(())?;
         self.local_depths[bucket_index] = local_depth;
 
@@ -155,7 +195,7 @@ impl HashTableDirectoryPage {
     ///
     /// # Errors
     /// Returns `Err` if index is greater than size.
-    fn increment_local_depth(&mut self, bucket_index: usize) -> Result<u8, ()> {
+    pub fn increment_local_depth(&mut self, bucket_index: usize) -> Result<u8, ()> {
         let previous_depth = self.get_local_depth(bucket_index).ok_or(())?;
         self.set_local_depth(bucket_index, previous_depth + 1)?;
 

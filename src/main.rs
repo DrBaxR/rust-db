@@ -1,5 +1,7 @@
-use disk::{buffer_pool_manager::{BufferPoolManager, DiskRead, DiskWrite}, disk_manager::DiskManager};
-use index::{bucket_page::HashTableBucketPage, serial::{Deserialize, Serialize}};
+use std::sync::Arc;
+
+use disk::buffer_pool_manager::BufferPoolManager;
+use index::disk_extendible_hash_table::DiskExtendibleHashTable;
 
 mod b_tree;
 mod config;
@@ -7,19 +9,16 @@ mod disk;
 mod index;
 
 fn main() {
-    let bpm = BufferPoolManager::new(String::from("db/test.db"), 2, 2);
-    let page_id = bpm.new_page();
+    // TODO: fix the todos haha
+    let bpm = Arc::new(BufferPoolManager::new(String::from("db/test.db"), 2, 2));
+    let ht = DiskExtendibleHashTable::<i32, i32>::new(Arc::clone(&bpm), 0, 2);
 
-    let mut page = bpm.get_write_page(page_id);
-    let mut bucket = HashTableBucketPage::<u32, u8>::new(vec![(1, 2), (2, 3), (3, 4), (3, 5), (4, 5)]);
-    bucket.insert(4, 10).unwrap();
-    page.write(bucket.serialize());
-    drop(page);
-
-    let page = bpm.get_read_page(page_id);
-    let bucket = HashTableBucketPage::<u32, u8>::deserialize(page.read());
-    println!("{:?}", bucket.lookup(4));
-    drop(page);
+    ht.insert(1, 2).unwrap();
+    ht.insert(3, 4).unwrap();
+    ht.insert(5, 6).unwrap();
 
     bpm.flush_all_pages();
+
+    // TODO: see if reading it from disk works fine
+    // TODO: printing of hash table for debugging
 }

@@ -33,7 +33,7 @@ The structore of this page type's data is as follows:
 
 ## Extendible Hashing
 
-The implementation details of the extendible hashing scheme used in this project can be found in task #3 of the [CMU Fall 2023 Index Assignment](https://15445.courses.cs.cmu.edu/fall2023/project2/).
+The implementation details of the extendible hashing scheme used in this project can be found in task #3 of the [CMU Fall 2023 Index Assignment](https://15445.courses.cs.cmu.edu/fall2023/project2/). For the general details of the algorithm, check [this](https://www.geeksforgeeks.org/extendible-hashing-dynamic-approach-to-dbms/).
 
 ### Interface
 
