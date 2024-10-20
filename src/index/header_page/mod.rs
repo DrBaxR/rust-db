@@ -13,6 +13,7 @@ const HASH_TABLE_HEADER_PAGE_MAX_IDS: usize = 512;
 /// Header page for extendible hashing index. The data structure looks like this:
 /// - `directory_page_ids` (0-2047): An array of directory page IDs (4 bytes each)
 /// - `max_depth` (2048-2051): The max depth the header can handle - configured on index creation
+/// - `directory_max_depth` (2052-2055): The max depth the directories of this header can handle
 
 // OPTIMIZATION: don't deserialize/re-serialize every time you need a page, just directly operate on the 4096 bytes for each of the methods
 // just get rid of internal struct fields and update serialization to be trivial
@@ -20,10 +21,11 @@ const HASH_TABLE_HEADER_PAGE_MAX_IDS: usize = 512;
 pub struct HashTableHeaderPage {
     directory_page_ids: Vec<Option<PageID>>,
     max_depth: u32,
+    directory_max_depth: u32,
 }
 
 impl HashTableHeaderPage {
-    pub fn new(max_depth: u32) -> Self {
+    pub fn new(max_depth: u32, directory_max_depth: u32) -> Self {
         assert!(max_depth <= 9);
 
         let mut directory_page_ids = vec![];
@@ -32,13 +34,19 @@ impl HashTableHeaderPage {
         Self {
             directory_page_ids,
             max_depth,
+            directory_max_depth,
         }
     }
 
-    fn new_with_ids(directory_page_ids: Vec<Option<PageID>>, max_depth: u32) -> Self {
+    fn new_with_ids(
+        directory_page_ids: Vec<Option<PageID>>,
+        max_depth: u32,
+        directory_max_depth: u32,
+    ) -> Self {
         Self {
             directory_page_ids,
             max_depth,
+            directory_max_depth,
         }
     }
 
@@ -47,7 +55,7 @@ impl HashTableHeaderPage {
     }
 
     /// Returns the page ID of the directory page with the index `directory_index`. Will return `None` if there is no directory page for that index.
-    /// 
+    ///
     /// # Panics
     /// Will panic if trying to index outside of bounds.
     pub fn get_directory_page_id(&self, directory_index: usize) -> Option<PageID> {
@@ -77,6 +85,16 @@ impl HashTableHeaderPage {
     pub fn max_size(&self) -> usize {
         1 << self.max_depth
     }
+
+    /// Returns max depth of header page.
+    pub fn max_depth(&self) -> u32 {
+        self.max_depth
+    }
+
+    /// Returns max depth the directories of this header can handle.
+    pub fn directory_max_depth(&self) -> u32 {
+        self.directory_max_depth
+    }
 }
 
 impl Serialize for HashTableHeaderPage {
@@ -90,6 +108,7 @@ impl Serialize for HashTableHeaderPage {
         }
 
         data.extend_from_slice(&self.max_depth.to_be_bytes());
+        data.extend_from_slice(&self.directory_max_depth.to_be_bytes());
         data.resize(DB_PAGE_SIZE as usize, 0);
 
         data
@@ -106,10 +125,12 @@ impl Deserialize for HashTableHeaderPage {
         }
 
         let max_depth = u32::from_be_bytes(get_four_bytes_group(data, 512));
+        let directory_max_depth = u32::from_be_bytes(get_four_bytes_group(data, 513));
 
         Self {
             directory_page_ids: page_ids,
             max_depth,
+            directory_max_depth,
         }
     }
 }

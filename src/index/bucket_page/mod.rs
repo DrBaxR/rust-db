@@ -119,6 +119,11 @@ where
         self.data.len()
     }
 
+    /// Returns max size that the header page can handle.
+    pub fn max_size(&self) -> u32 {
+        self.max_size
+    }
+
     /// Returns `true` if the bucket is full.
     pub fn is_full(&self) -> bool {
         self.data.len() as u32 >= self.max_size

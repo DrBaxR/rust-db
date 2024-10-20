@@ -63,17 +63,21 @@ fn set_bucket_page_id() {
 }
 
 #[test]
-fn increment_decrement_global_depth() {
+fn increment_global_depth() {
     let mut directory = HashTableDirectoryPage::new(vec![1, 2, 3, 4], vec![5, 6, 7, 8], 9, 2);
-
     assert_eq!(directory.global_depth(), 2);
 
-    directory.increment_global_depth();
-    directory.increment_global_depth();
-    assert_eq!(directory.global_depth(), 4);
-
-    directory.decrement_global_depth();
+    directory.increment_global_depth().unwrap();
     assert_eq!(directory.global_depth(), 3);
+
+    assert_eq!(directory.bucket_page_ids, vec![1, 2, 3, 4, 1, 2, 3, 4]);
+}
+
+#[test]
+fn increment_global_depth_error() {
+    let mut directory = HashTableDirectoryPage::new(vec![1, 2, 3, 4], vec![5, 6, 7, 8], 2, 2);
+    
+    assert!(directory.increment_global_depth().is_err());
 }
 
 #[test]

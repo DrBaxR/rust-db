@@ -115,7 +115,6 @@ impl HashTableDirectoryPage {
     ///
     /// ## Errors
     /// Will return `Err` if the global depth is already equal to `max_depth`.
-    // TODO: add more tests
     pub fn increment_global_depth(&mut self) -> Result<u32, ()> {
         if self.global_depth() >= self.max_depth() {
             return Err(());

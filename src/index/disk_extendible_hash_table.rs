@@ -1,5 +1,6 @@
 use std::{io::Cursor, marker::PhantomData, sync::Arc};
 
+use ascii_tree::{write_tree, Tree};
 use murmur3::murmur3_32;
 
 use crate::{
@@ -11,7 +12,7 @@ use crate::{
 };
 
 use super::{
-    bucket_page::HashTableBucketPage,
+    bucket_page::{self, HashTableBucketPage},
     header_page::HashTableHeaderPage,
     serial::{Deserialize, Serialize},
 };
@@ -23,9 +24,10 @@ where
 {
     _marker: PhantomData<(K, V)>, // this is more of a logical struct, since it uses the buffer pool manager to retrieve "its" data.
     bpm: Arc<BufferPoolManager>,
-    header_max_depth: u32,
+    header_max_depth: u32, // OPTIMIZATION: redindant to store max depths here since we already store header pid
     directory_max_depth: u32,
     header_page_id: PageID,
+    name: String,
 }
 
 impl<K, V> DiskExtendibleHashTable<K, V>
@@ -37,15 +39,14 @@ where
         bpm: Arc<BufferPoolManager>,
         header_max_depth: u32,
         directory_max_depth: u32,
+        name: String,
     ) -> Self {
         let header_page_id = bpm.new_page();
 
-        let header = HashTableHeaderPage::new(header_max_depth);
+        let header = HashTableHeaderPage::new(header_max_depth, directory_max_depth);
         let mut header_page = bpm.get_write_page(header_page_id);
         header_page.write(header.serialize());
         drop(header_page);
-
-        dbg!(header_page_id);
 
         Self {
             _marker: PhantomData,
@@ -53,6 +54,22 @@ where
             header_max_depth,
             directory_max_depth,
             header_page_id,
+            name,
+        }
+    }
+
+    pub fn from_disk(bpm: Arc<BufferPoolManager>, header_pid: PageID, name: String) -> Self {
+        let header_page = bpm.get_read_page(header_pid);
+        let header = HashTableHeaderPage::deserialize(header_page.read());
+        drop(header_page);
+
+        Self {
+            _marker: PhantomData,
+            bpm,
+            header_max_depth: header.max_depth(),
+            directory_max_depth: header.directory_max_depth(),
+            header_page_id: header_pid,
+            name
         }
     }
 
@@ -208,5 +225,69 @@ where
     /// Returns 32-bit hashed value of `key`.
     fn hash(&self, key: &K) -> u32 {
         murmur3_32(&mut Cursor::new(key.serialize()), 0).expect("Hashing error")
+    }
+
+    /// Prints whole hash table **for debugging**.
+    pub fn print(&self) {
+        let h_page = self.bpm.get_read_page(self.header_page_id);
+        let header = HashTableHeaderPage::deserialize(h_page.read()); // header page
+        drop(h_page);
+
+        let mut directories_nodes = vec![];
+        for i in 0..header.max_size() {
+            let d_pid = header.get_directory_page_id(i);
+            if let Some(d_pid) = d_pid {
+                let d_page = self.bpm.get_read_page(d_pid);
+                let directory = HashTableDirectoryPage::deserialize(d_page.read()); // directory page
+                drop(d_page);
+
+                let mut buckets_nodes = vec![];
+                for j in 0..directory.size() {
+                    let b_pid = directory.get_bucket_page_id(j).unwrap();
+                    let b_page = self.bpm.get_read_page(b_pid);
+                    let bucket = HashTableBucketPage::<K, V>::deserialize(b_page.read()); // bucket page
+                    drop(b_page);
+
+                    buckets_nodes.push(Tree::Leaf(vec![format!(
+                        "[{}] pid: {} | d: {} (sz: {}/{})",
+                        j,
+                        b_pid,
+                        directory.get_local_depth(j).unwrap(),
+                        bucket.size(),
+                        bucket.max_size()
+                    )
+                    .to_string()]));
+                }
+
+                directories_nodes.push(Tree::Node(
+                    format!(
+                        "[{}] pid: {} | d: {}/{} (sz: {})",
+                        i,
+                        d_pid,
+                        directory.global_depth(),
+                        directory.max_depth(),
+                        directory.size()
+                    )
+                    .to_string(),
+                    buckets_nodes,
+                ));
+            } else {
+                directories_nodes.push(Tree::Leaf(vec!["None".to_string()]));
+            }
+        }
+
+        let header_node = Tree::Node(
+            format!(
+                "[{}] pid: {} | d: {}",
+                self.name,
+                self.header_page_id,
+                header.max_size()
+            ),
+            directories_nodes,
+        );
+
+        let mut output = String::new();
+        write_tree(&mut output, &header_node).unwrap();
+        println!("{output}");
     }
 }
