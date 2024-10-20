@@ -303,18 +303,19 @@ impl Serialize for HashTableDirectoryPage {
 impl Deserialize for HashTableDirectoryPage {
     fn deserialize(data: &[u8]) -> Self {
         let mut bucket_page_ids = vec![];
-        for i in 0..HASH_TABLE_DIRECTORY_PAGE_MAX_IDS {
+
+        let max_depth = u32::from_be_bytes(get_four_bytes_group(data, MAX_DEPTH_GROUP_INDEX));
+        let global_depth = u32::from_be_bytes(get_four_bytes_group(data, GLOBAL_DEPTH_GROUP_INDEX));
+
+        for i in 0..(1 << global_depth) {
             bucket_page_ids.push(u32::from_be_bytes(get_four_bytes_group(data, i)));
         }
 
         let local_depths_offset = HASH_TABLE_DIRECTORY_PAGE_MAX_IDS * size_of::<PageID>();
         let mut local_depths = vec![];
-        for i in 0..HASH_TABLE_DIRECTORY_PAGE_MAX_LOCAL_DEPTHS {
+        for i in 0..(1 << global_depth) {
             local_depths.push(data[local_depths_offset + i]);
         }
-
-        let max_depth = u32::from_be_bytes(get_four_bytes_group(data, MAX_DEPTH_GROUP_INDEX));
-        let global_depth = u32::from_be_bytes(get_four_bytes_group(data, GLOBAL_DEPTH_GROUP_INDEX));
 
         Self {
             bucket_page_ids,

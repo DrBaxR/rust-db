@@ -102,13 +102,13 @@ fn header_get_directory_page_id() {
 #[test]
 #[should_panic]
 fn get_directory_page_id_panic() {
-    let header = HashTableHeaderPage::new(2);
+    let header = HashTableHeaderPage::new(2, 2);
     header.get_directory_page_id(4);
 }
 
 #[test]
 fn header_set_directory_page_id() {
-    let mut header = HashTableHeaderPage::new_with_ids(vec![Some(1), Some(2), Some(3), Some(4)], 2);
+    let mut header = HashTableHeaderPage::new_with_ids(vec![Some(1), Some(2), Some(3), Some(4)], 2, 2);
     
     let prev = header.set_directory_page_id(0, 12);
     assert_eq!(header.get_directory_page_id(0).unwrap(), 12);
@@ -121,30 +121,30 @@ fn header_set_directory_page_id() {
 fn header_hash_to_directory_page_index() {
     let hash = 0xb6000000u32; // 10110110 00...
 
-    let header = HashTableHeaderPage::new_with_ids(vec![], 0);
+    let header = HashTableHeaderPage::new_with_ids(vec![], 0, 0);
     assert_eq!(header.hash_to_directory_page_index(hash), 0);
 
-    let header = HashTableHeaderPage::new_with_ids(vec![], 1);
+    let header = HashTableHeaderPage::new_with_ids(vec![], 1, 1);
     assert_eq!(header.hash_to_directory_page_index(hash), 1);
 
-    let header = HashTableHeaderPage::new_with_ids(vec![], 2);
+    let header = HashTableHeaderPage::new_with_ids(vec![], 2, 2);
     assert_eq!(header.hash_to_directory_page_index(hash), 2);
 
-    let header = HashTableHeaderPage::new_with_ids(vec![], 3);
+    let header = HashTableHeaderPage::new_with_ids(vec![], 3, 3);
     assert_eq!(header.hash_to_directory_page_index(hash), 5);
 
-    let header = HashTableHeaderPage::new_with_ids(vec![], 8);
+    let header = HashTableHeaderPage::new_with_ids(vec![], 8, 8);
     assert_eq!(header.hash_to_directory_page_index(hash), 182);
 }
 
 #[test]
 fn new_size() {
-    let header = HashTableHeaderPage::new(2);
+    let header = HashTableHeaderPage::new(2, 2);
     assert_eq!(header.directory_page_ids.len(), 4);
 
-    let header = HashTableHeaderPage::new(4);
+    let header = HashTableHeaderPage::new(4, 4);
     assert_eq!(header.directory_page_ids.len(), 16);
 
-    let header = HashTableHeaderPage::new(9);
+    let header = HashTableHeaderPage::new(9, 9);
     assert_eq!(header.directory_page_ids.len(), 512);
 }

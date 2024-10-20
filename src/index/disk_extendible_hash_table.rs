@@ -19,8 +19,8 @@ use super::{
 
 pub struct DiskExtendibleHashTable<K, V>
 where
-    K: Serialize + Deserialize + Eq,
-    V: Serialize + Deserialize,
+    K: Serialize + Deserialize + Eq + Clone,
+    V: Serialize + Deserialize + Clone,
 {
     _marker: PhantomData<(K, V)>, // this is more of a logical struct, since it uses the buffer pool manager to retrieve "its" data.
     bpm: Arc<BufferPoolManager>,
@@ -32,8 +32,8 @@ where
 
 impl<K, V> DiskExtendibleHashTable<K, V>
 where
-    K: Serialize + Deserialize + Eq,
-    V: Serialize + Deserialize,
+    K: Serialize + Deserialize + Eq + Clone,
+    V: Serialize + Deserialize + Clone,
 {
     pub fn new(
         bpm: Arc<BufferPoolManager>,
@@ -69,7 +69,7 @@ where
             header_max_depth: header.max_depth(),
             directory_max_depth: header.directory_max_depth(),
             header_page_id: header_pid,
-            name
+            name,
         }
     }
 
@@ -129,12 +129,12 @@ where
 
         // split the bucket
         let mut split_image_bucket = HashTableBucketPage::<K, V>::new_empty();
-        let split_image_bucket_index = directory.get_split_image_index(b_index).unwrap();
 
         // increase local depth or buckets
-        let new_local_depth = directory.increment_local_depth(b_index).unwrap();
+        let old_local_depth = directory.increment_local_depth(b_index).unwrap();
+        let split_image_bucket_index = directory.get_split_image_index(b_index).unwrap();
         directory
-            .set_local_depth(split_image_bucket_index, new_local_depth)
+            .set_local_depth(split_image_bucket_index, old_local_depth + 1)
             .unwrap();
 
         // set pointer in directory to split image
@@ -144,26 +144,21 @@ where
             .unwrap();
 
         // move entries that hash to the new bucket to the split image
-        let mut indexes_to_remove = vec![];
+        let mut entries_to_remove = vec![];
         for i in 0..bucket.size() {
-            let key = bucket.key_at(i).unwrap();
+            let (key, value) = bucket.entry_at(i).unwrap();
             let hash = self.hash(key);
             let index = directory.hash_to_bucket_index(hash);
             assert!(index == b_index || index == split_image_bucket_index);
 
             if index != b_index {
-                indexes_to_remove.push(index);
+                entries_to_remove.push((key.clone(), value.clone()));
             }
         }
 
-        let mut entries_to_insert = vec![];
-        for i in indexes_to_remove.iter().rev() {
-            let removed_entry = bucket.remove_at(*i).unwrap();
-            entries_to_insert.push(removed_entry);
-        }
-
-        for (key, value) in entries_to_insert {
-            split_image_bucket.insert(key, value).unwrap();
+        for (k, v) in entries_to_remove {
+            bucket.remove(k.clone());
+            split_image_bucket.insert(k, v).unwrap();
         }
 
         // insert element into the bucket it hashes to
@@ -250,7 +245,7 @@ where
 
                     buckets_nodes.push(Tree::Leaf(vec![format!(
                         "[{}] pid: {} | d: {} (sz: {}/{})",
-                        j,
+                        to_binary(j as u32, directory.global_depth()),
                         b_pid,
                         directory.get_local_depth(j).unwrap(),
                         bucket.size(),
@@ -262,7 +257,7 @@ where
                 directories_nodes.push(Tree::Node(
                     format!(
                         "[{}] pid: {} | d: {}/{} (sz: {})",
-                        i,
+                        to_binary(i as u32, self.header_max_depth),
                         d_pid,
                         directory.global_depth(),
                         directory.max_depth(),
@@ -290,4 +285,22 @@ where
         write_tree(&mut output, &header_node).unwrap();
         println!("{output}");
     }
+}
+
+fn to_binary(n: u32, count: u32) -> String {
+    if count == 0 {
+        return "-".to_string();
+    }
+
+    // Extract the last `count` bits
+    let mask = (1 << count) - 1; // Create a mask with the last `count` bits set to 1
+    let bits = n & mask; // Get the last `count` bits of `n`
+
+    // Convert to binary string and pad with leading zeros if needed
+    let mut binary_str = format!("{:b}", bits);
+    if binary_str.len() < count as usize {
+        binary_str = format!("{:0>width$}", binary_str, width = count as usize);
+    }
+
+    binary_str
 }

@@ -9,21 +9,19 @@ mod disk;
 mod index;
 
 fn main() {
-    let bpm = Arc::new(BufferPoolManager::new(String::from("db/test.db"), 2, 2));
+    let bpm = Arc::new(BufferPoolManager::new(String::from("db/test.db"), 100, 2));
     let ht =
-        DiskExtendibleHashTable::<i32, i32>::new(Arc::clone(&bpm), 0, 2, String::from("index"));
+        DiskExtendibleHashTable::<i32, i32>::new(Arc::clone(&bpm), 2, 2, String::from("index"));
 
-    ht.print();
-    ht.insert(1, 2).unwrap();
-    ht.print();
-    ht.insert(3, 4).unwrap();
-    ht.print();
-    ht.insert(5, 6).unwrap();
-    ht.print();
+    for i in 0..5000 {
+        ht.insert(i, i).unwrap();
+        ht.print();
+    }
 
     bpm.flush_all_pages();
 
-    // TODO: see if reading it from disk works fine
+    println!("FINAL TABLE STATE FROM DISK:");
+    read_from_disk(0, "index".to_string());
 }
 
 fn read_from_disk(header_pid: PageID, name: String) {

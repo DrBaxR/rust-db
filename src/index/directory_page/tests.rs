@@ -1,30 +1,20 @@
-use crate::index::{directory_page::HashTableDirectoryPage, serial::{Deserialize, Serialize}};
+use crate::index::{
+    directory_page::HashTableDirectoryPage,
+    serial::{Deserialize, Serialize},
+};
 
 #[test]
 fn directory_serialization() {
-    let directory = HashTableDirectoryPage::new(vec![1, 2, 3], vec![2, 2, 2], 9, 10);
+    let directory = HashTableDirectoryPage::new(vec![1, 2, 3, 4], vec![2, 2, 2, 2], 9, 2);
 
     let serialized_data = directory.serialize();
     let directory_deserialized = HashTableDirectoryPage::deserialize(&serialized_data);
 
     assert_eq!(
         directory.bucket_page_ids,
-        directory_deserialized
-            .bucket_page_ids
-            .iter()
-            .filter(|e| **e != 0)
-            .map(|e| *e)
-            .collect::<Vec<u32>>()
+        directory_deserialized.bucket_page_ids
     );
-    assert_eq!(
-        directory.local_depths,
-        directory_deserialized
-            .local_depths
-            .iter()
-            .filter(|e| **e != 0)
-            .map(|e| *e)
-            .collect::<Vec<u8>>()
-    );
+    assert_eq!(directory.local_depths, directory_deserialized.local_depths);
     assert_eq!(directory.max_depth, directory_deserialized.max_depth);
     assert_eq!(directory.global_depth, directory_deserialized.global_depth);
 }
@@ -76,7 +66,7 @@ fn increment_global_depth() {
 #[test]
 fn increment_global_depth_error() {
     let mut directory = HashTableDirectoryPage::new(vec![1, 2, 3, 4], vec![5, 6, 7, 8], 2, 2);
-    
+
     assert!(directory.increment_global_depth().is_err());
 }
 
