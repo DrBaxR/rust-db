@@ -17,6 +17,9 @@ use super::{
     serial::{Deserialize, Serialize},
 };
 
+#[cfg(test)]
+mod tests;
+
 pub struct DiskExtendibleHashTable<K, V>
 where
     K: Serialize + Deserialize + Eq + Clone,
@@ -209,7 +212,32 @@ where
 
     /// Get values associated with `key`.
     pub fn lookup(&self, key: K) -> Vec<V> {
-        todo!()
+        let hash = self.hash(&key);
+
+        let h_page = self.bpm.get_read_page(self.header_page_id);
+        let header = HashTableHeaderPage::deserialize(h_page.read());
+        drop(h_page);
+
+        let d_index = header.hash_to_directory_page_index(hash);
+        let d_pid = match header.get_directory_page_id(d_index) {
+            Some(pid) => pid,
+            None => return vec![],
+        };
+        let d_page = self.bpm.get_read_page(d_pid);
+        let directory = HashTableDirectoryPage::deserialize(d_page.read());
+        drop(d_page);
+
+        let b_index = directory.hash_to_bucket_index(hash);
+        let b_pid = directory.get_bucket_page_id(b_index).unwrap();
+        let b_page = self.bpm.get_read_page(b_pid);
+        let bucket = HashTableBucketPage::<K, V>::deserialize(b_page.read());
+        drop(b_page);
+
+        bucket
+            .lookup(key)
+            .iter()
+            .map(|v| (*v).clone())
+            .collect::<Vec<_>>()
     }
 
     /// Remove entries associated with `key` from the table. Returns the amount of entries that were removed.
