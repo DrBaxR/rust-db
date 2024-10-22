@@ -1,4 +1,4 @@
-use std::{io::Cursor, marker::PhantomData, sync::Arc};
+use std::{io::Cursor, marker::PhantomData, os::unix::raw::pid_t, sync::Arc};
 
 use ascii_tree::{write_tree, Tree};
 use murmur3::murmur3_32;
@@ -8,11 +8,11 @@ use crate::{
         buffer_pool_manager::{BufferPoolManager, DiskRead, DiskWrite},
         disk_manager::PageID,
     },
-    index::directory_page::HashTableDirectoryPage,
+    index::directory_page::{self, HashTableDirectoryPage},
 };
 
 use super::{
-    bucket_page::{self, HashTableBucketPage},
+    bucket_page::HashTableBucketPage,
     header_page::HashTableHeaderPage,
     serial::{Deserialize, Serialize},
 };
@@ -242,7 +242,33 @@ where
 
     /// Remove entries associated with `key` from the table. Returns the amount of entries that were removed.
     pub fn remove(&self, key: K) -> usize {
-        todo!()
+        let hash = self.hash(&key);
+
+        let h_page = self.bpm.get_read_page(self.header_page_id);
+        let header = HashTableHeaderPage::deserialize(h_page.read());
+        drop(h_page);
+
+        let d_index = header.hash_to_directory_page_index(hash);
+        let d_pid = match header.get_directory_page_id(d_index) {
+            Some(pid) => pid,
+            None => return 0,
+        };
+        let d_page = self.bpm.get_read_page(d_pid);
+        let directory = HashTableDirectoryPage::deserialize(d_page.read());
+        drop(d_page);
+
+        let b_index = directory.hash_to_bucket_index(hash);
+        let b_pid = directory.get_bucket_page_id(b_index).unwrap();
+        let b_page = self.bpm.get_read_page(b_pid);
+        let mut bucket = HashTableBucketPage::<K, V>::deserialize(b_page.read());
+        drop(b_page);
+
+        let removed_count = bucket.remove(key);
+        if !bucket.is_empty() {
+            return removed_count;
+        }
+
+        todo!("check split image depth")
     }
 
     /// Returns 32-bit hashed value of `key`.
