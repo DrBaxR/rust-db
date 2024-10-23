@@ -23,4 +23,4 @@ Here are a bunch of resources that I used in the process of developing this proj
 2. The [BusTub](https://github.com/cmu-db/bustub) Source Code (This is very useful if you follow along with the course)
 3. Tony Saro's [Writing My Own Database From Scratch](https://www.youtube.com/watch?v=5Pc18ge9ohI&list=WL&index=16) Video (This is the video that made me start this project)
 4. Mara Bos's [Rust Atomics and Locks](https://marabos.nl/atomics/) Book
-5. [The PostgreSQL Documentation](https://www.postgresql.org/docs/17/index.html)
+5. The [PostgreSQL Documentation](https://www.postgresql.org/docs/17/index.html)
