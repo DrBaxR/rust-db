@@ -81,6 +81,16 @@ impl HashTableDirectoryPage {
         Ok(previous_page_id)
     }
 
+    /// Sets all the bucket IDs that are at indexes that end in the same `local_depth` (the local depth of the bucket at the index passed 
+    /// as a parameter) bits of the `reference_index` to point to the page with the ID that `reference_index` points to.
+    /// 
+    /// # Errors
+    /// Will return `Err` if `reference_index` is greater than the current size of the directory.
+    pub fn set_split_images_pointers_to_reference(&mut self, reference_index: usize) -> Result<(), ()> {
+        // TODO: tests
+        todo!()
+    }
+
     /// Returns the index of the split image of the bucket at index `bucket_index`. Will return `None` if the index is greater than the current size.
     ///
     /// # Split Image
@@ -205,7 +215,7 @@ impl HashTableDirectoryPage {
     ///
     /// # Errors
     /// Returns `Err` if index is greater than size.
-    fn decrement_local_depth(&mut self, bucket_index: usize) -> Result<u8, ()> {
+    pub fn decrement_local_depth(&mut self, bucket_index: usize) -> Result<u8, ()> {
         let previous_depth = self.get_local_depth(bucket_index).ok_or(())?;
         self.set_local_depth(bucket_index, previous_depth - 1)?;
 

@@ -271,21 +271,41 @@ where
 
         // try merging
         let d_page = self.bpm.get_write_page(d_pid);
-        let directory = HashTableDirectoryPage::deserialize(d_page.read());
+        let mut directory = HashTableDirectoryPage::deserialize(d_page.read());
 
         // check local depths
-        let split_image_index = directory.get_split_image_index(b_index).unwrap();
-        let bucket_ld = directory.get_local_depth(b_index).unwrap();
-        let split_image_ld = directory.get_local_depth(split_image_index).unwrap();
-        if bucket_ld == split_image_ld {
+        let mut split_image_index = directory.get_split_image_index(b_index).unwrap();
+        let mut bucket_is_empty = bucket.is_empty(); // is the current merge result bucket empty?
+        while bucket_is_empty {
+            let bucket_ld = directory.get_local_depth(b_index).unwrap();
+            let split_image_ld = directory.get_local_depth(split_image_index).unwrap();
+
+            if bucket_ld != split_image_ld { // merge only possible when same local depths
+                break;
+            }
+
             // merge buckets
             self.bpm.delete_page(b_pid); // TODO: might need to hold onto the bucket lock up to this point for thread safety
-            todo!("update metadata for split image in directory");
+
+            directory.decrement_local_depth(split_image_index).unwrap();
+            directory
+                .set_split_images_pointers_to_reference(split_image_index)
+                .unwrap();
+
+
+            // check if merge result is empty
+            let split_image_pid = directory.get_bucket_page_id(split_image_index).unwrap();
+            let split_image_page = self.bpm.get_read_page(split_image_pid);
+            bucket_is_empty = HashTableBucketPage::<K, V>::deserialize(split_image_page.read()).is_empty();
+            drop(split_image_page);
+
+            split_image_index = directory.get_split_image_index(split_image_index).unwrap();
         }
 
         // try shrink if possible
         todo!()
 
+        // todo write to dorectory page
         // todo drop directory page
     }
 
