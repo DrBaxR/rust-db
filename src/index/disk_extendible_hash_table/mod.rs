@@ -1,4 +1,4 @@
-use std::{io::Cursor, marker::PhantomData, os::unix::raw::pid_t, sync::Arc};
+use std::{io::Cursor, marker::PhantomData, sync::Arc};
 
 use ascii_tree::{write_tree, Tree};
 use murmur3::murmur3_32;
@@ -263,12 +263,30 @@ where
         let mut bucket = HashTableBucketPage::<K, V>::deserialize(b_page.read());
         drop(b_page);
 
+        // remove entries
         let removed_count = bucket.remove(key);
         if !bucket.is_empty() {
             return removed_count;
         }
 
-        todo!("check split image depth")
+        // try merging
+        let d_page = self.bpm.get_write_page(d_pid);
+        let directory = HashTableDirectoryPage::deserialize(d_page.read());
+
+        // check local depths
+        let split_image_index = directory.get_split_image_index(b_index).unwrap();
+        let bucket_ld = directory.get_local_depth(b_index).unwrap();
+        let split_image_ld = directory.get_local_depth(split_image_index).unwrap();
+        if bucket_ld == split_image_ld {
+            // merge buckets
+            self.bpm.delete_page(b_pid); // TODO: might need to hold onto the bucket lock up to this point for thread safety
+            todo!("update metadata for split image in directory");
+        }
+
+        // try shrink if possible
+        todo!()
+
+        // todo drop directory page
     }
 
     /// Returns 32-bit hashed value of `key`.
