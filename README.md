@@ -14,7 +14,10 @@ Basically, what I'm saying is that I have no clue what I'm doing and ***ALL*** t
 
 ## Goal
 
-The main goal I started in mind with when I started working on this project was to implement a piece of software that accepts multiple connections at the same time and accepts and runs SQL queries concurrently in a decently performant manner, and supports transactions.
+The main goal I had in mind with when I started working on this project was to implement a piece of software that:
+1. Accepts multiple connections at the same time 
+2. Runs SQL queries a decently performant manner
+3. Runs transactions concurrently
 
 ## Resources
 
