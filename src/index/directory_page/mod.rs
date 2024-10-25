@@ -81,14 +81,34 @@ impl HashTableDirectoryPage {
         Ok(previous_page_id)
     }
 
-    /// Sets all the bucket IDs that are at indexes that end in the same `local_depth` (the local depth of the bucket at the index passed 
-    /// as a parameter) bits of the `reference_index` to point to the page with the ID that `reference_index` points to.
-    /// 
+    /// Sets all the bucket IDs that are at indexes that end in the same `local_depth` (the local depth of the bucket at the index passed
+    /// as a parameter) bits of the `reference_index` to point to the page with the ID that `reference_index` points to. Also sets the local
+    /// depths at the found indexes to the local depth at `reference_index`.
+    ///
     /// # Errors
     /// Will return `Err` if `reference_index` is greater than the current size of the directory.
-    pub fn set_split_images_pointers_to_reference(&mut self, reference_index: usize) -> Result<(), ()> {
-        // TODO: tests
-        todo!()
+    pub fn set_split_images_pointers_to_reference(
+        &mut self,
+        reference_index: usize,
+    ) -> Result<(), ()> {
+        if reference_index >= self.size() {
+            return Err(());
+        }
+
+        let mut sibling_indexes = vec![];
+        for index in 0..self.size() {
+            let mask = self.get_local_depth_mask(reference_index).unwrap();
+            if index as u32 & mask == reference_index as u32 & mask {
+                sibling_indexes.push(index);
+            }
+        }
+
+        for i in sibling_indexes {
+            self.bucket_page_ids[i] = self.bucket_page_ids[reference_index];
+            self.local_depths[i] = self.local_depths[reference_index];
+        }
+
+        Ok(())
     }
 
     /// Returns the index of the split image of the bucket at index `bucket_index`. Will return `None` if the index is greater than the current size.
@@ -123,7 +143,7 @@ impl HashTableDirectoryPage {
 
     /// Doubles the size of the directory and increments the global depth. Returns new global depth.
     ///
-    /// ## Errors
+    /// # Errors
     /// Will return `Err` if the global depth is already equal to `max_depth`.
     pub fn increment_global_depth(&mut self) -> Result<u32, ()> {
         if self.global_depth() >= self.max_depth() {
@@ -154,9 +174,30 @@ impl HashTableDirectoryPage {
         Ok(self.global_depth)
     }
 
-    pub fn decrement_global_depth(&mut self) {
-        // TODO: correct this (when implementing remove)
+    /// Halves the size of the directory and decreasez the global depth (AKA **shrinks the directory**). Returns new global depth.
+    ///
+    /// # Errors
+    /// Will return `Err` if the global depth is already equal to `0`.
+    pub fn decrement_global_depth(&mut self) -> Result<u32, ()> {
+        if self.global_depth() == 0 {
+            return Err(());
+        }
+
+        self.bucket_page_ids = self
+            .bucket_page_ids
+            .iter()
+            .take(self.size() / 2)
+            .cloned()
+            .collect();
+        self.local_depths = self
+            .local_depths
+            .iter()
+            .take(self.size() / 2)
+            .cloned()
+            .collect();
         self.global_depth -= 1;
+
+        Ok(self.global_depth)
     }
 
     /// Return `true` if all local depths are less than the global depth.

@@ -270,7 +270,7 @@ where
         }
 
         // try merging
-        let d_page = self.bpm.get_write_page(d_pid);
+        let mut d_page = self.bpm.get_write_page(d_pid);
         let mut directory = HashTableDirectoryPage::deserialize(d_page.read());
 
         // check local depths
@@ -280,7 +280,8 @@ where
             let bucket_ld = directory.get_local_depth(b_index).unwrap();
             let split_image_ld = directory.get_local_depth(split_image_index).unwrap();
 
-            if bucket_ld != split_image_ld { // merge only possible when same local depths
+            if bucket_ld != split_image_ld {
+                // merge only possible when same local depths
                 break;
             }
 
@@ -292,21 +293,28 @@ where
                 .set_split_images_pointers_to_reference(split_image_index)
                 .unwrap();
 
-
             // check if merge result is empty
             let split_image_pid = directory.get_bucket_page_id(split_image_index).unwrap();
             let split_image_page = self.bpm.get_read_page(split_image_pid);
-            bucket_is_empty = HashTableBucketPage::<K, V>::deserialize(split_image_page.read()).is_empty();
+            bucket_is_empty =
+                HashTableBucketPage::<K, V>::deserialize(split_image_page.read()).is_empty();
             drop(split_image_page);
 
             split_image_index = directory.get_split_image_index(split_image_index).unwrap();
         }
 
-        // try shrink if possible
-        todo!()
+        // shrink while possible
+        while directory.can_shrink() { // todo do in while
+            if directory.decrement_global_depth().is_err() {
+                // prevent infinite loop if decrementing when global depth 0
+                break;
+            }
+        }
 
-        // todo write to dorectory page
-        // todo drop directory page
+        d_page.write(directory.serialize());
+        drop(d_page);
+
+        removed_count
     }
 
     /// Returns 32-bit hashed value of `key`.
