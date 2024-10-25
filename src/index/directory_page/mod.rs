@@ -112,6 +112,9 @@ impl HashTableDirectoryPage {
     }
 
     /// Returns the index of the split image of the bucket at index `bucket_index`. Will return `None` if the index is greater than the current size.
+    /// 
+    /// # Panics
+    /// Will panic when the local depth of `bucket_index` is `0`.
     ///
     /// # Split Image
     /// The split image represents the bucket which would have resulted as a split of the current bucket. This means that the split image of a bucket is a

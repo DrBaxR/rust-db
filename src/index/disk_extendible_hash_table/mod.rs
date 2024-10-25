@@ -259,12 +259,14 @@ where
 
         let b_index = directory.hash_to_bucket_index(hash);
         let b_pid = directory.get_bucket_page_id(b_index).unwrap();
-        let b_page = self.bpm.get_read_page(b_pid);
+        let mut b_page = self.bpm.get_write_page(b_pid);
         let mut bucket = HashTableBucketPage::<K, V>::deserialize(b_page.read());
-        drop(b_page);
 
         // remove entries
         let removed_count = bucket.remove(key);
+        b_page.write(bucket.serialize());
+        drop(b_page);
+
         if !bucket.is_empty() {
             return removed_count;
         }
@@ -272,6 +274,11 @@ where
         // try merging
         let mut d_page = self.bpm.get_write_page(d_pid);
         let mut directory = HashTableDirectoryPage::deserialize(d_page.read());
+
+        if directory.global_depth() == 0 {
+            // merge only relevant when global_depth > 0
+            return removed_count;
+        }
 
         // check local depths
         let mut split_image_index = directory.get_split_image_index(b_index).unwrap();
@@ -300,7 +307,11 @@ where
                 HashTableBucketPage::<K, V>::deserialize(split_image_page.read()).is_empty();
             drop(split_image_page);
 
-            split_image_index = directory.get_split_image_index(split_image_index).unwrap();
+            if directory.get_local_depth(b_index).unwrap() == 0 {
+                // can stop if local depth became 0
+                break;
+            }
+            split_image_index = directory.get_split_image_index(b_index).unwrap();
         }
 
         // shrink while possible

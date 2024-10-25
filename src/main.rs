@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, thread, time::Duration};
 
 use disk::{buffer_pool_manager::BufferPoolManager, disk_manager::PageID};
 use index::disk_extendible_hash_table::DiskExtendibleHashTable;
@@ -9,12 +9,19 @@ mod disk;
 mod index;
 
 fn main() {
+    // TODO: write remove tests
     let bpm = Arc::new(BufferPoolManager::new(String::from("db/test.db"), 100, 2));
     let ht =
-        DiskExtendibleHashTable::<i32, i32>::new(Arc::clone(&bpm), 2, 2, String::from("index"));
+        DiskExtendibleHashTable::<i32, i32>::new(Arc::clone(&bpm), 0, 4, String::from("index"));
 
-    for i in 0..5000 {
+    for i in 1..5000 {
         ht.insert(i, i).unwrap();
+        ht.print();
+    }
+    
+    for i in 1..5000 {
+        ht.remove(i);
+        thread::sleep(Duration::from_millis(1));
         ht.print();
     }
 
