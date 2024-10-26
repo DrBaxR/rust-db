@@ -100,14 +100,13 @@ where
                 empty_dir_pid
             }
         };
-        drop(h_page);
 
         // get ID of bucket where to store entry
-        let d_page = self.bpm.get_read_page(d_pid);
+        let mut d_page = self.bpm.get_write_page(d_pid);
+        drop(h_page);
         let directory = HashTableDirectoryPage::deserialize(d_page.read());
         let b_index = directory.hash_to_bucket_index(hash);
         let b_pid = directory.get_bucket_page_id(b_index).unwrap();
-        drop(d_page); // TODO: to make thread safe will need to hold onto this until sure we don't need to change directory
 
         // insert entry into bucket
         let mut b_page = self.bpm.get_write_page(b_pid);
@@ -116,16 +115,16 @@ where
         if !bucket.is_full() {
             bucket.insert(key, value).unwrap();
             b_page.write(bucket.serialize());
+
+            drop(d_page);
             drop(b_page);
 
             return Ok(());
         }
 
         // bucket is full
-        let mut d_page = self.bpm.get_write_page(d_pid);
         let mut directory = HashTableDirectoryPage::deserialize(d_page.read());
 
-        // TODO: assumes that b_index hasn't changed up until this point (might not be the case if directory was doubled)
         if directory.get_local_depth(b_index).unwrap() as u32 >= directory.global_depth() {
             directory.increment_global_depth()?;
         }
@@ -169,7 +168,6 @@ where
         let insert_bucket_pid = directory.get_bucket_page_id(b_index).unwrap();
 
         d_page.write(directory.serialize()); // directory no longer needed
-        drop(d_page);
 
         assert!(insert_bucket_pid == b_pid || insert_bucket_pid == split_image_bucket_pid);
         if insert_bucket_pid == b_pid {
@@ -185,6 +183,7 @@ where
         let mut split_image_bucket_page = self.bpm.get_write_page(split_image_bucket_pid);
         split_image_bucket_page.write(split_image_bucket.serialize());
         drop(split_image_bucket_page);
+        drop(d_page); // only safe to release latch on directory after split bucket data is done writing
 
         Ok(())
     }
