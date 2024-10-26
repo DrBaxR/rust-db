@@ -311,7 +311,8 @@ where
         }
 
         // shrink while possible
-        while directory.can_shrink() { // todo do in while
+        while directory.can_shrink() {
+            // todo do in while
             if directory.decrement_global_depth().is_err() {
                 // prevent infinite loop if decrementing when global depth 0
                 break;

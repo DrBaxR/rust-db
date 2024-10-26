@@ -1,4 +1,4 @@
-use std::{fs::remove_file, sync::Arc, thread, time::Instant};
+use std::{sync::Arc, thread};
 
 use disk::buffer_pool_manager::BufferPoolManager;
 use index::disk_extendible_hash_table::DiskExtendibleHashTable;
@@ -13,22 +13,36 @@ fn main() {
     let ht =
         DiskExtendibleHashTable::<i32, i32>::new(Arc::clone(&bpm), 0, 4, String::from("index"));
     let ht = Arc::new(ht);
-    
+
     // insert initial elements
     for i in 0..3000 {
         ht.insert(i, i).unwrap();
     }
 
-    ht.print();
-
-    // remove all elements
     let mut handles = vec![];
-    for i in 0..8 {
+    // insert more elements
+    for i in 0..4 {
         let ht = Arc::clone(&ht);
 
         let handle = thread::spawn(move || {
-            let start = i * 500;
+            let start = 3000 + i * 500;
             let end = start + 500;
+
+            for i in start..end {
+                ht.insert(i, i).unwrap();
+            }
+        });
+
+        handles.push(handle);
+    }
+
+    // remove all elements
+    for i in 0..4 {
+        let ht = Arc::clone(&ht);
+
+        let handle = thread::spawn(move || {
+            let start = i * 750;
+            let end = start + 750;
 
             for i in start..end {
                 ht.remove(i);
@@ -43,4 +57,12 @@ fn main() {
     }
 
     ht.print();
+
+    for i in 0..3000 {
+        assert_eq!(ht.lookup(i), vec![]);
+    }
+
+    for i in 3000..5000 {
+        assert_eq!(ht.lookup(i), vec![i]);
+    }
 }
