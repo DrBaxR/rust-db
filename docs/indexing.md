@@ -41,8 +41,3 @@ The interface that the extendible hash index consists of these methods:
 - `insert(key, value)`: Inserts `key`-`value` into the index.
 - `remove(key)`: Removes all entries from that index that have `key`.
 - `lookup(key)`: Look up all values associated to `key`.
-
-
-## Concurrency Control
-
-TODO
