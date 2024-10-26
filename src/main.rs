@@ -15,7 +15,7 @@ fn main() {
     let ht = Arc::new(ht);
     
     // insert initial elements
-    for i in 0..4000 {
+    for i in 0..3000 {
         ht.insert(i, i).unwrap();
     }
 
