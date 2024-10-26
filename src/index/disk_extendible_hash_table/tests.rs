@@ -349,3 +349,49 @@ fn insert_multi_threaded_semantics() {
     // cleanup
     remove_file(db_path).unwrap();
 }
+
+#[test]
+fn remove_multi_threaded() {
+    // init
+    let db_path = temp_dir().join("deht_remove_multi_threaded.db");
+    let db_file_path = db_path.to_str().unwrap().to_string();
+    let bpm = Arc::new(BufferPoolManager::new(String::from(db_file_path), 100, 2));
+    let ht =
+        DiskExtendibleHashTable::<i32, i32>::new(Arc::clone(&bpm), 0, 4, String::from("index"));
+    let ht = Arc::new(ht);
+    
+    // insert initial elements
+    for i in 0..4000 {
+        ht.insert(i, i).unwrap();
+    }
+
+    // remove all elements
+    let mut handles = vec![];
+    for i in 0..8 {
+        let ht = Arc::clone(&ht);
+
+        let handle = thread::spawn(move || {
+            let start = i * 500;
+            let end = start + 500;
+
+            for i in start..end {
+                ht.remove(i);
+            }
+        });
+
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    let directory = &get_directories(&ht)[0];
+    assert_eq!(directory.size(), 1);
+    for i in 0..4000 {
+        assert_eq!(ht.lookup(i), vec![]);
+    }
+
+    // cleanup
+    remove_file(db_path).unwrap();
+}

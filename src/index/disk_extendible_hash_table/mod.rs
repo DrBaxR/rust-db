@@ -252,9 +252,8 @@ where
             Some(pid) => pid,
             None => return 0,
         };
-        let d_page = self.bpm.get_read_page(d_pid);
+        let mut d_page = self.bpm.get_write_page(d_pid);
         let directory = HashTableDirectoryPage::deserialize(d_page.read());
-        drop(d_page);
 
         let b_index = directory.hash_to_bucket_index(hash);
         let b_pid = directory.get_bucket_page_id(b_index).unwrap();
@@ -271,7 +270,6 @@ where
         }
 
         // try merging
-        let mut d_page = self.bpm.get_write_page(d_pid);
         let mut directory = HashTableDirectoryPage::deserialize(d_page.read());
 
         if directory.global_depth() == 0 {
@@ -280,7 +278,7 @@ where
         }
 
         // check local depths
-        let mut split_image_index = directory.get_split_image_index(b_index).unwrap();
+        let mut split_image_index = directory.get_split_image_index(b_index).unwrap(); // todo: unwrap none
         let mut bucket_is_empty = bucket.is_empty(); // is the current merge result bucket empty?
         while bucket_is_empty {
             let bucket_ld = directory.get_local_depth(b_index).unwrap();

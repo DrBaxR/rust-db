@@ -148,7 +148,11 @@ impl BufferPoolManager {
     }
 
     /// Brings to memory page that is **NOT** in memory. Returns index in the `frames` array of the page. Will return `None` if the buffer is full and can't evict anything.
-    fn bring_page_in_memory(&self, page_id: PageID, mut page_table: MutexGuard<'_, PageTable>) -> Option<usize> {
+    fn bring_page_in_memory(
+        &self,
+        page_id: PageID,
+        mut page_table: MutexGuard<'_, PageTable>,
+    ) -> Option<usize> {
         let response = self
             .disk_scheduler
             .schedule(DiskRequest {
