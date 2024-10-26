@@ -230,7 +230,6 @@ where
         let b_pid = directory.get_bucket_page_id(b_index).unwrap();
         let b_page = self.bpm.get_read_page(b_pid);
         let bucket = HashTableBucketPage::<K, V>::deserialize(b_page.read());
-        drop(b_page);
 
         bucket
             .lookup(key)
