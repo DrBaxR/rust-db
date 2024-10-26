@@ -9,7 +9,6 @@ mod disk;
 mod index;
 
 fn main() {
-    // TODO: write remove tests
     let bpm = Arc::new(BufferPoolManager::new(String::from("db/test.db"), 100, 2));
     let ht =
         DiskExtendibleHashTable::<i32, i32>::new(Arc::clone(&bpm), 0, 4, String::from("index"));
