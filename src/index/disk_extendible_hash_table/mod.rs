@@ -8,7 +8,7 @@ use crate::{
         buffer_pool_manager::{BufferPoolManager, DiskRead, DiskWrite},
         disk_manager::PageID,
     },
-    index::directory_page::{self, HashTableDirectoryPage},
+    index::directory_page::HashTableDirectoryPage,
 };
 
 use super::{
@@ -277,7 +277,7 @@ where
         }
 
         // check local depths
-        let mut split_image_index = directory.get_split_image_index(b_index).unwrap(); // todo: unwrap none
+        let mut split_image_index = directory.get_split_image_index(b_index).unwrap();
         let mut bucket_is_empty = bucket.is_empty(); // is the current merge result bucket empty?
         while bucket_is_empty {
             let bucket_ld = directory.get_local_depth(b_index).unwrap();
@@ -289,7 +289,7 @@ where
             }
 
             // merge buckets
-            self.bpm.delete_page(b_pid); // TODO: might need to hold onto the bucket lock up to this point for thread safety
+            self.bpm.delete_page(b_pid);
 
             directory.decrement_local_depth(split_image_index).unwrap();
             directory
@@ -312,7 +312,6 @@ where
 
         // shrink while possible
         while directory.can_shrink() {
-            // todo do in while
             if directory.decrement_global_depth().is_err() {
                 // prevent infinite loop if decrementing when global depth 0
                 break;
