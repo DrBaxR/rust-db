@@ -14,4 +14,4 @@ This note is meant to document the progress that has been made in developing thi
 
 ## System Overview
 
-TODO: A diagram with the overview of the whole system.
+![Architecture Overview](images/architecture.png)
