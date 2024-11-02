@@ -7,7 +7,7 @@ This note is meant to document the progress that has been made in developing thi
 - [x] Extendible Hash Table (hash table implementation that can be used for indexes)
 - [ ] Table (representation of a table)
 - [ ] User Client (similar to `psql` - takes user commands and feeds to database engine)
-- [ ] Parser (takes in a SQL string and spits out an AST)
+- [ ] (WIP) Parser (takes in a SQL string and spits out an AST)
 - [ ] Planner (takes the binder's output and creates a plan tree)
 - [ ] Optimizer (takes a plan tree and spits out an optimized plan tree)
 - [ ] Execution Engine (takes in a plan tree and executes it)

@@ -7,6 +7,7 @@ mod b_tree;
 mod config;
 mod disk;
 mod index;
+mod parser;
 
 fn main() {
     let bpm = Arc::new(BufferPoolManager::new(String::from("db/test.db"), 100, 2));
