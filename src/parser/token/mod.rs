@@ -5,7 +5,8 @@ use keyword::Keyword;
 use operator::Operator;
 use value::Value;
 
-// TODO: character by character FSM??? (start with operator, i think it's the most indicative)
+mod char_matcher;
+
 mod data_type;
 mod delimiter;
 mod function;
