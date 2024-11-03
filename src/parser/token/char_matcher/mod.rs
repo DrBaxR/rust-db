@@ -77,7 +77,7 @@ impl<'a, V> ChrSqMatcherFSM<'a, V> {
     ///
     /// # Errors
     /// Will return `Err` if there is no state to transition to by applying `c`.
-    fn transition(&mut self, c: char) -> Result<(), ()> {
+    pub fn transition(&mut self, c: char) -> Result<(), ()> {
         self.state = self.state.get_child(c).ok_or(())?;
 
         Ok(())
@@ -85,7 +85,7 @@ impl<'a, V> ChrSqMatcherFSM<'a, V> {
 
     /// Returns the value of the current state the machine is in. Will return `None` if the state has no value
     /// associated to it.
-    fn current_value(&self) -> Option<&'a V> {
+    pub fn current_value(&self) -> Option<&'a V> {
         self.state.get_value()
     }
 }
