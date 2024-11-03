@@ -1,46 +1,56 @@
-use super::CharMatcher;
+use super::ChrSqMatcher;
 
 #[test]
 fn empty () {
-    let matcher = CharMatcher::new();
+    let matcher = ChrSqMatcher::<usize>::new();
 
-    assert!(!matcher.is_match("abc"));
-    assert!(!matcher.is_match("test123 wow"));
-    assert!(!matcher.is_match("this will never match you idiot"));
+    assert!(matcher.get_match("abc").is_none());
+    assert!(matcher.get_match("test123 wow").is_none());
+    assert!(matcher.get_match("this will never match you idiot").is_none());
 }
 
 #[test]
 fn full_distinct_matches() {
-    let matcher = CharMatcher::with(&vec!["john", "doe", "123"]);
+    let matcher = ChrSqMatcher::with(vec![("john", 1), ("doe", 2), ("123", 3)]);
 
-    assert!(matcher.is_match("john"));
-    assert!(matcher.is_match("doe"));
-    assert!(matcher.is_match("123"));
+    assert!(matcher.get_match("john").is_some());
+    assert!(matcher.get_match("doe").is_some());
+    assert!(matcher.get_match("123").is_some());
 
-    assert!(!matcher.is_match("andi"));
-    assert!(!matcher.is_match("sql"));
+    assert!(matcher.get_match("andi").is_none());
+    assert!(matcher.get_match("sql").is_none());
 }
 
 #[test]
 fn add_post_create() {
-    let mut matcher = CharMatcher::new();
-    assert!(!matcher.is_match("test"));
+    let mut matcher = ChrSqMatcher::new();
+    assert!(matcher.get_match("test").is_none());
 
-    matcher.add_match("test");
-    assert!(matcher.is_match("test"));
+    matcher.add_match("test", 1);
+    assert!(matcher.get_match("test").is_some());
 }
 
 #[test]
 fn partial_matching() {
-    let mut matcher = CharMatcher::with(&vec!["in", "is", "instant", "instance"]);
+    let mut matcher = ChrSqMatcher::with(vec![("in", 1), ("is", 2), ("instant", 3), ("instance", 4)]);
 
-    assert!(matcher.is_match("in"));
-    assert!(matcher.is_match("instant"));
+    assert!(matcher.get_match("in").is_some());
+    assert!(matcher.get_match("instant").is_some());
 
-    assert!(!matcher.is_match("inst"));
-    assert!(!matcher.is_match("insta"));
-    assert!(!matcher.is_match("i"));
+    assert!(matcher.get_match("inst").is_none());
+    assert!(matcher.get_match("insta").is_none());
+    assert!(matcher.get_match("i").is_none());
 
-    matcher.add_match("i");
-    assert!(matcher.is_match("i"));
+    matcher.add_match("i", 3);
+    assert!(matcher.get_match("i").is_some());
+}
+
+#[test]
+fn matching_value() {
+    let matcher = ChrSqMatcher::with(vec![("one", 1), ("two", 2), ("three", 3)]);
+    
+    assert_eq!(matcher.get_match("one"), Some(&1));
+    assert_eq!(matcher.get_match("two"), Some(&2));
+    assert_eq!(matcher.get_match("three"), Some(&3));
+    assert_eq!(matcher.get_match("four"), None);
 }
