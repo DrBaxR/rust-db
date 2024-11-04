@@ -90,7 +90,7 @@ impl KeywordTokenizer {
         }
     }
 
-    /// Returns the longest matching operator in `raw` and the size of the characters that have been matched.
+    /// Returns the longest matching keyword in `raw` and the size of the characters that have been matched.
     fn largest_match(&self, raw: &str) -> Option<(Keyword, usize)> {
         let mut fsm = self.matcher.as_fsm();
 

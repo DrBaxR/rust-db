@@ -10,10 +10,10 @@ mod char_matcher;
 mod data_type;
 mod delimiter;
 mod function;
+mod identifier;
 mod keyword;
 mod operator;
 mod value;
-mod identifier;
 
 /// A token that represents a single unit of a SQL statement.
 enum Token {
