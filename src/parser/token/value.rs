@@ -6,3 +6,7 @@ pub enum Value {
     Boolean(bool),
     Null,
 }
+
+struct ValueTokenizer {
+    // TODO
+}

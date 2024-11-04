@@ -13,6 +13,7 @@ mod function;
 mod keyword;
 mod operator;
 mod value;
+mod identifier;
 
 /// A token that represents a single unit of a SQL statement.
 enum Token {
