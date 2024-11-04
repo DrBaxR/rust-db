@@ -4,7 +4,7 @@ use super::char_matcher::ChrSqMatcher;
 mod tests;
 
 /// An operator used in a SQL statement.
-#[derive(Clone, PartialEq ,Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Operator {
     Plus,     // +
     Minus,    // -
