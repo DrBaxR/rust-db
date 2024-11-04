@@ -47,7 +47,6 @@ struct KeywordTokenizer {
     matcher: ChrSqMatcher<Keyword>,
 }
 
-// TODO: tests
 impl KeywordTokenizer {
     fn new() -> Self {
         Self {
@@ -97,7 +96,7 @@ impl KeywordTokenizer {
 
         let mut largest = None;
         for (i, c) in raw.chars().enumerate() {
-            if fsm.transition(c).is_err() {
+            if fsm.transition(c.to_ascii_uppercase()).is_err() {
                 return largest;
             }
 

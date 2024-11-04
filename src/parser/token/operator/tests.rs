@@ -38,6 +38,7 @@ fn word() {
     assert_eq!(tokenizer.largest_match("OR"), Some((Operator::Or, 2)));
     assert_eq!(tokenizer.largest_match("NOT"), Some((Operator::Not, 3)));
     assert_eq!(tokenizer.largest_match("LIKE"), Some((Operator::Like, 4)));
+    assert_eq!(tokenizer.largest_match("lIKe"), Some((Operator::Like, 4)));
     assert_eq!(tokenizer.largest_match("IN"), Some((Operator::In, 2)));
     assert_eq!(tokenizer.largest_match("IS"), Some((Operator::Is, 2)));
 
@@ -48,7 +49,7 @@ fn word() {
 fn no_match() {
     let tokenizer = OperatorTokenizer::new();
 
-    assert_eq!(tokenizer.largest_match("ANd"), None);
+    assert_eq!(tokenizer.largest_match("nANd"), None);
     assert_eq!(tokenizer.largest_match("test"), None);
     assert_eq!(tokenizer.largest_match("&&"), None);
 }
