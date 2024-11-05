@@ -4,7 +4,7 @@ use super::char_matcher::ChrSqMatcher;
 mod tests;
 
 /// A value literal used in a SQL statement.
-#[derive(PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Value {
     Integer(i64),
     Float(f64),
@@ -13,7 +13,7 @@ pub enum Value {
     Null,
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum ValueFsmState {
     Start,
     Integer,
@@ -121,20 +121,22 @@ impl ValueTokenizer {
         for c in raw.chars() {
             if let ValueFsmState::Keyword(_) = state {
                 let is_err = keyword_fsm.transition(c.to_ascii_uppercase()).is_err();
-                state = ValueFsmState::Keyword(keyword_fsm.current_value().cloned());
+                let new_state = ValueFsmState::Keyword(keyword_fsm.current_value().cloned());
 
                 if is_err {
                     break;
                 }
 
+                state = new_state;
                 cursor += 1;
             } else {
-                state = state.transition(c);
+                let new_state = state.transition(c);
 
-                if state == ValueFsmState::Error {
+                if new_state == ValueFsmState::Error {
                     break;
                 }
 
+                state = new_state;
                 cursor += 1;
             }
         }
