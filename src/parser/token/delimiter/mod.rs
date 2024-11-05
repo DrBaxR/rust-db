@@ -1,4 +1,4 @@
-use super::char_matcher::ChrSqMatcher;
+use super::{char_matcher::ChrSqMatcher, Token};
 
 mod tests;
 
@@ -14,12 +14,12 @@ pub enum Delimiter {
     CloseBracket, // ]
 }
 
-struct DelimiterTokenizer {
+pub struct DelimiterTokenizer {
     matcher: ChrSqMatcher<Delimiter>,
 }
 
 impl DelimiterTokenizer {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             matcher: ChrSqMatcher::with(vec![
                 (",", Delimiter::Comma),
@@ -29,11 +29,11 @@ impl DelimiterTokenizer {
                 (")", Delimiter::CloseParen),
                 ("[", Delimiter::OpenBracket),
                 ("]", Delimiter::CloseBracket),
-            ])
+            ]),
         }
     }
 
-    fn largest_match(&self, raw: &str) -> Option<(Delimiter, usize)> {
+    pub fn largest_match(&self, raw: &str) -> Option<(Token, usize)> {
         let mut fsm = self.matcher.as_fsm();
 
         let mut largest = None;
@@ -43,7 +43,7 @@ impl DelimiterTokenizer {
             }
 
             if let Some(value) = fsm.current_value() {
-                largest = Some((value.clone(), i + 1))
+                largest = Some((Token::Delimiter(value.clone()), i + 1))
             }
         }
 

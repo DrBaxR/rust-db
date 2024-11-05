@@ -1,4 +1,4 @@
-use super::char_matcher::ChrSqMatcher;
+use super::{char_matcher::ChrSqMatcher, Token};
 
 #[cfg(test)]
 mod tests;
@@ -94,7 +94,7 @@ impl ValueFsmState {
     }
 }
 
-struct ValueTokenizer {
+pub struct ValueTokenizer {
     matcher: ChrSqMatcher<Value>,
 }
 
@@ -112,7 +112,7 @@ impl ValueTokenizer {
 
     /// Returns the longest matching value in `raw` and the size of the characters that have been matched. Will
     /// return `None` if there is no value matching the start of the string.
-    pub fn largest_match(&self, raw: &str) -> Option<(Value, usize)> {
+    pub fn largest_match(&self, raw: &str) -> Option<(Token, usize)> {
         let mut keyword_fsm = self.matcher.as_fsm();
         let mut state = ValueFsmState::Start;
         let mut cursor = 0;
@@ -147,30 +147,30 @@ impl ValueTokenizer {
         match state {
             ValueFsmState::Start => None,
             ValueFsmState::Integer => Some((
-                Value::Integer(
+                Token::Value(Value::Integer(
                     raw_value
                         .parse()
                         .expect("Integer value expected in Integer state"),
-                ),
+                )),
                 cursor,
             )),
             ValueFsmState::FractionalStart => None,
             ValueFsmState::Fractional => Some((
-                Value::Float(
+                Token::Value(Value::Float(
                     raw_value
                         .parse()
                         .expect("Float value expected in Float state"),
-                ),
+                )),
                 cursor,
             )),
             ValueFsmState::String => None,
             ValueFsmState::StringEnd => Some((
-                Value::String(raw_value[1..raw_value.len() - 1].to_string()),
+                Token::Value(Value::String(raw_value[1..raw_value.len() - 1].to_string())),
                 cursor,
             )),
             ValueFsmState::Keyword(value) => {
                 if let Some(value) = value {
-                    Some((value, cursor))
+                    Some((Token::Value(value), cursor))
                 } else {
                     None
                 }

@@ -1,4 +1,4 @@
-use crate::parser::token::function::Function;
+use crate::parser::token::{function::Function, Token};
 
 use super::FunctionTokenizer;
 
@@ -6,9 +6,9 @@ use super::FunctionTokenizer;
 fn matches() {
     let tokenizer = FunctionTokenizer::new();
 
-    assert_eq!(tokenizer.largest_match("count"), Some((Function::Count, 5)));
-    assert_eq!(tokenizer.largest_match("AVG"), Some((Function::Avg, 3)));
-    assert_eq!(tokenizer.largest_match("Round"), Some((Function::Round, 5)));
+    assert_eq!(tokenizer.largest_match("count"), Some((Token::Function(Function::Count), 5)));
+    assert_eq!(tokenizer.largest_match("AVG"), Some((Token::Function(Function::Avg), 3)));
+    assert_eq!(tokenizer.largest_match("Round"), Some((Token::Function(Function::Round), 5)));
 }
 
 #[test]

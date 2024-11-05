@@ -1,3 +1,5 @@
+use super::Token;
+
 #[cfg(test)]
 mod tests;
 
@@ -47,7 +49,7 @@ impl IdentifierFsmState {
 /// Returns the largest matching identifier from the start of `raw` and the length of the match. Will return
 /// `None` if there is no matching identifier at the start of the string (equivalent to returning a 0-length 
 /// match).
-fn largest_match(raw: &str) -> Option<(String, usize)> {
+pub fn largest_match(raw: &str) -> Option<(Token, usize)> {
     let mut state = IdentifierFsmState::Start;
     let mut cursor = 0;
 
@@ -64,5 +66,5 @@ fn largest_match(raw: &str) -> Option<(String, usize)> {
         return None;
     }
 
-    Some((raw[0..cursor].to_string(), cursor))
+    Some((Token::Identifier(raw[0..cursor].to_string()), cursor))
 }

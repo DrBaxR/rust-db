@@ -1,4 +1,4 @@
-use crate::parser::token::delimiter::Delimiter;
+use crate::parser::token::{delimiter::Delimiter, Token};
 
 use super::DelimiterTokenizer;
 
@@ -6,11 +6,26 @@ use super::DelimiterTokenizer;
 fn matches() {
     let tokenizer = DelimiterTokenizer::new();
 
-    assert_eq!(tokenizer.largest_match(","), Some((Delimiter::Comma, 1)));
-    assert_eq!(tokenizer.largest_match("."), Some((Delimiter::Dot, 1)));
-    assert_eq!(tokenizer.largest_match(";"), Some((Delimiter::Semicolon, 1)));
-    assert_eq!(tokenizer.largest_match("("), Some((Delimiter::OpenParen, 1)));
-    assert_eq!(tokenizer.largest_match("]"), Some((Delimiter::CloseBracket, 1)));
+    assert_eq!(
+        tokenizer.largest_match(","),
+        Some((Token::Delimiter(Delimiter::Comma), 1))
+    );
+    assert_eq!(
+        tokenizer.largest_match("."),
+        Some((Token::Delimiter(Delimiter::Dot), 1))
+    );
+    assert_eq!(
+        tokenizer.largest_match(";"),
+        Some((Token::Delimiter(Delimiter::Semicolon), 1))
+    );
+    assert_eq!(
+        tokenizer.largest_match("("),
+        Some((Token::Delimiter(Delimiter::OpenParen), 1))
+    );
+    assert_eq!(
+        tokenizer.largest_match("]"),
+        Some((Token::Delimiter(Delimiter::CloseBracket), 1))
+    );
 }
 
 #[test]

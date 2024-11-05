@@ -1,4 +1,4 @@
-use super::char_matcher::ChrSqMatcher;
+use super::{char_matcher::ChrSqMatcher, Token};
 
 mod tests;
 
@@ -43,12 +43,12 @@ pub enum Keyword {
     Where,
 }
 
-struct KeywordTokenizer {
+pub struct KeywordTokenizer {
     matcher: ChrSqMatcher<Keyword>,
 }
 
 impl KeywordTokenizer {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             matcher: ChrSqMatcher::with(vec![
                 ("ANY", Keyword::Any),
@@ -91,7 +91,7 @@ impl KeywordTokenizer {
     }
 
     /// Returns the longest matching keyword in `raw` and the size of the characters that have been matched.
-    fn largest_match(&self, raw: &str) -> Option<(Keyword, usize)> {
+    pub fn largest_match(&self, raw: &str) -> Option<(Token, usize)> {
         let mut fsm = self.matcher.as_fsm();
 
         let mut largest = None;
@@ -101,7 +101,7 @@ impl KeywordTokenizer {
             }
 
             if let Some(value) = fsm.current_value() {
-                largest = Some((value.clone(), i + 1))
+                largest = Some((Token::Keyword(value.clone()), i + 1))
             }
         }
 

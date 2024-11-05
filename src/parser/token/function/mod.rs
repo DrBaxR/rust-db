@@ -1,4 +1,4 @@
-use super::char_matcher::ChrSqMatcher;
+use super::{char_matcher::ChrSqMatcher, Token};
 
 #[cfg(test)]
 mod tests;
@@ -19,12 +19,12 @@ pub enum Function {
     Coalesce,
 }
 
-struct FunctionTokenizer {
+pub struct FunctionTokenizer {
     matcher: ChrSqMatcher<Function>,
 }
 
 impl FunctionTokenizer {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             matcher: ChrSqMatcher::with(vec![
                 ("COUNT", Function::Count),
@@ -42,7 +42,7 @@ impl FunctionTokenizer {
         }
     }
 
-    fn largest_match(&self, raw: &str) -> Option<(Function, usize)> {
+    pub fn largest_match(&self, raw: &str) -> Option<(Token, usize)> {
         let mut fsm = self.matcher.as_fsm();
 
         let mut largest = None;
@@ -52,7 +52,7 @@ impl FunctionTokenizer {
             }
 
             if let Some(value) = fsm.current_value() {
-                largest = Some((value.clone(), i + 1))
+                largest = Some((Token::Function(value.clone()), i + 1))
             }
         }
 

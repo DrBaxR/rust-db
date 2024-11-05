@@ -1,4 +1,4 @@
-use super::char_matcher::ChrSqMatcher;
+use super::{char_matcher::ChrSqMatcher, Token};
 
 #[cfg(test)]
 mod tests;
@@ -27,12 +27,12 @@ pub enum Operator {
     Is,   // IS
 }
 
-struct OperatorTokenizer {
+pub struct OperatorTokenizer {
     matcher: ChrSqMatcher<Operator>,
 }
 
 impl OperatorTokenizer {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             matcher: ChrSqMatcher::with(vec![
                 ("+", Operator::Plus),
@@ -57,9 +57,8 @@ impl OperatorTokenizer {
         }
     }
 
-    // TODO: implement largest match for all tokenizers and then master tokenizer will cal all them and pick largest
     /// Returns the longest matching operator in `raw` and the size of the characters that have been matched.
-    fn largest_match(&self, raw: &str) -> Option<(Operator, usize)> {
+    pub fn largest_match(&self, raw: &str) -> Option<(Token, usize)> {
         let mut fsm = self.matcher.as_fsm();
 
         let mut largest = None;
@@ -69,7 +68,7 @@ impl OperatorTokenizer {
             }
 
             if let Some(value) = fsm.current_value() {
-                largest = Some((value.clone(), i + 1))
+                largest = Some((Token::Operator(value.clone()), i + 1))
             }
         }
 

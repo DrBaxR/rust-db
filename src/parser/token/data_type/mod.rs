@@ -1,4 +1,4 @@
-use super::char_matcher::ChrSqMatcher;
+use super::{char_matcher::ChrSqMatcher, Token};
 
 #[cfg(test)]
 mod tests;
@@ -21,12 +21,12 @@ pub enum DataType {
     Binary,
 }
 
-struct DataTypeTokenizer {
+pub struct DataTypeTokenizer {
     matcher: ChrSqMatcher<DataType>,
 }
 
 impl DataTypeTokenizer {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             matcher: ChrSqMatcher::with(vec![
                 ("INTEGER", DataType::Integer),
@@ -42,11 +42,11 @@ impl DataTypeTokenizer {
                 ("TIME", DataType::Time),
                 ("TIMESTAMP", DataType::Timestamp),
                 ("BINARY", DataType::Binary),
-            ])
+            ]),
         }
     }
 
-    fn largest_match(&self, raw: &str) -> Option<(DataType, usize)> {
+    pub fn largest_match(&self, raw: &str) -> Option<(Token, usize)> {
         let mut fsm = self.matcher.as_fsm();
 
         let mut largest = None;
@@ -56,7 +56,7 @@ impl DataTypeTokenizer {
             }
 
             if let Some(value) = fsm.current_value() {
-                largest = Some((value.clone(), i + 1))
+                largest = Some((Token::DataType(value.clone()), i + 1))
             }
         }
 
