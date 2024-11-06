@@ -21,4 +21,18 @@ fn simple_statement() {
     );
 }
 
+fn simple_statement_whitespace() {
+    let t = Tokenizer::new();
+    let expected = vec![
+        Token::Keyword(Keyword::Select),
+        Token::Operator(Operator::Multiply),
+        Token::Keyword(Keyword::From),
+        Token::Identifier(String::from("my_table")),
+        Token::Delimiter(Delimiter::Semicolon),
+    ];
+
+    assert_eq!(t.tokenize("select * from                my_table;").unwrap(), expected);
+    assert_eq!(t.tokenize("select \t*   from my_table\n;").unwrap(), expected);
+}
+
 // TODO: more tests
