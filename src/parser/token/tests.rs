@@ -21,6 +21,7 @@ fn simple_statement() {
     );
 }
 
+#[test]
 fn simple_statement_whitespace() {
     let t = Tokenizer::new();
     let expected = vec![
@@ -35,4 +36,19 @@ fn simple_statement_whitespace() {
     assert_eq!(t.tokenize("select \t*   from my_table\n;").unwrap(), expected);
 }
 
+#[test]
+fn simple_statement_case_insensitive() {
+    let t = Tokenizer::new();
+    let expected = vec![
+        Token::Keyword(Keyword::Select),
+        Token::Operator(Operator::Multiply),
+        Token::Keyword(Keyword::From),
+        Token::Identifier(String::from("my_table")),
+        Token::Delimiter(Delimiter::Semicolon),
+    ];
+
+    assert_eq!(t.tokenize("select * from my_table;").unwrap(), expected);
+    assert_eq!(t.tokenize("SELECT * FROM my_table;").unwrap(), expected);
+    assert_eq!(t.tokenize("SeLEcT * fROm my_table;").unwrap(), expected);
+}
 // TODO: more tests
