@@ -27,3 +27,4 @@ Here are a bunch of resources that I used in the process of developing this proj
 3. Tony Saro's [Writing My Own Database From Scratch](https://www.youtube.com/watch?v=5Pc18ge9ohI&list=WL&index=16) Video (This is the video that made me start this project)
 4. Mara Bos's [Rust Atomics and Locks](https://marabos.nl/atomics/) Book
 5. The [PostgreSQL Documentation](https://www.postgresql.org/docs/17/index.html)
+6. The PostgreSQL source code (I generally reference it [here](https://doxygen.postgresql.org/dir_3f615ade772d23cefe5e20dcb18424a2.html))
