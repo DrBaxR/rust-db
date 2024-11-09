@@ -40,14 +40,29 @@ table_name = name ;
 table_alias = name ;
 
 expression = and_condition , { "OR" , and_condition } ;
-(* TODO: Everything under this *)
 
 and_condition = condition , { "AND" , condition }
+
+condition = ( operand , [ 
+        ( compare , operand ) 
+        | ( [ "NOT" ] , "IN" , "(" , constant_operand , { "," , constant_operand } , ")" ) 
+        | ( [ "NOT" ] , "LIKE" , string )
+        | ( [ "NOT" ] , "BETWEEN" , operand , "AND" , operand )
+        | ( "IS" , [ "NOT" ] , "NULL" )
+    ] )
+    | "NOT" , expression
+    | "(" , expression , ")" ;
+
+(* equivalent to compare Operator::* tokens *)
+compare = "<>" | "<=" | ">=" | "=" | "<" | ">" | "!=" ;
+
+constant_operand = operand ;
 
 order = expression , [ "ASC" | "DESC" ] ;
 
 (* equivalent to a Value::Integer token *)
 number = "0-9" , [ number ] ;
+(* TODO: Everything under this *)
 
 (* ------------------------------------------ *)
 (* ----------------- CREATE ----------------- *)
