@@ -1,0 +1,67 @@
+(* ------------------------------------------ *)
+(* ----------------- SELECT ----------------- *)
+(* ------------------------------------------ *)
+select_statement = "SELECT" , [ "DISTINCT" | "ALL" ] , select_expression , { "," , select_expression } ,
+    "FROM" , table_expression ,
+    "WHERE" , expression ,
+    "GROUP BY" , expression , { "," , expression } , "HAVING" , expression ,
+    "ORDER BY" , order , { "," , expression } , "LIMIT" , number ;
+
+select_expression = "*" | term , [ "AS" , column_alias ] ;
+
+term = value | function | "(" + operand + ")" | [ table_alias , "." ] , column_ref | row_value_constructor ;
+
+(* equivalent to Value::* tokens *)
+value = string | numeric | boolean | null;
+
+function = function_count | function_sum | function_avg | function_min | function_max | function_upper 
+    | function_lower | function_length | function_round | function_now | function_coalesce ;
+(* TODO: all the functions *)
+
+operand = factor , { "+" | "-" , factor } ;
+
+factor = term , { "*" | "/" , term } ;
+
+table_alias = name ;
+
+(* equivalent to token of type Identifier *)
+name = "A-Z" | "_" , { "A-Z" | "_" | "0-9" } ;
+
+column_ref = name ;
+
+row_value_constructor = "(" , term , "," , term , { "," , term } , ")";
+
+column_alias = name ;
+
+table_expression = table_name , [ "AS" , table_alias ] ;
+
+table_name = name ;
+
+table_alias = name ;
+
+expression = and_condition , { "OR" , and_condition } ;
+(* TODO: Everything under this *)
+
+and_condition = condition , { "AND" , condition }
+
+order = expression , [ "ASC" | "DESC" ] ;
+
+(* equivalent to a Value::Integer token *)
+number = "0-9" , [ number ] ;
+
+(* ------------------------------------------ *)
+(* ----------------- CREATE ----------------- *)
+(* ------------------------------------------ *)
+create_statement
+
+index_statement
+
+delete_statement
+
+insert_statement
+
+update_statement
+
+explain_statement
+
+set_show_statement
