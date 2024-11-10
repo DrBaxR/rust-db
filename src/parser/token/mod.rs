@@ -10,13 +10,13 @@ mod tests;
 
 mod char_matcher;
 
-mod data_type;
+pub mod data_type;
 mod delimiter;
 mod function;
 mod identifier;
 mod keyword;
 mod operator;
-mod value;
+pub mod value;
 
 /// A token that represents a single unit of a SQL statement.
 #[derive(Debug, PartialEq, Clone)]
@@ -31,7 +31,7 @@ pub enum Token {
 }
 
 /// Takes in a raw string as input and outputs a list of tokens.
-struct Tokenizer {
+pub struct Tokenizer {
     // identifier tokenizer is just a function
     data_type_tokenizer: DataTypeTokenizer,
     delimiter_tokenizer: DelimiterTokenizer,

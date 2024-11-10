@@ -1,11 +1,13 @@
+(* Couldn't find a general SQL spec grammar, modified this one: https://forcedotcom.github.io/phoenix/ *)
+
 (* ------------------------------------------ *)
 (* ----------------- SELECT ----------------- *)
 (* ------------------------------------------ *)
 select_statement = "SELECT" , [ "DISTINCT" | "ALL" ] , select_expression , { "," , select_expression } ,
-    "FROM" , table_expression ,
-    "WHERE" , expression ,
-    "GROUP BY" , expression , { "," , expression } , "HAVING" , expression ,
-    "ORDER BY" , order , { "," , expression } , "LIMIT" , number ;
+    "FROM" , table_expression , [ "WHERE" , expression ] ,
+    [ "GROUP BY" , expression , { "," , expression } ] , [ "HAVING" , expression ] ,
+    [ "ORDER BY" , expression , { "," , expression } , order ] , [ "LIMIT" , number ] ;
+    [ ( "INNER JOIN" | "JOIN" | "LEFT JOIN" | "RIGHT JOIN" | "OUTER JOIN" ) , table_expression , "ON" , expression ]
 
 select_expression = "*" | term , [ "AS" , column_alias ] ;
 
@@ -39,7 +41,7 @@ expression = and_condition , { "OR" , and_condition } ;
 
 and_condition = condition , { "AND" , condition }
 
-condition = ( operand , [ 
+condition = ( operand , [
         ( compare , operand ) 
         | ( [ "NOT" ] , "IN" , "(" , constant_operand , { "," , constant_operand } , ")" ) 
         | ( [ "NOT" ] , "LIKE" , string )
@@ -54,7 +56,7 @@ compare = "<>" | "<=" | ">=" | "=" | "<" | ">" | "!=" ;
 
 constant_operand = operand ;
 
-order = expression , [ "ASC" | "DESC" ] ;
+order = [ "ASC" | "DESC" ] ;
 
 (* equivalent to a Value::Integer token *)
 number = "0-9" , [ number ] ;
@@ -86,7 +88,7 @@ delete_statement = "DELETE" , "FROM" , table_name , [ "WHERE" , expression ] , [
 (* ------------------------------------------ *)
 (* ----------------- INSERT ----------------- *)
 (* ------------------------------------------ *)
-insert_statement = "INSERT INTO" , [ "(" , column_ref , { "," , column_ref } , ")" ] ,
+insert_statement = "INSERT INTO" , table_name , [ "(" , column_ref , { "," , column_ref } , ")" ] ,
     "VALUES" , "(" , constant_term , { "," , constant_term } , ")";
 
 constant_term = term ;

@@ -1,31 +1,19 @@
-// grammar: https://forcedotcom.github.io/phoenix/index.html
-mod token;
+use token::Token;
 
-// TODO: token-by-token FSM
-/// A parser that can interpret some raw SQL string.
+mod token;
+mod parse;
+
 struct SqlParser {
-    raw: String,
+    tokens: Vec<Token>,
     cursor: usize,
-    // state: ?
 }
 
 impl SqlParser {
-    fn new(sql: String) -> Self {
-        Self {
-            raw: sql,
-            cursor: 0,
-        }
-    }
-
-    fn parse(&mut self) {
-        todo!()
-    }
-
-    fn peek(&self) -> Self {
-        todo!()
-    }
-
-    fn pop(&mut self) -> String {
-        todo!()
+    /// Parses `sql` string and generates AST representation of it.
+    ///
+    /// # Errors
+    /// Will return an `Err` if there was a lexing error, or if there was a syntax error.
+    pub fn parse() -> Result<(), ()> {
+        todo!("Use AST terminal nodes defined in the parse module and implement the rules in the grammar")
     }
 }
