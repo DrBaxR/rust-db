@@ -9,13 +9,10 @@ select_statement = "SELECT" , [ "DISTINCT" | "ALL" ] , select_expression , { ","
 
 select_expression = "*" | term , [ "AS" , column_alias ] ;
 
-term = value | function | "(" + operand + ")" | [ table_alias , "." ] , column_ref | row_value_constructor ;
+term = value | function | "(" + operand + ")" | ( [ table_alias , "." ] , column_ref ) | row_value_constructor ;
 
 (* equivalent to Value::* tokens *)
 value = string | numeric | boolean | null;
-
-function = function_count | function_sum | function_avg | function_min | function_max | function_upper 
-    | function_lower | function_length | function_round | function_now | function_coalesce ;
 
 operand = factor , { "+" | "-" , factor } ;
 
@@ -114,4 +111,16 @@ transaction_statement = "BEGIN" | "COMMIT" | "ROLLBACK" ;
 (* ------------------------------------------ *)
 (* --------------- FUNCTTIONS --------------- *)
 (* ------------------------------------------ *)
-(* TODO: all the functions *)
+function = function_count | function_sum | function_avg | function_min | function_max | function_now ;
+
+function_count = "COUNT" , "(" , [ "DISTINCT" ] , ( "*" | term ) , ")" ;
+
+function_sum = "SUM" , "(" , term , ")" ;
+
+function_avg = "AVG" , "(" , term , ")" ;
+
+function_min = "MIN" , "(" , term , ")" ;
+
+function_max = "MAX" , "(" , term , ")" ;
+
+function_now = "NOW" , "(" , ")"
