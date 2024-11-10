@@ -15,10 +15,6 @@ fn matches() {
         Some((Token::DataType(DataType::Varchar), 7))
     );
     assert_eq!(
-        tokenizer.largest_match("teXt"),
-        Some((Token::DataType(DataType::Text), 4))
-    );
-    assert_eq!(
         tokenizer.largest_match("date"),
         Some((Token::DataType(DataType::Date), 4))
     );

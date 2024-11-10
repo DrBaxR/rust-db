@@ -16,7 +16,6 @@ value = string | numeric | boolean | null;
 
 function = function_count | function_sum | function_avg | function_min | function_max | function_upper 
     | function_lower | function_length | function_round | function_now | function_coalesce ;
-(* TODO: all the functions *)
 
 operand = factor , { "+" | "-" , factor } ;
 
@@ -62,21 +61,57 @@ order = expression , [ "ASC" | "DESC" ] ;
 
 (* equivalent to a Value::Integer token *)
 number = "0-9" , [ number ] ;
-(* TODO: Everything under this *)
 
 (* ------------------------------------------ *)
 (* ----------------- CREATE ----------------- *)
 (* ------------------------------------------ *)
-create_statement
+create_statement = "CREATE TABLE" , table_ref , "(" , column_def , { "," , column_def } , ")" ;
 
-index_statement
+table_ref = table_name ;
 
-delete_statement
+column_def = column_ref , data_type ;
 
-insert_statement
+(* equivalent to a DataType::* token (except for varchar) *)
+data_type = "INTEGER" | ... | ( "VARCHAR" , "(" , number ")" ) ;
 
-update_statement
+(* ------------------------------------------ *)
+(* -------------- CREATE INDEX -------------- *)
+(* ------------------------------------------ *)
+index_statement = "CREATE INDEX" , index_name , "ON" , table_ref , "(" , column_ref , { "," , column_ref } ")";
 
-explain_statement
+index_name = name ;
 
-set_show_statement
+(* ------------------------------------------ *)
+(* ----------------- DELETE ----------------- *)
+(* ------------------------------------------ *)
+delete_statement = "DELETE" , "FROM" , table_name , [ "WHERE" , expression ] , [ "LIMIT" , number ] ;
+
+(* ------------------------------------------ *)
+(* ----------------- INSERT ----------------- *)
+(* ------------------------------------------ *)
+insert_statement = "INSERT INTO" , [ "(" , column_ref , { "," , column_ref } , ")" ] ,
+    "VALUES" , "(" , constant_term , { "," , constant_term } , ")";
+
+constant_term = term ;
+
+(* ------------------------------------------ *)
+(* ----------------- UPDATE ----------------- *)
+(* ------------------------------------------ *)
+update_statement = "UPDATE" , table_ref , 
+    "SET" , column_ref , "=" , value , { "," , column_ref , "=" , value } ,
+    "WHERE" , expression ;
+
+(* ------------------------------------------ *)
+(* ----------------- EXPLAIN ---------------- *)
+(* ------------------------------------------ *)
+explain_statement = "EXPLAIN" , ( select_statement | update_statement | delete_statement ) ;
+
+(* ------------------------------------------ *)
+(* --------------- TRANSACTION -------------- *)
+(* ------------------------------------------ *)
+transaction_statement = "BEGIN" | "COMMIT" | "ROLLBACK" ;
+
+(* ------------------------------------------ *)
+(* --------------- FUNCTTIONS --------------- *)
+(* ------------------------------------------ *)
+(* TODO: all the functions *)
