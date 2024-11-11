@@ -11,11 +11,11 @@ mod tests;
 mod char_matcher;
 
 pub mod data_type;
-mod delimiter;
-mod function;
-mod identifier;
-mod keyword;
-mod operator;
+pub mod delimiter;
+pub mod function;
+pub mod identifier;
+pub mod keyword;
+pub mod operator;
 pub mod value;
 
 /// A token that represents a single unit of a SQL statement.

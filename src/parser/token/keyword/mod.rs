@@ -6,6 +6,7 @@ mod tests;
 /// them from [here](https://www.w3schools.com/sql/sql_ref_keywords.asp).
 #[derive(Debug, Clone, PartialEq)]
 pub enum Keyword {
+    All,
     Any,
     As,
     Asc,
@@ -55,6 +56,7 @@ impl KeywordTokenizer {
     pub fn new() -> Self {
         Self {
             matcher: ChrSqMatcher::with(vec![
+                ("ALL", Keyword::All),
                 ("ANY", Keyword::Any),
                 ("AS", Keyword::As),
                 ("ASC", Keyword::Asc),
