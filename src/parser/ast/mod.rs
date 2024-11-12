@@ -18,27 +18,27 @@ pub struct SelectStatement {
     join: Option<JoinExpression>,         // JOIN
 }
 
-struct JoinExpression {
+pub struct JoinExpression {
     join_type: JoinType,
     table: TableExpression,
     on_expression: Expression, // ON
 }
 
-enum JoinType {
+pub enum JoinType {
     Inner, // JOIN | INNER JOIN
     Left,
     Right,
     Outer,
 }
 
-struct OrderByExpression {
+pub struct OrderByExpression {
     /// 1+
     expressions: Vec<Expression>,
     /// either `ASC` or `DESC`
     asc: bool,
 }
 
-enum SelectExpression {
+pub enum SelectExpression {
     All,
     As { term: Term, alias: String },
 }
