@@ -60,8 +60,24 @@ impl SqlParser {
             } else {
                 None
             };
-        
+
         // [ "GROUP BY" , expression , { "," , expression } ]
+        let group_by_expressions =
+            if let Some(_) = self.match_next_option(&vec![Token::Keyword(Keyword::GroupBy)])? {
+                self.parse_expressions()?
+            } else {
+                vec![]
+            };
+        
+        // [ "HAVING" , expression ]
+        let having_expression =
+            if let Some(_) = self.match_next_option(&vec![Token::Keyword(Keyword::GroupBy)])? {
+                Some(self.parse_expression()?)
+            } else {
+                None
+            };
+        
+        // [ "ORDER BY" , expression , { "," , expression } , order ]
         todo!()
     }
 
@@ -74,6 +90,10 @@ impl SqlParser {
     }
 
     fn parse_expression(&mut self) -> Result<Expression, String> {
+        todo!()
+    }
+
+    fn parse_expressions(&mut self) -> Result<Vec<Expression>, String> {
         todo!()
     }
 
