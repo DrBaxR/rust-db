@@ -9,6 +9,7 @@ mod tests;
 
 mod ast;
 mod token;
+mod parse;
 
 struct SqlParser {
     tokens: Vec<Token>,
@@ -26,111 +27,6 @@ impl SqlParser {
     /// Will return an `Err` if there was a lexing error, or if there was a syntax error.
     pub fn parse(&mut self) -> Result<(), ()> {
         todo!("Use AST terminal nodes defined in the parse module and implement the rules in the grammar")
-    }
-
-    fn parse_select_statement(&mut self) -> Result<SelectStatement, String> {
-        // SELECT
-        self.match_next_option(&vec![Token::Keyword(Keyword::Select)])?
-            .ok_or("STX: Expected SELECT keyword".to_string())?;
-
-        // [ "DISTINCT" | "ALL" ]
-        let is_distinct = match self.match_next_option(&vec![
-            Token::Keyword(Keyword::Distinct),
-            Token::Keyword(Keyword::All),
-        ])? {
-            Some(Token::Keyword(keyword)) => *keyword == Keyword::Distinct,
-            None => false,
-            _ => panic!("STX: Anomaly"),
-        };
-
-        // select_expression , { "," , select_expression }
-        let select_expressions = self.parse_select_expressions()?;
-
-        // FROM
-        self.match_next_option(&vec![Token::Keyword(Keyword::From)])?
-            .ok_or("STX: Expected FROM keyword".to_string())?;
-
-        // table_expression
-        let from_expression = self.parse_table_expression()?;
-
-        // [ "WHERE" , expression ]
-        let where_expression =
-            if let Some(_) = self.match_next_option(&vec![Token::Keyword(Keyword::Where)])? {
-                Some(self.parse_expression()?)
-            } else {
-                None
-            };
-
-        // [ "GROUP BY" , expression , { "," , expression } ]
-        let group_by_expressions =
-            if let Some(_) = self.match_next_option(&vec![Token::Keyword(Keyword::GroupBy)])? {
-                self.parse_expressions()?
-            } else {
-                vec![]
-            };
-
-        // [ "HAVING" , expression ]
-        let having_expression =
-            if let Some(_) = self.match_next_option(&vec![Token::Keyword(Keyword::GroupBy)])? {
-                Some(self.parse_expression()?)
-            } else {
-                None
-            };
-
-        // [ "ORDER BY" , expression , { "," , expression } , order ]
-        let order_by_expression = self.parse_order_by_expression()?;
-
-        // [ "LIMIT" , number ]
-        let limit =
-            if let Some(_) = self.match_next_option(&vec![Token::Keyword(Keyword::Limit)])? {
-                let next = self.pop()?;
-
-                match next {
-                    Token::Value(Value::Integer(value)) => Some(*value as usize),
-                    _ => return Err("STX: Expected integer after LIMIT".to_string()),
-                }
-            } else {
-                None
-            };
-
-        // [ ( "INNER JOIN" | "JOIN" | "LEFT JOIN" | "RIGHT JOIN" | "OUTER JOIN" ) , table_expression , "ON" , expression ]
-        let join_expression = self.parse_join_expression()?;
-
-        Ok(SelectStatement {
-            is_distinct,
-            select_expressions,
-            from_expression,
-            where_expression,
-            group_by_expressions,
-            having_expression,
-            order_by_expression,
-            join_expression,
-            limit,
-        })
-    }
-
-    fn parse_select_expressions(&mut self) -> Result<Vec<SelectExpression>, String> {
-        todo!()
-    }
-
-    fn parse_table_expression(&mut self) -> Result<TableExpression, String> {
-        todo!()
-    }
-
-    fn parse_expression(&mut self) -> Result<Expression, String> {
-        todo!()
-    }
-
-    fn parse_expressions(&mut self) -> Result<Vec<Expression>, String> {
-        todo!()
-    }
-
-    fn parse_order_by_expression(&mut self) -> Result<Option<OrderByExpression>, String> {
-        todo!()
-    }
-
-    fn parse_join_expression(&mut self) -> Result<Option<JoinExpression>, String> {
-        todo!()
     }
 
     fn pop(&mut self) -> Result<&Token, String> {
