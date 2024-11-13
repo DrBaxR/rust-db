@@ -93,8 +93,14 @@ fn parse_select_expressions(parser: &mut SqlParser) -> Result<Vec<SelectExpressi
     todo!()
 }
 
+/// Parse expression matching `table_name , [ "AS" , table_alias ]`.
+// TODO: test
 fn parse_table_expression(parser: &mut SqlParser) -> Result<TableExpression, String> {
-    todo!()
+    let table_name = parser.match_next_identifier()?;
+    parser.match_next(Token::Keyword(Keyword::As))?;
+    let alias = parser.match_next_identifier()?;
+
+    Ok(TableExpression { table_name, alias })
 }
 
 fn parse_expression(parser: &mut SqlParser) -> Result<Expression, String> {

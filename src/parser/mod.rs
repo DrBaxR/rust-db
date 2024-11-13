@@ -8,8 +8,8 @@ use token::{keyword::Keyword, value::Value, Token};
 mod tests;
 
 mod ast;
-mod token;
 mod parse;
+mod token;
 
 struct SqlParser {
     tokens: Vec<Token>,
@@ -58,5 +58,41 @@ impl SqlParser {
         }
 
         Ok(None)
+    }
+
+    /// Matches next token and moves cursor if matches `expected`.
+    ///
+    /// # Errors
+    /// Will return `Err` if there are no more tokens in the stream OR if next token doesn't match `expected`
+    // TODO: test
+    fn match_next(&mut self, expected: Token) -> Result<(), String> {
+        let next_token = self.peek()?;
+
+        if expected != *next_token {
+            return Err(format!(
+                "STX: Expected {:?}, but got {:?}",
+                expected, next_token
+            ));
+        }
+
+        self.pop()?;
+        Ok(())
+    }
+
+    /// Expects next token to be an identifier and advances cursor if matches.
+    /// 
+    /// # Errors
+    /// Will return `Err` if tokens empty or no match.
+    // TODO: test
+    fn match_next_identifier(&mut self) -> Result<String, String> {
+        let idenfier = match self.peek()? {
+            Token::Identifier(identifier) => {
+                Ok(identifier.clone())
+            }
+            _ => Err("STX: Expected an identifier".to_string()),
+        };
+
+        self.pop()?;
+        idenfier
     }
 }

@@ -45,8 +45,8 @@ struct Factor {
 }
 
 pub struct TableExpression {
-    table_name: String,
-    alias: String,
+    pub table_name: String,
+    pub alias: String,
 }
 
 /// Represents an `OR` expression for boolean operations.
