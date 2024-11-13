@@ -1,8 +1,8 @@
 use ast::{
     general::{Expression, TableExpression},
-    SelectExpression, SelectStatement,
+    JoinExpression, OrderByExpression, SelectExpression, SelectStatement,
 };
-use token::{keyword::Keyword, Token};
+use token::{keyword::Keyword, value::Value, Token};
 
 #[cfg(test)]
 mod tests;
@@ -68,7 +68,7 @@ impl SqlParser {
             } else {
                 vec![]
             };
-        
+
         // [ "HAVING" , expression ]
         let having_expression =
             if let Some(_) = self.match_next_option(&vec![Token::Keyword(Keyword::GroupBy)])? {
@@ -76,9 +76,37 @@ impl SqlParser {
             } else {
                 None
             };
-        
+
         // [ "ORDER BY" , expression , { "," , expression } , order ]
-        todo!()
+        let order_by_expression = self.parse_order_by_expression()?;
+
+        // [ "LIMIT" , number ]
+        let limit =
+            if let Some(_) = self.match_next_option(&vec![Token::Keyword(Keyword::Limit)])? {
+                let next = self.pop()?;
+
+                match next {
+                    Token::Value(Value::Integer(value)) => Some(*value as usize),
+                    _ => return Err("STX: Expected integer after LIMIT".to_string()),
+                }
+            } else {
+                None
+            };
+
+        // [ ( "INNER JOIN" | "JOIN" | "LEFT JOIN" | "RIGHT JOIN" | "OUTER JOIN" ) , table_expression , "ON" , expression ]
+        let join_expression = self.parse_join_expression()?;
+
+        Ok(SelectStatement {
+            is_distinct,
+            select_expressions,
+            from_expression,
+            where_expression,
+            group_by_expressions,
+            having_expression,
+            order_by_expression,
+            join_expression,
+            limit,
+        })
     }
 
     fn parse_select_expressions(&mut self) -> Result<Vec<SelectExpression>, String> {
@@ -94,6 +122,14 @@ impl SqlParser {
     }
 
     fn parse_expressions(&mut self) -> Result<Vec<Expression>, String> {
+        todo!()
+    }
+
+    fn parse_order_by_expression(&mut self) -> Result<Option<OrderByExpression>, String> {
+        todo!()
+    }
+
+    fn parse_join_expression(&mut self) -> Result<Option<JoinExpression>, String> {
         todo!()
     }
 
@@ -114,7 +150,7 @@ impl SqlParser {
     }
 
     /// Returns the next token if it matches any of the `expected_options`. Will return `None` if there is still a token but it matches none of the
-    /// options.
+    /// options. Also advances the internal token `cursor`.
     ///
     /// # Errors
     /// Will return `Err` if there are no more tokens in the stream.

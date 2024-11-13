@@ -5,17 +5,17 @@ use super::token::value::Value;
 pub mod general;
 
 pub struct SelectStatement {
-    is_distinct: bool,
+    pub is_distinct: bool,
     /// 1+
-    select_expressions: Vec<SelectExpression>,
-    from_expression: TableExpression,     // FROM
-    where_expression: Option<Expression>, // WHERE
+    pub select_expressions: Vec<SelectExpression>,
+    pub from_expression: TableExpression,     // FROM
+    pub where_expression: Option<Expression>, // WHERE
     /// 0+
-    group_by_expressions: Vec<Expression>, // GROUP BY
-    having_expression: Option<Expression>, // HAVING
-    order_by_expressions: Option<OrderByExpression>, // ORDER BY
-    limit: Option<usize>,                 // LIMIT
-    join: Option<JoinExpression>,         // JOIN
+    pub group_by_expressions: Vec<Expression>, // GROUP BY
+    pub having_expression: Option<Expression>, // HAVING
+    pub order_by_expression: Option<OrderByExpression>, // ORDER BY
+    pub limit: Option<usize>,                 // LIMIT
+    pub join_expression: Option<JoinExpression>,         // JOIN
 }
 
 pub struct JoinExpression {
