@@ -44,6 +44,7 @@ struct Factor {
     terms: Vec<Term>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct TableExpression {
     pub table_name: String,
     pub alias: String,

@@ -33,3 +33,20 @@ fn match_next_option() {
         ])
         .is_err());
 }
+
+#[test]
+fn match_next() {
+    let mut p = SqlParser::new(vec![Token::Keyword(Keyword::Select)]);
+    assert!(p.match_next(Token::Keyword(Keyword::Select)).is_ok());
+    assert!(p.match_next(Token::Keyword(Keyword::Select)).is_err());
+
+    let mut p = SqlParser::new(vec![Token::Keyword(Keyword::As)]);
+    assert!(p.match_next(Token::Keyword(Keyword::Select)).is_err());
+}
+
+#[test]
+fn match_next_identifier() {
+    let mut p = SqlParser::new(vec![Token::Identifier("my_table".to_string())]);
+    assert_eq!(p.match_next_identifier().unwrap(), "my_table".to_string());
+    assert!(p.match_next_identifier().is_err());
+}

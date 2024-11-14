@@ -64,7 +64,6 @@ impl SqlParser {
     ///
     /// # Errors
     /// Will return `Err` if there are no more tokens in the stream OR if next token doesn't match `expected`
-    // TODO: test
     fn match_next(&mut self, expected: Token) -> Result<(), String> {
         let next_token = self.peek()?;
 
@@ -83,7 +82,6 @@ impl SqlParser {
     /// 
     /// # Errors
     /// Will return `Err` if tokens empty or no match.
-    // TODO: test
     fn match_next_identifier(&mut self) -> Result<String, String> {
         let idenfier = match self.peek()? {
             Token::Identifier(identifier) => {

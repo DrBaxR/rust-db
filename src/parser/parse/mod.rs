@@ -1,11 +1,15 @@
+use general::{
+    parse_expression, parse_expressions, parse_join_expression, parse_order_by_expression,
+    parse_select_expressions, parse_table_expression,
+};
+
 use super::{
-    ast::{
-        general::{Expression, TableExpression},
-        JoinExpression, OrderByExpression, SelectExpression, SelectStatement,
-    },
+    ast::SelectStatement,
     token::{keyword::Keyword, value::Value, Token},
     SqlParser,
 };
+
+mod general;
 
 fn parse_select_statement(parser: &mut SqlParser) -> Result<SelectStatement, String> {
     // SELECT
@@ -87,34 +91,4 @@ fn parse_select_statement(parser: &mut SqlParser) -> Result<SelectStatement, Str
         join_expression,
         limit,
     })
-}
-
-fn parse_select_expressions(parser: &mut SqlParser) -> Result<Vec<SelectExpression>, String> {
-    todo!()
-}
-
-/// Parse expression matching `table_name , [ "AS" , table_alias ]`.
-// TODO: test
-fn parse_table_expression(parser: &mut SqlParser) -> Result<TableExpression, String> {
-    let table_name = parser.match_next_identifier()?;
-    parser.match_next(Token::Keyword(Keyword::As))?;
-    let alias = parser.match_next_identifier()?;
-
-    Ok(TableExpression { table_name, alias })
-}
-
-fn parse_expression(parser: &mut SqlParser) -> Result<Expression, String> {
-    todo!()
-}
-
-fn parse_expressions(parser: &mut SqlParser) -> Result<Vec<Expression>, String> {
-    todo!()
-}
-
-fn parse_order_by_expression(parser: &mut SqlParser) -> Result<Option<OrderByExpression>, String> {
-    todo!()
-}
-
-fn parse_join_expression(parser: &mut SqlParser) -> Result<Option<JoinExpression>, String> {
-    todo!()
 }
