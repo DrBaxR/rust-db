@@ -14,11 +14,12 @@ mod token;
 struct SqlParser {
     tokens: Vec<Token>,
     cursor: usize,
+    saved_cursor: usize,
 }
 
 impl SqlParser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, cursor: 0 }
+        Self { tokens, cursor: 0, saved_cursor: 0 }
     }
 
     /// Parses `sql` string and generates AST representation of it.
@@ -43,6 +44,16 @@ impl SqlParser {
         self.tokens
             .get(self.cursor)
             .ok_or("STX: Expected more tokens".to_string())
+    }
+
+    /// Marks current position as a checkpoint in token stream, which can be gone to with `load()`.
+    fn save(&mut self) {
+        self.saved_cursor = self.cursor;
+    }
+
+    /// Go to last marked checkpoint with `save()`. Will return to start of stream if no `save()` was called before calling this.
+    fn load(&mut self) {
+        self.cursor = self.saved_cursor;
     }
 
     /// Returns the next token if it matches any of the `expected_options`. Will return `None` if there is still a token but it matches none of the

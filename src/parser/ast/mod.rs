@@ -15,7 +15,7 @@ pub struct SelectStatement {
     pub having_expression: Option<Expression>, // HAVING
     pub order_by_expression: Option<OrderByExpression>, // ORDER BY
     pub limit: Option<usize>,                 // LIMIT
-    pub join_expression: Option<JoinExpression>,         // JOIN
+    pub join_expression: Option<JoinExpression>, // JOIN
 }
 
 pub struct JoinExpression {
@@ -40,7 +40,7 @@ pub struct OrderByExpression {
 
 pub enum SelectExpression {
     All,
-    As { term: Term, alias: String },
+    As { term: Term, alias: Option<String> },
 }
 
 pub struct CreateTableStatement {
