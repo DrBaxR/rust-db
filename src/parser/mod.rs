@@ -19,7 +19,11 @@ struct SqlParser {
 
 impl SqlParser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, cursor: 0, saved_cursor: 0 }
+        Self {
+            tokens,
+            cursor: 0,
+            saved_cursor: 0,
+        }
     }
 
     /// Parses `sql` string and generates AST representation of it.
@@ -90,18 +94,31 @@ impl SqlParser {
     }
 
     /// Expects next token to be an identifier and advances cursor if matches.
-    /// 
+    ///
     /// # Errors
     /// Will return `Err` if tokens empty or no match.
     fn match_next_identifier(&mut self) -> Result<String, String> {
         let idenfier = match self.peek()? {
-            Token::Identifier(identifier) => {
-                Ok(identifier.clone())
-            }
+            Token::Identifier(identifier) => Ok(identifier.clone()),
             _ => Err("STX: Expected an identifier".to_string()),
         };
 
         self.pop()?;
         idenfier
+    }
+
+    /// Expects next token to be a value and advances cursor if matches. Will return the matched `Value` in case
+    /// of match.
+    ///
+    /// # Errors
+    /// Will return `Err` if tokens empty or no match.
+    fn match_next_value(&mut self) -> Result<Value, String> {
+        let value = match self.peek()? {
+            Token::Value(value) => Ok(value.clone()),
+            _ => Err("STX: Expected a value".to_string()),
+        };
+
+        self.pop()?;
+        value
     }
 }

@@ -12,7 +12,7 @@ pub enum Term {
     RowValueConstructor(Vec<Term>),
 }
 
-enum Function {
+pub enum Function {
     Count {
         distinct: bool,
         count_type: CountType,
@@ -30,11 +30,11 @@ enum CountType {
 }
 
 /// Represents a summand for arithmetic operations.
-struct Operand {
+pub struct Operand {
     /// either `+` or `-`
-    addition: bool,
+    pub addition: bool,
     /// 1+
-    factors: Vec<Factor>,
+    pub factors: Vec<Factor>,
 }
 
 struct Factor {
