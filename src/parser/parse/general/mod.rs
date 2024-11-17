@@ -1,9 +1,9 @@
 use crate::parser::{
     ast::{
-        general::{Expression, Function, Operand, TableExpression, Term},
+        general::{CountType, Expression, Function, Operand, TableExpression, Term},
         JoinExpression, OrderByExpression, SelectExpression,
     },
-    token::{delimiter::Delimiter, keyword::Keyword, operator::Operator, Token},
+    token::{delimiter::Delimiter, function, keyword::Keyword, operator::Operator, Token},
     SqlParser,
 };
 
@@ -92,12 +92,72 @@ fn parse_term(parser: &mut SqlParser) -> Result<Term, String> {
 /// Parse expression matching `function_count | function_sum | function_avg | function_min | function_max | function_now `.
 // TODO: test
 fn parse_function(parser: &mut SqlParser) -> Result<Function, String> {
-    todo!("this")
+    match parser.match_next_function()? {
+        function::Function::Count => {
+            parser.match_next(Token::Delimiter(Delimiter::OpenParen))?;
+            let distinct = parser.match_next(Token::Keyword(Keyword::Distinct)).is_ok();
+
+            if parser
+                .match_next(Token::Operator(Operator::Multiply))
+                .is_ok()
+            {
+                // count * case
+                parser.match_next(Token::Delimiter(Delimiter::CloseParen))?;
+                return Ok(Function::Count {
+                    distinct,
+                    count_type: CountType::All,
+                });
+            }
+
+            // count term case
+            let term = parse_term(parser)?;
+            parser.match_next(Token::Delimiter(Delimiter::CloseParen))?;
+
+            Ok(Function::Count {
+                distinct,
+                count_type: CountType::Term(Box::new(term)),
+            })
+        }
+        function::Function::Sum => Ok(Function::Sum(Box::new(parse_paren_term(parser)?))),
+        function::Function::Avg => Ok(Function::Avg(Box::new(parse_paren_term(parser)?))),
+        function::Function::Min => Ok(Function::Min(Box::new(parse_paren_term(parser)?))),
+        function::Function::Max => Ok(Function::Max(Box::new(parse_paren_term(parser)?))),
+        function::Function::Upper => Err("STX: UPPER function not supported".to_string()),
+        function::Function::Lower => Err("STX: LOWER function not supported".to_string()),
+        function::Function::Length => Err("STX: LENGTH function not supported".to_string()),
+        function::Function::Round => Err("STX: ROUND function not supported".to_string()),
+        function::Function::Now => {
+            parser.match_next(Token::Delimiter(Delimiter::OpenParen))?;
+            parser.match_next(Token::Delimiter(Delimiter::CloseParen))?;
+
+            Ok(Function::Now)
+        }
+        function::Function::Coalesce => Err("STX: COALESCE function not supported".to_string()),
+    }
+}
+
+/// Parse expression matching `"(" + term + ")"`.
+fn parse_paren_term(parser: &mut SqlParser) -> Result<Term, String> {
+    parser.match_next(Token::Delimiter(Delimiter::OpenParen))?;
+    let term = parse_term(parser)?;
+    parser.match_next(Token::Delimiter(Delimiter::CloseParen))?;
+
+    Ok(term)
 }
 
 /// Parse expression matching `"(" + operand + ")"`.
 // TODO: test
 fn parse_paren_operand(parser: &mut SqlParser) -> Result<Operand, String> {
+    parser.match_next(Token::Delimiter(Delimiter::OpenParen))?;
+    let operand = parse_operand(parser)?;
+    parser.match_next(Token::Delimiter(Delimiter::CloseParen))?;
+
+    Ok(operand)
+}
+
+/// Parse expression matching `factor , { "+" | "-" , factor }`.
+// TODO: test
+fn parse_operand(parser: &mut SqlParser) -> Result<Operand, String> {
     todo!("this")
 }
 

@@ -1,5 +1,6 @@
 use crate::parser::token::{data_type::DataType, value::Value};
 
+#[derive(Debug, PartialEq)]
 pub enum Term {
     Value(Value),
     Function(Function),
@@ -12,6 +13,7 @@ pub enum Term {
     RowValueConstructor(Vec<Term>),
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Function {
     Count {
         distinct: bool,
@@ -24,12 +26,14 @@ pub enum Function {
     Now,
 }
 
-enum CountType {
+#[derive(Debug, PartialEq)]
+pub enum CountType {
     All,
     Term(Box<Term>),
 }
 
 /// Represents a summand for arithmetic operations.
+#[derive(Debug, PartialEq)]
 pub struct Operand {
     /// either `+` or `-`
     pub addition: bool,
@@ -37,11 +41,12 @@ pub struct Operand {
     pub factors: Vec<Factor>,
 }
 
-struct Factor {
+#[derive(Debug, PartialEq)]
+pub struct Factor {
     /// either `*` or `/`
-    multiplication: bool,
+    pub multiplication: bool,
     /// 1+
-    terms: Vec<Term>,
+    pub terms: Vec<Term>,
 }
 
 #[derive(Debug, PartialEq)]

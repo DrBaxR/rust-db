@@ -2,7 +2,12 @@ use ast::{
     general::{Expression, TableExpression},
     JoinExpression, OrderByExpression, SelectExpression, SelectStatement,
 };
-use token::{keyword::Keyword, value::Value, Token};
+use token::{
+    function::{self, Function},
+    keyword::Keyword,
+    value::Value,
+    Token,
+};
 
 #[cfg(test)]
 mod tests;
@@ -120,5 +125,20 @@ impl SqlParser {
 
         self.pop()?;
         value
+    }
+
+    /// Expects next token to be a function token and advances cursor if matches. Will return the matched `Function`
+    /// token in case of match.
+    ///
+    /// # Errors
+    /// Will return `Err` if tokens empty or no match.
+    fn match_next_function(&mut self) -> Result<Function, String> {
+        let function = match self.peek()? {
+            Token::Function(function) => Ok(function.clone()),
+            _ => Err("STX: Expected function token".to_string()),
+        };
+
+        self.pop()?;
+        function
     }
 }

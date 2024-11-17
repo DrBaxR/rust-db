@@ -1,4 +1,4 @@
-use crate::parser::token::value::Value;
+use crate::parser::token::{function::Function, value::Value};
 
 use super::{
     token::{keyword::Keyword, Token},
@@ -61,4 +61,14 @@ fn match_next_value() {
     let mut p = SqlParser::new(vec![Token::Value(Value::Integer(12))]);
     assert_eq!(p.match_next_value().unwrap(), Value::Integer(12));
     assert!(p.match_next_value().is_err());
+}
+
+#[test]
+fn match_next_function() {
+    let mut p = SqlParser::new(vec![Token::Identifier("my_table".to_string())]);
+    assert!(p.match_next_function().is_err());
+
+    let mut p = SqlParser::new(vec![Token::Function(Function::Min)]);
+    assert_eq!(p.match_next_function().unwrap(), Function::Min);
+    assert!(p.match_next_function().is_err());
 }
