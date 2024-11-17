@@ -35,18 +35,27 @@ pub enum CountType {
 /// Represents a summand for arithmetic operations.
 #[derive(Debug, PartialEq)]
 pub struct Operand {
-    /// either `+` or `-`
-    pub addition: bool,
-    /// 1+
-    pub factors: Vec<Factor>,
+    pub left: Factor,
+    /// 0+
+    pub right: Vec<OperatorRight>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum OperatorRight {
+    Plus(Factor),
+    Minus(Factor),
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Factor {
-    /// either `*` or `/`
-    pub multiplication: bool,
-    /// 1+
-    pub terms: Vec<Term>,
+    pub left: Box<Term>,
+    pub right: Vec<FactorRight>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum FactorRight {
+    Mult(Term),
+    Div(Term),
 }
 
 #[derive(Debug, PartialEq)]

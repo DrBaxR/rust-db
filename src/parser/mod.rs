@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use ast::{
     general::{Expression, TableExpression},
     JoinExpression, OrderByExpression, SelectExpression, SelectStatement,
@@ -19,7 +21,8 @@ mod token;
 struct SqlParser {
     tokens: Vec<Token>,
     cursor: usize,
-    saved_cursor: usize,
+    /// slot -> cursor_pos
+    saves: HashMap<usize, usize>,
 }
 
 impl SqlParser {
@@ -27,7 +30,7 @@ impl SqlParser {
         Self {
             tokens,
             cursor: 0,
-            saved_cursor: 0,
+            saves: HashMap::new(),
         }
     }
 
@@ -56,13 +59,16 @@ impl SqlParser {
     }
 
     /// Marks current position as a checkpoint in token stream, which can be gone to with `load()`.
-    fn save(&mut self) {
-        self.saved_cursor = self.cursor;
+    fn save(&mut self) -> usize {
+        let next_slot = self.saves.keys().max().unwrap_or(&0) + 1;
+        self.saves.insert(next_slot, self.cursor);
+
+        next_slot
     }
 
     /// Go to last marked checkpoint with `save()`. Will return to start of stream if no `save()` was called before calling this.
-    fn load(&mut self) {
-        self.cursor = self.saved_cursor;
+    fn load(&mut self, slot: usize) {
+        self.cursor = self.saves.remove(&slot).expect("Invalid save slot ID");
     }
 
     /// Returns the next token if it matches any of the `expected_options`. Will return `None` if there is still a token but it matches none of the

@@ -1,6 +1,6 @@
 use crate::parser::{
-    ast::general::{TableExpression, Term},
-    parse::general::parse_paren_term,
+    ast::general::{Factor, Function, Operand, TableExpression, Term},
+    parse::general::{parse_paren_term, parse_term},
     token::{value::Value, Tokenizer},
     SqlParser,
 };
@@ -42,6 +42,53 @@ fn parse_paren_term_test() {
     let tokens = Tokenizer::new().tokenize("(*)").unwrap();
     let mut p = SqlParser::new(tokens);
 
-    // TODO: uncomment once all is implemented
-    // assert!(parse_paren_term(&mut p).is_err());
+    assert!(parse_paren_term(&mut p).is_err());
+}
+
+fn get_parser(raw: &str) -> SqlParser {
+    let tokens = Tokenizer::new().tokenize(raw).unwrap();
+    SqlParser::new(tokens)
+}
+
+#[test]
+fn parse_term_test() {
+    let mut p = get_parser("12");
+    assert_eq!(parse_term(&mut p).unwrap(), Term::Value(Value::Integer(12)));
+
+    let mut p = get_parser("MAX(12)");
+    assert_eq!(
+        parse_term(&mut p).unwrap(),
+        Term::Function(Function::Max(Box::new(Term::Value(Value::Integer(12)))))
+    );
+
+    let mut p = get_parser("(1)");
+    assert_eq!(
+        parse_term(&mut p).unwrap(),
+        Term::Operand(Operand {
+            left: Factor {
+                left: Box::new(Term::Value(Value::Integer(1))),
+                right: vec![]
+            },
+            right: vec![]
+        })
+    );
+
+    let mut p = get_parser("column");
+    assert_eq!(
+        parse_term(&mut p).unwrap(),
+        Term::Column {
+            table_alias: None,
+            name: "column".to_string()
+        }
+    );
+
+    let mut p = get_parser("(1, 2, 3)");
+    assert_eq!(
+        parse_term(&mut p).unwrap(),
+        Term::RowValueConstructor(vec![
+            Term::Value(Value::Integer(1)),
+            Term::Value(Value::Integer(2)),
+            Term::Value(Value::Integer(3))
+        ])
+    );
 }

@@ -1,6 +1,9 @@
 use crate::parser::{
     ast::{
-        general::{CountType, Expression, Function, Operand, TableExpression, Term},
+        general::{
+            CountType, Expression, Factor, FactorRight, Function, Operand, OperatorRight,
+            TableExpression, Term,
+        },
         JoinExpression, OrderByExpression, SelectExpression,
     },
     token::{delimiter::Delimiter, function, keyword::Keyword, operator::Operator, Token},
@@ -51,42 +54,47 @@ fn parse_select_expression(parser: &mut SqlParser) -> Result<SelectExpression, S
 }
 
 /// Parse expression matching `value | function | "(" + operand + ")" | ( [ table_alias , "." ] , column_ref ) | row_value_constructor`.
-// TODO: test
 fn parse_term(parser: &mut SqlParser) -> Result<Term, String> {
     // value
-    parser.save();
+    let slot = parser.save();
     if let Ok(value) = parser.match_next_value() {
         return Ok(Term::Value(value));
     }
-    parser.load();
+    parser.load(slot);
 
     // function
-    parser.save();
+    let slot = parser.save();
     if let Ok(function) = parse_function(parser) {
         return Ok(Term::Function(function));
     }
-    parser.load();
+    parser.load(slot);
 
     // "(" + operand + ")"
-    parser.save();
+    let slot = parser.save();
     if let Ok(operand) = parse_paren_operand(parser) {
         return Ok(Term::Operand(operand));
     }
-    parser.load();
+    parser.load(slot);
 
     // ( [ table_alias , "." ] , column_ref )
-    parser.save();
+    let slot = parser.save();
     if let Ok((table_alias, name)) = parse_column_identifier(parser) {
         return Ok(Term::Column { table_alias, name });
     }
-    parser.load();
+    dbg!(slot);
+    dbg!(&parser.saves);
+    parser.load(slot);
+    dbg!(parser.cursor);
 
     // row_value_constructor
     if let Ok(terms) = parse_row_value_constructor(parser) {
         return Ok(Term::RowValueConstructor(terms));
     }
 
-    Err("STX: Expected term expression variant".to_string())
+    Err(format!(
+        "STX: Expected term expression variant, got {:?}",
+        parser.peek()
+    ))
 }
 
 /// Parse expression matching `function_count | function_sum | function_avg | function_min | function_max | function_now `.
@@ -158,19 +166,90 @@ fn parse_paren_operand(parser: &mut SqlParser) -> Result<Operand, String> {
 /// Parse expression matching `factor , { "+" | "-" , factor }`.
 // TODO: test
 fn parse_operand(parser: &mut SqlParser) -> Result<Operand, String> {
-    todo!("this")
+    let left = parse_factor(parser)?;
+
+    let mut right = vec![];
+    loop {
+        let is_plus = parser.match_next(Token::Operator(Operator::Plus)).is_ok();
+        let is_minus = parser.match_next(Token::Operator(Operator::Minus)).is_ok();
+        if !is_plus && !is_minus {
+            break;
+        }
+
+        let factor = parse_factor(parser)?;
+        if is_plus {
+            right.push(OperatorRight::Plus(factor));
+        } else if is_minus {
+            right.push(OperatorRight::Minus(factor));
+        }
+    }
+
+    Ok(Operand { left, right })
+}
+
+/// Parse expression matching `term , { "*" | "/" , term }`.
+// TODO: test
+fn parse_factor(parser: &mut SqlParser) -> Result<Factor, String> {
+    let left = Box::new(parse_term(parser)?);
+
+    let mut right = vec![];
+    loop {
+        let is_mul = parser
+            .match_next(Token::Operator(Operator::Multiply))
+            .is_ok();
+        let is_div = parser.match_next(Token::Operator(Operator::Divide)).is_ok();
+        if !is_mul && !is_div {
+            break;
+        }
+
+        let term = parse_term(parser)?;
+        if is_mul {
+            right.push(FactorRight::Mult(term));
+        } else if is_div {
+            right.push(FactorRight::Div(term));
+        }
+    }
+
+    Ok(Factor { left, right })
 }
 
 /// Parse expression matching `( [ table_alias , "." ] , column_ref )`.
 // TODO: test
 fn parse_column_identifier(parser: &mut SqlParser) -> Result<(Option<String>, String), String> {
-    todo!("this")
+    let first = parser.match_next_identifier()?;
+
+    let second = if parser.match_next(Token::Delimiter(Delimiter::Dot)).is_ok() {
+        Some(parser.match_next_identifier()?)
+    } else {
+        None
+    };
+
+    Ok((second, first))
 }
 
 /// Parse expression matching `"(" , term , "," , term , { "," , term } , ")"`.
 // TODO: test
 fn parse_row_value_constructor(parser: &mut SqlParser) -> Result<Vec<Term>, String> {
-    todo!("this")
+    parser.match_next(Token::Delimiter(Delimiter::OpenParen))?;
+
+    let mut terms = vec![];
+    terms.push(parse_term(parser)?);
+    parser.match_next(Token::Delimiter(Delimiter::Comma))?;
+    terms.push(parse_term(parser)?);
+
+    loop {
+        if parser
+            .match_next(Token::Delimiter(Delimiter::Comma))
+            .is_err()
+        {
+            break;
+        }
+
+        terms.push(parse_term(parser)?);
+    }
+    parser.match_next(Token::Delimiter(Delimiter::CloseParen))?;
+
+    Ok(terms)
 }
 
 /// Parse expression matching `table_name , [ "AS" , table_alias ]`.
