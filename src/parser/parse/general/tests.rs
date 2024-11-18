@@ -1,6 +1,6 @@
 use crate::parser::{
-    ast::general::{Factor, Function, Operand, TableExpression, Term},
-    parse::general::{parse_paren_term, parse_term},
+    ast::general::{CountType, Factor, FactorRight, Function, Operand, TableExpression, Term},
+    parse::general::{parse_factor, parse_function, parse_paren_term, parse_term},
     token::{value::Value, Tokenizer},
     SqlParser,
 };
@@ -90,5 +90,86 @@ fn parse_term_test() {
             Term::Value(Value::Integer(2)),
             Term::Value(Value::Integer(3))
         ])
+    );
+}
+
+#[test]
+fn parse_function_count() {
+    let mut parser = get_parser("COUNT(*)");
+    assert_eq!(
+        parse_function(&mut parser).unwrap(),
+        Function::Count {
+            distinct: false,
+            count_type: CountType::All
+        }
+    );
+
+    let mut parser = get_parser("COUNT(column)");
+    assert_eq!(
+        parse_function(&mut parser).unwrap(),
+        Function::Count {
+            distinct: false,
+            count_type: CountType::Term(Box::new(Term::Column {
+                table_alias: None,
+                name: "column".to_string()
+            }))
+        }
+    );
+
+    let mut parser = get_parser("COUNT( DISTINCT column )");
+    assert_eq!(
+        parse_function(&mut parser).unwrap(),
+        Function::Count {
+            distinct: true,
+            count_type: CountType::Term(Box::new(Term::Column {
+                table_alias: None,
+                name: "column".to_string()
+            }))
+        }
+    );
+}
+
+#[test]
+fn parse_function_sum() {
+    let mut parser = get_parser("SUM(column)");
+    assert_eq!(
+        parse_function(&mut parser).unwrap(),
+        Function::Sum(Box::new(Term::Column {
+            table_alias: None,
+            name: "column".to_string()
+        }))
+    );
+
+    let mut parser = get_parser("SUM(column");
+    assert!(parse_function(&mut parser).is_err());
+}
+
+#[test]
+fn parse_function_now() {
+    let mut parser = get_parser("NOW()");
+    assert_eq!(parse_function(&mut parser).unwrap(), Function::Now);
+}
+
+#[test]
+fn parse_factor_test() {
+    let mut parser = get_parser("1");
+    assert_eq!(
+        parse_factor(&mut parser).unwrap(),
+        Factor {
+            left: Box::new(Term::Value(Value::Integer(1))),
+            right: vec![],
+        }
+    );
+
+    let mut parser = get_parser("1*2/99");
+    assert_eq!(
+        parse_factor(&mut parser).unwrap(),
+        Factor {
+            left: Box::new(Term::Value(Value::Integer(1))),
+            right: vec![
+                FactorRight::Mult(Term::Value(Value::Integer(2))),
+                FactorRight::Div(Term::Value(Value::Integer(99)))
+            ],
+        }
     );
 }

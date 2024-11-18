@@ -98,7 +98,6 @@ fn parse_term(parser: &mut SqlParser) -> Result<Term, String> {
 }
 
 /// Parse expression matching `function_count | function_sum | function_avg | function_min | function_max | function_now `.
-// TODO: test
 fn parse_function(parser: &mut SqlParser) -> Result<Function, String> {
     match parser.match_next_function()? {
         function::Function::Count => {
@@ -154,7 +153,6 @@ fn parse_paren_term(parser: &mut SqlParser) -> Result<Term, String> {
 }
 
 /// Parse expression matching `"(" + operand + ")"`.
-// TODO: test
 fn parse_paren_operand(parser: &mut SqlParser) -> Result<Operand, String> {
     parser.match_next(Token::Delimiter(Delimiter::OpenParen))?;
     let operand = parse_operand(parser)?;
@@ -188,7 +186,6 @@ fn parse_operand(parser: &mut SqlParser) -> Result<Operand, String> {
 }
 
 /// Parse expression matching `term , { "*" | "/" , term }`.
-// TODO: test
 fn parse_factor(parser: &mut SqlParser) -> Result<Factor, String> {
     let left = Box::new(parse_term(parser)?);
 

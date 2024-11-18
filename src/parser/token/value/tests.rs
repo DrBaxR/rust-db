@@ -10,6 +10,7 @@ fn integer() {
     assert_eq!(t.largest_match("99999asd"), Some((Token::Value(Value::Integer(99999)), 5)));
     assert_eq!(t.largest_match("99999!"), Some((Token::Value(Value::Integer(99999)), 5)));
     assert_eq!(t.largest_match("-99999"), None);
+    assert_eq!(t.largest_match("1*2/3"), Some((Token::Value(Value::Integer(1)), 1)));
 }
 
 #[test]

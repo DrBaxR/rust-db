@@ -166,3 +166,19 @@ fn invalid_statements() {
     assert!(t.tokenize("SELECT 1 + 2 + 3.").is_err());
     assert!(t.tokenize("SELECT 'this string is invalid;").is_err());
 }
+
+#[test]
+fn expression() {
+    let t = Tokenizer::new();
+
+    assert_eq!(
+        t.tokenize("1*2/3").unwrap(),
+        vec![
+            Token::Value(Value::Integer(1)),
+            Token::Operator(Operator::Multiply),
+            Token::Value(Value::Integer(2)),
+            Token::Operator(Operator::Divide),
+            Token::Value(Value::Integer(3)),
+        ]
+    )
+}
