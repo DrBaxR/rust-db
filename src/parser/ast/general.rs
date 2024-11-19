@@ -37,11 +37,11 @@ pub enum CountType {
 pub struct Operand {
     pub left: Factor,
     /// 0+
-    pub right: Vec<OperatorRight>,
+    pub right: Vec<OperandRight>,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum OperatorRight {
+pub enum OperandRight {
     Plus(Factor),
     Minus(Factor),
 }
@@ -65,16 +65,19 @@ pub struct TableExpression {
 }
 
 /// Represents an `OR` expression for boolean operations.
+#[derive(Debug, PartialEq)]
 pub struct Expression {
     /// 1+
     and_conditions: Vec<AndCondition>,
 }
 
+#[derive(Debug, PartialEq)]
 struct AndCondition {
     /// 1+
     conditions: Vec<Condition>,
 }
 
+#[derive(Debug, PartialEq)]
 enum Condition {
     Operation {
         operand: Operand,
@@ -84,6 +87,7 @@ enum Condition {
     Positive(Expression),
 }
 
+#[derive(Debug, PartialEq)]
 enum Operation {
     Comparison {
         cmp_type: CompareType,
@@ -108,6 +112,7 @@ enum Operation {
     },
 }
 
+#[derive(Debug, PartialEq)]
 enum CompareType {
     EQ,  // =
     NE,  // != or <>
@@ -117,6 +122,7 @@ enum CompareType {
     LTE, // <=
 }
 
+#[derive(Debug, PartialEq)]
 pub struct ColumnDef {
     name: String,
     /// At the moment varchar is of set size (255)

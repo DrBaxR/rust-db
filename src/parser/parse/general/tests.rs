@@ -1,7 +1,16 @@
 use crate::parser::{
-    ast::general::{CountType, Factor, FactorRight, Function, Operand, TableExpression, Term},
-    parse::general::{parse_factor, parse_function, parse_paren_term, parse_term},
-    token::{value::Value, Tokenizer},
+    self,
+    ast::{
+        general::{
+            CountType, Factor, FactorRight, Function, Operand, OperandRight, TableExpression, Term,
+        },
+        SelectExpression,
+    },
+    parse::general::{
+        parse_column_identifier, parse_factor, parse_function, parse_operand, parse_paren_term,
+        parse_row_value_constructor, parse_select_expression, parse_select_expressions, parse_term,
+    },
+    token::{value::Value, Token, Tokenizer},
     SqlParser,
 };
 
@@ -171,5 +180,127 @@ fn parse_factor_test() {
                 FactorRight::Div(Term::Value(Value::Integer(99)))
             ],
         }
+    );
+}
+
+#[test]
+fn parse_operand_test() {
+    let mut parser = get_parser("1");
+    assert_eq!(
+        parse_operand(&mut parser).unwrap(),
+        Operand {
+            left: Factor {
+                left: Box::new(Term::Value(Value::Integer(1))),
+                right: vec![]
+            },
+            right: vec![]
+        }
+    );
+
+    let mut parser = get_parser("1 + 1 - 1");
+    assert_eq!(
+        parse_operand(&mut parser).unwrap(),
+        Operand {
+            left: Factor {
+                left: Box::new(Term::Value(Value::Integer(1))),
+                right: vec![]
+            },
+            right: vec![
+                OperandRight::Plus(Factor {
+                    left: Box::new(Term::Value(Value::Integer(1))),
+                    right: vec![]
+                }),
+                OperandRight::Minus(Factor {
+                    left: Box::new(Term::Value(Value::Integer(1))),
+                    right: vec![]
+                })
+            ]
+        }
+    );
+}
+
+#[test]
+fn parse_column_identifier_test() {
+    let mut parser = get_parser("my_table.my_column");
+    assert_eq!(
+        parse_column_identifier(&mut parser).unwrap(),
+        (Some("my_table".to_string()), "my_column".to_string())
+    );
+
+    let mut parser = get_parser("my_column");
+    assert_eq!(
+        parse_column_identifier(&mut parser).unwrap(),
+        (None, "my_column".to_string())
+    );
+}
+
+#[test]
+fn parse_row_value_constructor_test() {
+    let mut parser = get_parser("(1, 1)");
+    assert_eq!(
+        parse_row_value_constructor(&mut parser).unwrap(),
+        vec![
+            Term::Value(Value::Integer(1)),
+            Term::Value(Value::Integer(1))
+        ]
+    );
+
+    let mut parser = get_parser("(1, 1, 1)");
+    assert_eq!(
+        parse_row_value_constructor(&mut parser).unwrap(),
+        vec![
+            Term::Value(Value::Integer(1)),
+            Term::Value(Value::Integer(1)),
+            Term::Value(Value::Integer(1))
+        ]
+    );
+
+    let mut parser = get_parser("(1)");
+    assert!(parse_row_value_constructor(&mut parser).is_err());
+}
+
+#[test]
+fn parse_select_expression_test() {
+    let mut parser = get_parser("*");
+    assert_eq!(
+        parse_select_expression(&mut parser).unwrap(),
+        SelectExpression::All
+    );
+
+    let mut parser = get_parser("1");
+    assert_eq!(
+        parse_select_expression(&mut parser).unwrap(),
+        SelectExpression::As {
+            term: Term::Value(Value::Integer(1)),
+            alias: None
+        }
+    );
+
+    let mut parser = get_parser("1 as my_column");
+    assert_eq!(
+        parse_select_expression(&mut parser).unwrap(),
+        SelectExpression::As {
+            term: Term::Value(Value::Integer(1)),
+            alias: Some("my_column".to_string())
+        }
+    );
+}
+
+#[test]
+fn parse_select_expressions_test() {
+    let mut parser = get_parser("*");
+    assert_eq!(
+        parse_select_expressions(&mut parser).unwrap(),
+        vec![SelectExpression::All]
+    );
+
+    let mut parser = get_parser("*, *, *");
+    assert_eq!(
+        parse_select_expressions(&mut parser).unwrap(),
+        vec![
+            SelectExpression::All,
+            SelectExpression::All,
+            SelectExpression::All
+        ]
     );
 }

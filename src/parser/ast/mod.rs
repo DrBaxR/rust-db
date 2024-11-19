@@ -4,6 +4,7 @@ use super::token::value::Value;
 
 pub mod general;
 
+#[derive(Debug, PartialEq)]
 pub struct SelectStatement {
     pub is_distinct: bool,
     /// 1+
@@ -18,12 +19,14 @@ pub struct SelectStatement {
     pub join_expression: Option<JoinExpression>, // JOIN
 }
 
+#[derive(Debug, PartialEq)]
 pub struct JoinExpression {
     join_type: JoinType,
     table: TableExpression,
     on_expression: Expression, // ON
 }
 
+#[derive(Debug, PartialEq)]
 pub enum JoinType {
     Inner, // JOIN | INNER JOIN
     Left,
@@ -31,6 +34,7 @@ pub enum JoinType {
     Outer,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct OrderByExpression {
     /// 1+
     expressions: Vec<Expression>,
@@ -38,17 +42,20 @@ pub struct OrderByExpression {
     asc: bool,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum SelectExpression {
     All,
     As { term: Term, alias: Option<String> },
 }
 
+#[derive(Debug, PartialEq)]
 pub struct CreateTableStatement {
     table_name: String,
     /// 1+
     columns: Vec<ColumnDef>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct CreateIndexStatement {
     index_name: String,
     table: String, // ON
@@ -56,12 +63,14 @@ pub struct CreateIndexStatement {
     on_columns: Vec<String>,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct DeleteStatement {
     table_name: String,                   // FROM
     where_expression: Option<Expression>, // WHERE
     limit: Option<usize>,                 // LIMIT
 }
 
+#[derive(Debug, PartialEq)]
 pub struct InsertStatement {
     table_name: String, // INTO
     // 0+
@@ -70,6 +79,7 @@ pub struct InsertStatement {
     values: Vec<Term>, // VALUES
 }
 
+#[derive(Debug, PartialEq)]
 pub struct UpdateStatement {
     table_name: String,
     /// 1+; represents (column_name, value)
@@ -77,12 +87,14 @@ pub struct UpdateStatement {
     where_expression: Expression,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum ExplainStatement {
     Select(SelectStatement),
     Update(UpdateStatement),
     Delete(DeleteStatement),
 }
 
+#[derive(Debug, PartialEq)]
 pub enum TransactionStatement {
     Begin,
     Commit,

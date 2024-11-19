@@ -1,7 +1,7 @@
 use crate::parser::{
     ast::{
         general::{
-            CountType, Expression, Factor, FactorRight, Function, Operand, OperatorRight,
+            CountType, Expression, Factor, FactorRight, Function, Operand, OperandRight,
             TableExpression, Term,
         },
         JoinExpression, OrderByExpression, SelectExpression,
@@ -14,7 +14,6 @@ use crate::parser::{
 mod tests;
 
 /// Parse expression matching `select_expression , { "," , select_expression }`.
-// TODO: test
 pub fn parse_select_expressions(parser: &mut SqlParser) -> Result<Vec<SelectExpression>, String> {
     let mut select_expressions = vec![parse_select_expression(parser)?];
 
@@ -34,7 +33,6 @@ pub fn parse_select_expressions(parser: &mut SqlParser) -> Result<Vec<SelectExpr
 }
 
 /// Parse expression matching `"*" | term , [ "AS" , column_alias ]`.
-// TODO: test
 fn parse_select_expression(parser: &mut SqlParser) -> Result<SelectExpression, String> {
     if parser
         .match_next(Token::Operator(Operator::Multiply))
@@ -162,7 +160,6 @@ fn parse_paren_operand(parser: &mut SqlParser) -> Result<Operand, String> {
 }
 
 /// Parse expression matching `factor , { "+" | "-" , factor }`.
-// TODO: test
 fn parse_operand(parser: &mut SqlParser) -> Result<Operand, String> {
     let left = parse_factor(parser)?;
 
@@ -176,9 +173,9 @@ fn parse_operand(parser: &mut SqlParser) -> Result<Operand, String> {
 
         let factor = parse_factor(parser)?;
         if is_plus {
-            right.push(OperatorRight::Plus(factor));
+            right.push(OperandRight::Plus(factor));
         } else if is_minus {
-            right.push(OperatorRight::Minus(factor));
+            right.push(OperandRight::Minus(factor));
         }
     }
 
@@ -211,7 +208,6 @@ fn parse_factor(parser: &mut SqlParser) -> Result<Factor, String> {
 }
 
 /// Parse expression matching `( [ table_alias , "." ] , column_ref )`.
-// TODO: test
 fn parse_column_identifier(parser: &mut SqlParser) -> Result<(Option<String>, String), String> {
     let first = parser.match_next_identifier()?;
 
@@ -221,11 +217,14 @@ fn parse_column_identifier(parser: &mut SqlParser) -> Result<(Option<String>, St
         None
     };
 
-    Ok((second, first))
+    if let Some(second) = second {
+        Ok((Some(first), second))
+    } else {
+        Ok((None, first))
+    }
 }
 
 /// Parse expression matching `"(" , term , "," , term , { "," , term } , ")"`.
-// TODO: test
 fn parse_row_value_constructor(parser: &mut SqlParser) -> Result<Vec<Term>, String> {
     parser.match_next(Token::Delimiter(Delimiter::OpenParen))?;
 
@@ -258,8 +257,10 @@ pub fn parse_table_expression(parser: &mut SqlParser) -> Result<TableExpression,
     Ok(TableExpression { table_name, alias })
 }
 
+/// Parse expression matching `and_condition , { "OR" , and_condition }`.
+// TODO: test
 pub fn parse_expression(parser: &mut SqlParser) -> Result<Expression, String> {
-    todo!()
+    todo!("this")
 }
 
 pub fn parse_expressions(parser: &mut SqlParser) -> Result<Vec<Expression>, String> {
