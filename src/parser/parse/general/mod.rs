@@ -1,8 +1,8 @@
 use crate::parser::{
     ast::{
         general::{
-            CountType, Expression, Factor, FactorRight, Function, Operand, OperandRight,
-            TableExpression, Term,
+            AndCondition, Condition, CountType, Expression, Factor, FactorRight, Function, Operand,
+            OperandRight, TableExpression, Term,
         },
         JoinExpression, OrderByExpression, SelectExpression,
     },
@@ -260,6 +260,39 @@ pub fn parse_table_expression(parser: &mut SqlParser) -> Result<TableExpression,
 /// Parse expression matching `and_condition , { "OR" , and_condition }`.
 // TODO: test
 pub fn parse_expression(parser: &mut SqlParser) -> Result<Expression, String> {
+    let mut and_conditions = vec![parse_and_condition(parser)?];
+
+    loop {
+        if parser.match_next(Token::Operator(Operator::Or)).is_err() {
+            break;
+        }
+
+        and_conditions.push(parse_and_condition(parser)?);
+    }
+
+    Ok(Expression { and_conditions })
+}
+
+/// Parse expression matching `condition , { "AND" , condition }`.
+// TODO: test
+fn parse_and_condition(parser: &mut SqlParser) -> Result<AndCondition, String> {
+    todo!("this")
+}
+
+/// Parse expression matching 
+/// ```
+/// ( operand , [
+///   ( compare , operand )
+///   | ( [ "NOT" ] , "IN" , "(" , constant_operand , { "," , constant_operand } , ")" )
+///   | ( [ "NOT" ] , "LIKE" , string )
+///   | ( [ "NOT" ] , "BETWEEN" , operand , "AND" , operand )
+///   | ( "IS" , [ "NOT" ] , "NULL" )
+///   ] )
+/// |   "NOT" , expression
+/// |   "(" , expression , ")"
+/// ```
+// TODO: test
+fn parse_condition(parser: &mut SqlParser) -> Result<Condition, String> {
     todo!("this")
 }
 

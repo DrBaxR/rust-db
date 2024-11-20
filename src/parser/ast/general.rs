@@ -68,17 +68,17 @@ pub struct TableExpression {
 #[derive(Debug, PartialEq)]
 pub struct Expression {
     /// 1+
-    and_conditions: Vec<AndCondition>,
+    pub and_conditions: Vec<AndCondition>,
 }
 
 #[derive(Debug, PartialEq)]
-struct AndCondition {
+pub struct AndCondition {
     /// 1+
-    conditions: Vec<Condition>,
+    pub conditions: Vec<Condition>,
 }
 
 #[derive(Debug, PartialEq)]
-enum Condition {
+pub enum Condition {
     Operation {
         operand: Operand,
         operation: Option<Operation>,
@@ -88,7 +88,7 @@ enum Condition {
 }
 
 #[derive(Debug, PartialEq)]
-enum Operation {
+pub enum Operation {
     Comparison {
         cmp_type: CompareType,
         operand: Operand,
@@ -113,7 +113,7 @@ enum Operation {
 }
 
 #[derive(Debug, PartialEq)]
-enum CompareType {
+pub enum CompareType {
     EQ,  // =
     NE,  // != or <>
     GT,  // >
@@ -124,7 +124,7 @@ enum CompareType {
 
 #[derive(Debug, PartialEq)]
 pub struct ColumnDef {
-    name: String,
+    pub name: String,
     /// At the moment varchar is of set size (255)
-    data_type: DataType,
+    pub data_type: DataType,
 }
