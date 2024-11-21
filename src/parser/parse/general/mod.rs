@@ -2,7 +2,7 @@ use crate::parser::{
     ast::{
         general::{
             AndCondition, Condition, CountType, Expression, Factor, FactorRight, Function, Operand,
-            OperandRight, TableExpression, Term,
+            OperandRight, Operation, TableExpression, Term,
         },
         JoinExpression, OrderByExpression, SelectExpression,
     },
@@ -276,10 +276,20 @@ pub fn parse_expression(parser: &mut SqlParser) -> Result<Expression, String> {
 /// Parse expression matching `condition , { "AND" , condition }`.
 // TODO: test
 fn parse_and_condition(parser: &mut SqlParser) -> Result<AndCondition, String> {
-    todo!("this")
+    let mut conditions = vec![parse_condition(parser)?];
+
+    loop {
+        if parser.match_next(Token::Operator(Operator::And)).is_err() {
+            break;
+        }
+
+        conditions.push(parse_condition(parser)?);
+    }
+
+    Ok(AndCondition { conditions })
 }
 
-/// Parse expression matching 
+/// Parse expression matching
 /// ```
 /// ( operand , [
 ///   ( compare , operand )
@@ -293,7 +303,43 @@ fn parse_and_condition(parser: &mut SqlParser) -> Result<AndCondition, String> {
 /// ```
 // TODO: test
 fn parse_condition(parser: &mut SqlParser) -> Result<Condition, String> {
-    todo!("this")
+    if let Ok(operand) = parse_operand(parser) {
+        return Ok(Condition::Operation {
+            operand,
+            operation: parse_operation(parser)?,
+        });
+    }
+
+    if parser.match_next(Token::Operator(Operator::Not)).is_ok() {
+        return Ok(Condition::Negative(parse_expression(parser)?));
+    }
+
+    if parser
+        .match_next(Token::Delimiter(Delimiter::OpenParen))
+        .is_ok()
+    {
+        let expression = parse_expression(parser)?;
+        parser.match_next(Token::Delimiter(Delimiter::CloseParen))?;
+
+        return Ok(Condition::Positive(expression));
+    }
+
+    Err("STX: Expected condition".to_string())
+}
+
+/// Parse expression matching
+/// ```
+/// [
+///   ( compare , operand )
+///   | ( [ "NOT" ] , "IN" , "(" , constant_operand , { "," , constant_operand } , ")" )
+///   | ( [ "NOT" ] , "LIKE" , string )
+///   | ( [ "NOT" ] , "BETWEEN" , operand , "AND" , operand )
+///   | ( "IS" , [ "NOT" ] , "NULL" )
+/// ]
+/// ```
+// TODO: test
+pub fn parse_operation(parser: &mut SqlParser) -> Result<Option<Operation>, String> {
+    todo!("this");
 }
 
 pub fn parse_expressions(parser: &mut SqlParser) -> Result<Vec<Expression>, String> {
