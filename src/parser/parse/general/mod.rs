@@ -380,25 +380,72 @@ pub fn parse_operation(parser: &mut SqlParser) -> Result<Operation, String> {
 /// Parse expression matching `[ "NOT" ] , "IN" , "(" , constant_operand , { "," , constant_operand } , ")"`.
 // TODO: test
 fn parse_in_operation(parser: &mut SqlParser) -> Result<Operation, String> {
-    todo!()
+    let not = parser.match_next(Token::Operator(Operator::Not)).is_ok();
+
+    parser.match_next(Token::Operator(Operator::In))?;
+    parser.match_next(Token::Delimiter(Delimiter::OpenParen))?;
+
+    let mut operands = vec![parse_operand(parser)?];
+    loop {
+        if parser
+            .match_next(Token::Delimiter(Delimiter::Comma))
+            .is_err()
+        {
+            break;
+        }
+
+        operands.push(parse_operand(parser)?);
+    }
+
+    parser.match_next(Token::Delimiter(Delimiter::CloseParen))?;
+
+    Ok(Operation::In { not, operands })
 }
 
 /// Parse expression matching `[ "NOT" ] , "LIKE" , string`.
 // TODO: test
 fn parse_like_operation(parser: &mut SqlParser) -> Result<Operation, String> {
-    todo!()
+    let not = parser.match_next(Token::Operator(Operator::Not)).is_ok();
+
+    parser.match_next(Token::Operator(Operator::Like))?;
+    let value = parser.match_next_value()?;
+
+    match value {
+        crate::parser::token::value::Value::String(template) => {
+            Ok(Operation::Like { not, template })
+        }
+        _ => Err("STX: Expected string value".to_string()),
+    }
 }
 
 /// Parse expression matching `[ "NOT" ] , "BETWEEN" , operand , "AND" , operand`.
 // TODO: test
 fn parse_between_operation(parser: &mut SqlParser) -> Result<Operation, String> {
-    todo!()
+    let not = parser.match_next(Token::Operator(Operator::Not)).is_ok();
+
+    parser.match_next(Token::Keyword(Keyword::Between))?; // don't ask why BETWEEN is a keyword while the others are operators, I can't be bothered to change it
+    let start = parse_operand(parser)?;
+    parser.match_next(Token::Operator(Operator::And))?;
+    let end = parse_operand(parser)?;
+
+    Ok(Operation::Between { not, start, end })
 }
 
 /// Parse expression matching `"IS" , [ "NOT" ] , "NULL"`.
 // TODO: test
 fn parse_null_operation(parser: &mut SqlParser) -> Result<Operation, String> {
-    todo!()
+    if parser.match_next(Token::Keyword(Keyword::IsNull)).is_ok() {
+        return Ok(Operation::IsNull { not: false });
+    }
+
+    if parser
+        .match_next(Token::Keyword(Keyword::IsNotNull))
+        .is_ok()
+    {
+        return Ok(Operation::IsNull { not: true });
+    }
+
+    Err("STX: Expected null operation".to_string())
 }
 
 pub fn parse_expressions(parser: &mut SqlParser) -> Result<Vec<Expression>, String> {
