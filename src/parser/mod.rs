@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use ast::{
-    general::{Expression, TableExpression},
+    general::{CompareType, Expression, TableExpression},
     JoinExpression, OrderByExpression, SelectExpression, SelectStatement,
 };
 use token::{
@@ -146,5 +146,23 @@ impl SqlParser {
 
         self.pop()?;
         function
+    }
+
+    fn match_next_comparison(&mut self) -> Result<CompareType, String> {
+        let compare = match self.peek()? {
+            Token::Operator(operator) => match operator {
+                token::operator::Operator::Equal => Ok(CompareType::EQ),
+                token::operator::Operator::NotEqual => Ok(CompareType::NE),
+                token::operator::Operator::GreaterThan => Ok(CompareType::GT),
+                token::operator::Operator::GreaterThanOrEqual => Ok(CompareType::GTE),
+                token::operator::Operator::LessThan => Ok(CompareType::LT),
+                token::operator::Operator::LessThanOrEqual => Ok(CompareType::LTE),
+                _ => Err("STX: Expected compare operator".to_string()),
+            },
+            _ => Err("STX: Expected compare operator".to_string()),
+        };
+
+        self.pop()?;
+        compare
     }
 }

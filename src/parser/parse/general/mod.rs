@@ -306,7 +306,7 @@ fn parse_condition(parser: &mut SqlParser) -> Result<Condition, String> {
     if let Ok(operand) = parse_operand(parser) {
         return Ok(Condition::Operation {
             operand,
-            operation: parse_operation(parser)?,
+            operation: parse_operation(parser).ok(),
         });
     }
 
@@ -338,8 +338,67 @@ fn parse_condition(parser: &mut SqlParser) -> Result<Condition, String> {
 /// ]
 /// ```
 // TODO: test
-pub fn parse_operation(parser: &mut SqlParser) -> Result<Option<Operation>, String> {
-    todo!("this");
+pub fn parse_operation(parser: &mut SqlParser) -> Result<Operation, String> {
+    let slot = parser.save();
+    if let Ok(in_operation) = parse_in_operation(parser) {
+        return Ok(in_operation);
+    }
+    parser.load(slot);
+
+    let slot = parser.save();
+    if let Ok(like_operation) = parse_like_operation(parser) {
+        return Ok(like_operation);
+    }
+    parser.load(slot);
+
+    let slot = parser.save();
+    if let Ok(between_operation) = parse_between_operation(parser) {
+        return Ok(between_operation);
+    }
+    parser.load(slot);
+
+    let slot = parser.save();
+    if let Ok(null_operation) = parse_null_operation(parser) {
+        return Ok(null_operation);
+    }
+    parser.load(slot);
+
+    let slot = parser.save();
+    if let Ok(compare) = parser.match_next_comparison() {
+        if let Ok(operand) = parse_operand(parser) {
+            return Ok(Operation::Comparison {
+                cmp_type: compare,
+                operand,
+            });
+        }
+    }
+    parser.load(slot);
+
+    Err("STX: Expected operation".to_string())
+}
+
+/// Parse expression matching `[ "NOT" ] , "IN" , "(" , constant_operand , { "," , constant_operand } , ")"`.
+// TODO: test
+fn parse_in_operation(parser: &mut SqlParser) -> Result<Operation, String> {
+    todo!()
+}
+
+/// Parse expression matching `[ "NOT" ] , "LIKE" , string`.
+// TODO: test
+fn parse_like_operation(parser: &mut SqlParser) -> Result<Operation, String> {
+    todo!()
+}
+
+/// Parse expression matching `[ "NOT" ] , "BETWEEN" , operand , "AND" , operand`.
+// TODO: test
+fn parse_between_operation(parser: &mut SqlParser) -> Result<Operation, String> {
+    todo!()
+}
+
+/// Parse expression matching `"IS" , [ "NOT" ] , "NULL"`.
+// TODO: test
+fn parse_null_operation(parser: &mut SqlParser) -> Result<Operation, String> {
+    todo!()
 }
 
 pub fn parse_expressions(parser: &mut SqlParser) -> Result<Vec<Expression>, String> {
