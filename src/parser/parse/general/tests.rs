@@ -2,12 +2,15 @@ use crate::parser::{
     self,
     ast::{
         general::{
-            CountType, Factor, FactorRight, Function, Operand, OperandRight, TableExpression, Term,
+            AndCondition, CompareType, Condition, CountType, Expression, Factor, FactorRight,
+            Function, Operand, OperandRight, Operation, TableExpression, Term,
         },
         SelectExpression,
     },
     parse::general::{
-        parse_column_identifier, parse_factor, parse_function, parse_operand, parse_paren_term,
+        parse_and_condition, parse_between_operation, parse_column_identifier, parse_condition,
+        parse_expression, parse_factor, parse_function, parse_in_operation, parse_like_operation,
+        parse_null_operation, parse_operand, parse_operation, parse_paren_term,
         parse_row_value_constructor, parse_select_expression, parse_select_expressions, parse_term,
     },
     token::{value::Value, Token, Tokenizer},
@@ -302,5 +305,286 @@ fn parse_select_expressions_test() {
             SelectExpression::All,
             SelectExpression::All
         ]
+    );
+}
+
+#[test]
+fn parse_null_operation_test() {
+    let mut parser = get_parser("IS NULL");
+    assert_eq!(
+        parse_null_operation(&mut parser).unwrap(),
+        Operation::IsNull { not: false }
+    );
+
+    let mut parser = get_parser("IS NOT NULL");
+    assert_eq!(
+        parse_null_operation(&mut parser).unwrap(),
+        Operation::IsNull { not: true }
+    );
+
+    let mut parser = get_parser("IS");
+    assert!(parse_null_operation(&mut parser).is_err());
+}
+
+fn get_number_operand(number: i64) -> Operand {
+    Operand {
+        left: Factor {
+            left: Box::new(Term::Value(Value::Integer(number))),
+            right: vec![],
+        },
+        right: vec![],
+    }
+}
+
+#[test]
+fn parse_between_operation_test() {
+    let mut parser = get_parser("BETWEEN 1 AND 1");
+    assert_eq!(
+        parse_between_operation(&mut parser).unwrap(),
+        Operation::Between {
+            not: false,
+            start: get_number_operand(1),
+            end: get_number_operand(1)
+        }
+    );
+
+    let mut parser = get_parser("NOT BETWEEN 1 AND 1");
+    assert_eq!(
+        parse_between_operation(&mut parser).unwrap(),
+        Operation::Between {
+            not: true,
+            start: get_number_operand(1),
+            end: get_number_operand(1)
+        }
+    );
+    let mut parser = get_parser("NOT BETWEEN 1 1");
+    assert!(parse_between_operation(&mut parser).is_err(),);
+}
+
+#[test]
+fn parse_like_operation_test() {
+    let mut parser = get_parser("LIKE 'test'");
+    assert_eq!(
+        parse_like_operation(&mut parser).unwrap(),
+        Operation::Like {
+            not: false,
+            template: "test".to_string()
+        }
+    );
+
+    let mut parser = get_parser("NOT LIKE 'test'");
+    assert_eq!(
+        parse_like_operation(&mut parser).unwrap(),
+        Operation::Like {
+            not: true,
+            template: "test".to_string()
+        }
+    );
+
+    let mut parser = get_parser("NOT LIKE 1");
+    assert!(parse_like_operation(&mut parser).is_err(),);
+}
+
+#[test]
+fn parse_in_operation_test() {
+    let mut parser = get_parser("IN (1)");
+    assert_eq!(
+        parse_in_operation(&mut parser).unwrap(),
+        Operation::In {
+            not: false,
+            operands: vec![get_number_operand(1)]
+        }
+    );
+
+    let mut parser = get_parser("NOT IN (1, 1)");
+    assert_eq!(
+        parse_in_operation(&mut parser).unwrap(),
+        Operation::In {
+            not: true,
+            operands: vec![get_number_operand(1), get_number_operand(1)]
+        }
+    );
+
+    let mut parser = get_parser("IN 1");
+    assert!(parse_in_operation(&mut parser).is_err(),);
+}
+
+#[test]
+fn parse_operation_test() {
+    let mut parser = get_parser("IS NULL");
+    assert_eq!(
+        parse_operation(&mut parser).unwrap(),
+        Operation::IsNull { not: false }
+    );
+
+    let mut parser = get_parser("BETWEEN 1 AND 1");
+    assert_eq!(
+        parse_operation(&mut parser).unwrap(),
+        Operation::Between {
+            not: false,
+            start: get_number_operand(1),
+            end: get_number_operand(1)
+        }
+    );
+
+    let mut parser = get_parser("LIKE 'test'");
+    assert_eq!(
+        parse_operation(&mut parser).unwrap(),
+        Operation::Like {
+            not: false,
+            template: "test".to_string()
+        }
+    );
+
+    let mut parser = get_parser("IN (1)");
+    assert_eq!(
+        parse_operation(&mut parser).unwrap(),
+        Operation::In {
+            not: false,
+            operands: vec![get_number_operand(1)]
+        }
+    );
+
+    let mut parser = get_parser("<= 1");
+    assert_eq!(
+        parse_operation(&mut parser).unwrap(),
+        Operation::Comparison {
+            cmp_type: CompareType::LTE,
+            operand: get_number_operand(1)
+        }
+    );
+}
+
+fn get_bool_expression(value: bool) -> Expression {
+    Expression {
+        and_conditions: vec![AndCondition {
+            conditions: vec![Condition::Operation {
+                operand: Operand {
+                    left: Factor {
+                        left: Box::new(Term::Value(Value::Boolean(value))),
+                        right: vec![],
+                    },
+                    right: vec![],
+                },
+                operation: None,
+            }],
+        }],
+    }
+}
+
+#[test]
+fn parse_condition_test() {
+    let mut parser = get_parser("1");
+    assert_eq!(
+        parse_condition(&mut parser).unwrap(),
+        Condition::Operation {
+            operand: get_number_operand(1),
+            operation: None,
+        }
+    );
+
+    let mut parser = get_parser("1 < 2");
+    assert_eq!(
+        parse_condition(&mut parser).unwrap(),
+        Condition::Operation {
+            operand: get_number_operand(1),
+            operation: Some(Operation::Comparison {
+                cmp_type: CompareType::LT,
+                operand: get_number_operand(2)
+            })
+        }
+    );
+
+    let mut parser = get_parser("NOT true");
+    assert_eq!(
+        parse_condition(&mut parser).unwrap(),
+        Condition::Negative(get_bool_expression(true))
+    );
+}
+
+fn get_bool_operand(value: bool) -> Operand {
+    Operand {
+        left: Factor {
+            left: Box::new(Term::Value(Value::Boolean(value))),
+            right: vec![],
+        },
+        right: vec![],
+    }
+}
+
+#[test]
+fn parse_and_condition_test() {
+    let mut parser = get_parser("true");
+    assert_eq!(
+        parse_and_condition(&mut parser).unwrap(),
+        AndCondition {
+            conditions: vec![Condition::Operation {
+                operand: get_bool_operand(true),
+                operation: None
+            },]
+        }
+    );
+
+    let mut parser = get_parser("true AND true AND true");
+    assert_eq!(
+        parse_and_condition(&mut parser).unwrap(),
+        AndCondition {
+            conditions: vec![
+                Condition::Operation {
+                    operand: get_bool_operand(true),
+                    operation: None
+                },
+                Condition::Operation {
+                    operand: get_bool_operand(true),
+                    operation: None
+                },
+                Condition::Operation {
+                    operand: get_bool_operand(true),
+                    operation: None
+                }
+            ]
+        }
+    );
+}
+
+#[test]
+fn parse_expression_test() {
+    let mut parser = get_parser("true");
+    assert_eq!(
+        parse_expression(&mut parser).unwrap(),
+        get_bool_expression(true)
+    );
+
+    let mut parser = get_parser("true OR true");
+    assert_eq!(
+        parse_expression(&mut parser).unwrap(),
+        Expression {
+            and_conditions: vec![
+                AndCondition {
+                    conditions: vec![Condition::Operation {
+                        operand: Operand {
+                            left: Factor {
+                                left: Box::new(Term::Value(Value::Boolean(true))),
+                                right: vec![],
+                            },
+                            right: vec![],
+                        },
+                        operation: None,
+                    }],
+                },
+                AndCondition {
+                    conditions: vec![Condition::Operation {
+                        operand: Operand {
+                            left: Factor {
+                                left: Box::new(Term::Value(Value::Boolean(true))),
+                                right: vec![],
+                            },
+                            right: vec![],
+                        },
+                        operation: None,
+                    }],
+                }
+            ],
+        }
     );
 }

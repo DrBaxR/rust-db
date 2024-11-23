@@ -258,7 +258,6 @@ pub fn parse_table_expression(parser: &mut SqlParser) -> Result<TableExpression,
 }
 
 /// Parse expression matching `and_condition , { "OR" , and_condition }`.
-// TODO: test
 pub fn parse_expression(parser: &mut SqlParser) -> Result<Expression, String> {
     let mut and_conditions = vec![parse_and_condition(parser)?];
 
@@ -274,7 +273,6 @@ pub fn parse_expression(parser: &mut SqlParser) -> Result<Expression, String> {
 }
 
 /// Parse expression matching `condition , { "AND" , condition }`.
-// TODO: test
 fn parse_and_condition(parser: &mut SqlParser) -> Result<AndCondition, String> {
     let mut conditions = vec![parse_condition(parser)?];
 
@@ -301,7 +299,6 @@ fn parse_and_condition(parser: &mut SqlParser) -> Result<AndCondition, String> {
 /// |   "NOT" , expression
 /// |   "(" , expression , ")"
 /// ```
-// TODO: test
 fn parse_condition(parser: &mut SqlParser) -> Result<Condition, String> {
     if let Ok(operand) = parse_operand(parser) {
         return Ok(Condition::Operation {
@@ -337,7 +334,6 @@ fn parse_condition(parser: &mut SqlParser) -> Result<Condition, String> {
 ///   | ( "IS" , [ "NOT" ] , "NULL" )
 /// ]
 /// ```
-// TODO: test
 pub fn parse_operation(parser: &mut SqlParser) -> Result<Operation, String> {
     let slot = parser.save();
     if let Ok(in_operation) = parse_in_operation(parser) {
@@ -378,7 +374,6 @@ pub fn parse_operation(parser: &mut SqlParser) -> Result<Operation, String> {
 }
 
 /// Parse expression matching `[ "NOT" ] , "IN" , "(" , constant_operand , { "," , constant_operand } , ")"`.
-// TODO: test
 fn parse_in_operation(parser: &mut SqlParser) -> Result<Operation, String> {
     let not = parser.match_next(Token::Operator(Operator::Not)).is_ok();
 
@@ -403,7 +398,6 @@ fn parse_in_operation(parser: &mut SqlParser) -> Result<Operation, String> {
 }
 
 /// Parse expression matching `[ "NOT" ] , "LIKE" , string`.
-// TODO: test
 fn parse_like_operation(parser: &mut SqlParser) -> Result<Operation, String> {
     let not = parser.match_next(Token::Operator(Operator::Not)).is_ok();
 
@@ -419,7 +413,6 @@ fn parse_like_operation(parser: &mut SqlParser) -> Result<Operation, String> {
 }
 
 /// Parse expression matching `[ "NOT" ] , "BETWEEN" , operand , "AND" , operand`.
-// TODO: test
 fn parse_between_operation(parser: &mut SqlParser) -> Result<Operation, String> {
     let not = parser.match_next(Token::Operator(Operator::Not)).is_ok();
 
@@ -432,7 +425,6 @@ fn parse_between_operation(parser: &mut SqlParser) -> Result<Operation, String> 
 }
 
 /// Parse expression matching `"IS" , [ "NOT" ] , "NULL"`.
-// TODO: test
 fn parse_null_operation(parser: &mut SqlParser) -> Result<Operation, String> {
     if parser.match_next(Token::Keyword(Keyword::IsNull)).is_ok() {
         return Ok(Operation::IsNull { not: false });
