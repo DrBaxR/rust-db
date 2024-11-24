@@ -148,6 +148,11 @@ impl SqlParser {
         function
     }
 
+    /// Expects next token to be an operator token and advances cursor if matches. Besides being an operator, it also expects it
+    /// to be a comparison operator and will return the casted `CompareType` representation of that operator.
+    ///
+    /// # Errors
+    /// Will return `Err` if tokens empty or no match.
     fn match_next_comparison(&mut self) -> Result<CompareType, String> {
         let compare = match self.peek()? {
             Token::Operator(operator) => match operator {
@@ -164,5 +169,15 @@ impl SqlParser {
 
         self.pop()?;
         compare
+    }
+
+    fn match_next_keyword(&mut self) -> Result<Keyword, String> {
+        let keyword = match self.peek()? {
+            Token::Keyword(keyword) => Ok(keyword.clone()),
+            _ => Err("STX: Expected a keyword".to_string()),
+        };
+
+        self.pop()?;
+        keyword
     }
 }

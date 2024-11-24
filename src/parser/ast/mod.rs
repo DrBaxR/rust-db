@@ -21,9 +21,9 @@ pub struct SelectStatement {
 
 #[derive(Debug, PartialEq)]
 pub struct JoinExpression {
-    join_type: JoinType,
-    table: TableExpression,
-    on_expression: Expression, // ON
+    pub join_type: JoinType,
+    pub table: TableExpression,
+    pub on: Expression, // ON
 }
 
 #[derive(Debug, PartialEq)]
@@ -37,9 +37,9 @@ pub enum JoinType {
 #[derive(Debug, PartialEq)]
 pub struct OrderByExpression {
     /// 1+
-    expressions: Vec<Expression>,
+    pub expressions: Vec<Expression>,
     /// either `ASC` or `DESC`
-    asc: bool,
+    pub asc: bool,
 }
 
 #[derive(Debug, PartialEq)]

@@ -63,7 +63,7 @@ fn parse_select_statement(parser: &mut SqlParser) -> Result<SelectStatement, Str
         };
 
     // [ "ORDER BY" , expression , { "," , expression } , order ]
-    let order_by_expression = parse_order_by_expression(parser)?;
+    let order_by_expression = parse_order_by_expression(parser).ok();
 
     // [ "LIMIT" , number ]
     let limit = if let Some(_) = parser.match_next_option(&vec![Token::Keyword(Keyword::Limit)])? {
@@ -78,7 +78,7 @@ fn parse_select_statement(parser: &mut SqlParser) -> Result<SelectStatement, Str
     };
 
     // [ ( "INNER JOIN" | "JOIN" | "LEFT JOIN" | "RIGHT JOIN" | "OUTER JOIN" ) , table_expression , "ON" , expression ]
-    let join_expression = parse_join_expression(parser)?;
+    let join_expression = parse_join_expression(parser).ok();
 
     Ok(SelectStatement {
         is_distinct,

@@ -4,7 +4,7 @@ use crate::parser::{
             AndCondition, Condition, CountType, Expression, Factor, FactorRight, Function, Operand,
             OperandRight, Operation, TableExpression, Term,
         },
-        JoinExpression, OrderByExpression, SelectExpression,
+        JoinExpression, JoinType, OrderByExpression, SelectExpression,
     },
     token::{delimiter::Delimiter, function, keyword::Keyword, operator::Operator, Token},
     SqlParser,
@@ -440,16 +440,67 @@ fn parse_null_operation(parser: &mut SqlParser) -> Result<Operation, String> {
     Err("STX: Expected null operation".to_string())
 }
 
+/// Parse expression matching `expression , { "," , expression }`.
+// TODO: test
 pub fn parse_expressions(parser: &mut SqlParser) -> Result<Vec<Expression>, String> {
-    todo!()
+    let mut expressions = vec![parse_expression(parser)?];
+
+    loop {
+        if parser
+            .match_next(Token::Delimiter(Delimiter::Comma))
+            .is_err()
+        {
+            break;
+        }
+
+        expressions.push(parse_expression(parser)?);
+    }
+
+    Ok(expressions)
 }
 
-pub fn parse_order_by_expression(
-    parser: &mut SqlParser,
-) -> Result<Option<OrderByExpression>, String> {
-    todo!()
+/// Parse expression matching `[ "ORDER BY" , expression , { "," , expression } , order ]`.
+// TODO: test
+pub fn parse_order_by_expression(parser: &mut SqlParser) -> Result<OrderByExpression, String> {
+    parser.match_next(Token::Keyword(Keyword::OrderBy))?;
+
+    let expressions = parse_expressions(parser)?;
+    match parser.match_next_keyword() {
+        Ok(kw) => match kw {
+            Keyword::Asc => Ok(OrderByExpression {
+                expressions,
+                asc: true,
+            }),
+            Keyword::Desc => Ok(OrderByExpression {
+                expressions,
+                asc: false,
+            }),
+            _ => Err("STX: Expected either ASC or DESC".to_string()),
+        },
+        Err(_) => Err("STX: Expected a keyword".to_string()),
+    }
 }
 
-pub fn parse_join_expression(parser: &mut SqlParser) -> Result<Option<JoinExpression>, String> {
-    todo!()
+/// Parse expression matching `[ ( "INNER JOIN" | "JOIN" | "LEFT JOIN" | "RIGHT JOIN" | "OUTER JOIN" ) , table_expression , "ON" , expression ]`.
+// TODO: test
+pub fn parse_join_expression(parser: &mut SqlParser) -> Result<JoinExpression, String> {
+    let join_type = match parser.match_next_keyword()? {
+        Keyword::InnerJoin => Ok(JoinType::Inner),
+        Keyword::Join => Ok(JoinType::Inner),
+        Keyword::LeftJoin => Ok(JoinType::Left),
+        Keyword::OuterJoin => Ok(JoinType::Outer),
+        Keyword::RightJoin => Ok(JoinType::Right),
+        _ => Err("STX: Expected join type".to_string()),
+    }?;
+
+    let table = parse_table_expression(parser)?;
+
+    parser.match_next(Token::Keyword(Keyword::On))?;
+    let on = parse_expression(parser)?;
+
+    Ok(JoinExpression {
+        join_type,
+        table,
+        on,
+    })
 }
