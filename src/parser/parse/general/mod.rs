@@ -441,7 +441,6 @@ fn parse_null_operation(parser: &mut SqlParser) -> Result<Operation, String> {
 }
 
 /// Parse expression matching `expression , { "," , expression }`.
-// TODO: test
 pub fn parse_expressions(parser: &mut SqlParser) -> Result<Vec<Expression>, String> {
     let mut expressions = vec![parse_expression(parser)?];
 
