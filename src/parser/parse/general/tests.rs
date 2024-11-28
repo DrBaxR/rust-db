@@ -5,14 +5,14 @@ use crate::parser::{
             AndCondition, CompareType, Condition, CountType, Expression, Factor, FactorRight,
             Function, Operand, OperandRight, Operation, TableExpression, Term,
         },
-        SelectExpression,
+        OrderByExpression, SelectExpression,
     },
     parse::general::{
         parse_and_condition, parse_between_operation, parse_column_identifier, parse_condition,
         parse_expression, parse_expressions, parse_factor, parse_function, parse_in_operation,
         parse_like_operation, parse_null_operation, parse_operand, parse_operation,
-        parse_paren_term, parse_row_value_constructor, parse_select_expression,
-        parse_select_expressions, parse_term,
+        parse_order_by_expression, parse_paren_term, parse_row_value_constructor,
+        parse_select_expression, parse_select_expressions, parse_term,
     },
     token::{value::Value, Token, Tokenizer},
     SqlParser,
@@ -600,5 +600,26 @@ fn parse_expressions_test() {
             get_bool_expression(true),
             get_bool_expression(false),
         ]
+    );
+}
+
+#[test]
+fn parse_order_by_expression_test() {
+    let mut parser = get_parser("ORDER BY false ASC");
+    assert_eq!(
+        parse_order_by_expression(&mut parser).unwrap(),
+        OrderByExpression {
+            expressions: vec![get_bool_expression(false)],
+            asc: true
+        }
+    );
+
+    let mut parser = get_parser("ORDER BY false, true DESC");
+    assert_eq!(
+        parse_order_by_expression(&mut parser).unwrap(),
+        OrderByExpression {
+            expressions: vec![get_bool_expression(false), get_bool_expression(true)],
+            asc: false
+        }
     );
 }

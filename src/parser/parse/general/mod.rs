@@ -459,7 +459,6 @@ pub fn parse_expressions(parser: &mut SqlParser) -> Result<Vec<Expression>, Stri
 }
 
 /// Parse expression matching `[ "ORDER BY" , expression , { "," , expression } , order ]`.
-// TODO: test
 pub fn parse_order_by_expression(parser: &mut SqlParser) -> Result<OrderByExpression, String> {
     parser.match_next(Token::Keyword(Keyword::OrderBy))?;
 
