@@ -5,13 +5,13 @@ use crate::parser::{
             AndCondition, CompareType, Condition, CountType, Expression, Factor, FactorRight,
             Function, Operand, OperandRight, Operation, TableExpression, Term,
         },
-        OrderByExpression, SelectExpression,
+        JoinExpression, JoinType, OrderByExpression, SelectExpression,
     },
     parse::general::{
         parse_and_condition, parse_between_operation, parse_column_identifier, parse_condition,
         parse_expression, parse_expressions, parse_factor, parse_function, parse_in_operation,
-        parse_like_operation, parse_null_operation, parse_operand, parse_operation,
-        parse_order_by_expression, parse_paren_term, parse_row_value_constructor,
+        parse_join_expression, parse_like_operation, parse_null_operation, parse_operand,
+        parse_operation, parse_order_by_expression, parse_paren_term, parse_row_value_constructor,
         parse_select_expression, parse_select_expressions, parse_term,
     },
     token::{value::Value, Token, Tokenizer},
@@ -24,14 +24,22 @@ use super::parse_table_expression;
 fn parse_table_expression_test() {
     let tokens = Tokenizer::new().tokenize("my_table AS mt").unwrap();
     let mut p = SqlParser::new(tokens);
-
     assert_eq!(
         parse_table_expression(&mut p).unwrap(),
         TableExpression {
             table_name: "my_table".to_string(),
-            alias: "mt".to_string()
+            alias: Some("mt".to_string())
         }
     );
+
+    let mut parser = get_parser("my_table");
+    assert_eq!(
+        parse_table_expression(&mut parser).unwrap(),
+        TableExpression {
+            table_name: "my_table".to_string(),
+            alias: None
+        }
+    )
 }
 
 #[test]
@@ -620,6 +628,35 @@ fn parse_order_by_expression_test() {
         OrderByExpression {
             expressions: vec![get_bool_expression(false), get_bool_expression(true)],
             asc: false
+        }
+    );
+}
+
+#[test]
+fn parse_join_expression_test() {
+    let mut parser = get_parser("JOIN my_table ON true");
+    assert_eq!(
+        parse_join_expression(&mut parser).unwrap(),
+        JoinExpression {
+            join_type: JoinType::Inner,
+            table: TableExpression {
+                table_name: "my_table".to_string(),
+                alias: None
+            },
+            on: get_bool_expression(true)
+        }
+    );
+
+    let mut parser = get_parser("OUTER JOIN my_table ON true");
+    assert_eq!(
+        parse_join_expression(&mut parser).unwrap(),
+        JoinExpression {
+            join_type: JoinType::Outer,
+            table: TableExpression {
+                table_name: "my_table".to_string(),
+                alias: None
+            },
+            on: get_bool_expression(true)
         }
     );
 }

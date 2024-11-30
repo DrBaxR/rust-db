@@ -61,7 +61,7 @@ pub enum FactorRight {
 #[derive(Debug, PartialEq)]
 pub struct TableExpression {
     pub table_name: String,
-    pub alias: String,
+    pub alias: Option<String>,
 }
 
 /// Represents an `OR` expression for boolean operations.

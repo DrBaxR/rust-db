@@ -251,8 +251,11 @@ fn parse_row_value_constructor(parser: &mut SqlParser) -> Result<Vec<Term>, Stri
 /// Parse expression matching `table_name , [ "AS" , table_alias ]`.
 pub fn parse_table_expression(parser: &mut SqlParser) -> Result<TableExpression, String> {
     let table_name = parser.match_next_identifier()?;
-    parser.match_next(Token::Keyword(Keyword::As))?;
-    let alias = parser.match_next_identifier()?;
+    let alias = if parser.match_next(Token::Keyword(Keyword::As)).is_ok() {
+        Some(parser.match_next_identifier()?)
+    } else {
+        None
+    };
 
     Ok(TableExpression { table_name, alias })
 }
