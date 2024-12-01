@@ -50,9 +50,9 @@ pub enum SelectExpression {
 
 #[derive(Debug, PartialEq)]
 pub struct CreateTableStatement {
-    table_name: String,
+    pub table_name: String,
     /// 1+
-    columns: Vec<ColumnDef>,
+    pub columns: Vec<ColumnDef>,
 }
 
 #[derive(Debug, PartialEq)]

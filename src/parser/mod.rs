@@ -5,6 +5,7 @@ use ast::{
     JoinExpression, OrderByExpression, SelectExpression, SelectStatement,
 };
 use token::{
+    data_type::DataType,
     function::{self, Function},
     keyword::Keyword,
     value::Value,
@@ -171,6 +172,10 @@ impl SqlParser {
         compare
     }
 
+    /// Expects next token to be a keyword and returns the keyword in case of a match (also moves cursor in case of match).
+    ///
+    /// # Errors
+    /// Will return `Err` if tokens empty or no match.
     fn match_next_keyword(&mut self) -> Result<Keyword, String> {
         let keyword = match self.peek()? {
             Token::Keyword(keyword) => Ok(keyword.clone()),
@@ -179,5 +184,19 @@ impl SqlParser {
 
         self.pop()?;
         keyword
+    }
+
+    /// Expects next token to be a data type and returns the data type in case of a match (also moves cursor in case of match).
+    ///
+    /// # Errors
+    /// Will return `Err` if tokens empty or no match.
+    fn match_next_data_type(&mut self) -> Result<DataType, String> {
+        let data_type = match self.peek()? {
+            Token::DataType(data_type) => Ok(data_type.clone()),
+            _ => Err("STX: Expected a data type".to_string()),
+        };
+
+        self.pop()?;
+        data_type
     }
 }

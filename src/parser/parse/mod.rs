@@ -1,16 +1,17 @@
 use general::{
-    parse_expression, parse_expressions, parse_join_expression, parse_order_by_expression,
-    parse_select_expressions, parse_table_expression,
+    parse_column_defs, parse_expression, parse_expressions, parse_join_expression,
+    parse_order_by_expression, parse_select_expressions, parse_table_expression,
 };
 
 use super::{
-    ast::SelectStatement,
+    ast::{CreateTableStatement, SelectStatement},
     token::{keyword::Keyword, value::Value, Token},
     SqlParser,
 };
 
 mod general;
 
+// TODO: test
 fn parse_select_statement(parser: &mut SqlParser) -> Result<SelectStatement, String> {
     // SELECT
     parser
@@ -91,4 +92,16 @@ fn parse_select_statement(parser: &mut SqlParser) -> Result<SelectStatement, Str
         join_expression,
         limit,
     })
+}
+
+// TODO: test
+fn parse_create_table_statement(parser: &mut SqlParser) -> Result<CreateTableStatement, String> {
+    parser.match_next(Token::Keyword(Keyword::CreateTable))?;
+    let table_name = parser.match_next_identifier()?;
+    let columns = parse_column_defs(parser)?;
+
+    return Ok(CreateTableStatement {
+        table_name,
+        columns,
+    });
 }
