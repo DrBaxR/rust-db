@@ -506,7 +506,6 @@ pub fn parse_join_expression(parser: &mut SqlParser) -> Result<JoinExpression, S
 }
 
 /// Parse expression matching `"(" , column_def , { "," , column_def } , ")"`.
-// TODO: test
 pub fn parse_column_defs(parser: &mut SqlParser) -> Result<Vec<ColumnDef>, String> {
     parser.match_next(Token::Delimiter(Delimiter::OpenParen))?;
     let mut column_defs = vec![ColumnDef {
@@ -527,6 +526,8 @@ pub fn parse_column_defs(parser: &mut SqlParser) -> Result<Vec<ColumnDef>, Strin
             data_type: parser.match_next_data_type()?,
         });
     }
+
+    parser.match_next(Token::Delimiter(Delimiter::CloseParen))?;
 
     Ok(column_defs)
 }

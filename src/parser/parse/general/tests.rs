@@ -2,19 +2,19 @@ use crate::parser::{
     self,
     ast::{
         general::{
-            AndCondition, CompareType, Condition, CountType, Expression, Factor, FactorRight,
-            Function, Operand, OperandRight, Operation, TableExpression, Term,
+            AndCondition, ColumnDef, CompareType, Condition, CountType, Expression, Factor,
+            FactorRight, Function, Operand, OperandRight, Operation, TableExpression, Term,
         },
         JoinExpression, JoinType, OrderByExpression, SelectExpression,
     },
     parse::general::{
-        parse_and_condition, parse_between_operation, parse_column_identifier, parse_condition,
-        parse_expression, parse_expressions, parse_factor, parse_function, parse_in_operation,
-        parse_join_expression, parse_like_operation, parse_null_operation, parse_operand,
-        parse_operation, parse_order_by_expression, parse_paren_term, parse_row_value_constructor,
-        parse_select_expression, parse_select_expressions, parse_term,
+        parse_and_condition, parse_between_operation, parse_column_defs, parse_column_identifier,
+        parse_condition, parse_expression, parse_expressions, parse_factor, parse_function,
+        parse_in_operation, parse_join_expression, parse_like_operation, parse_null_operation,
+        parse_operand, parse_operation, parse_order_by_expression, parse_paren_term,
+        parse_row_value_constructor, parse_select_expression, parse_select_expressions, parse_term,
     },
-    token::{value::Value, Token, Tokenizer},
+    token::{data_type::DataType, value::Value, Token, Tokenizer},
     SqlParser,
 };
 
@@ -659,4 +659,34 @@ fn parse_join_expression_test() {
             on: get_bool_expression(true)
         }
     );
+}
+
+#[test]
+fn parse_column_defs_test() {
+    let mut parser = get_parser("(column INTEGER)");
+    assert_eq!(
+        parse_column_defs(&mut parser).unwrap(),
+        vec![ColumnDef {
+            name: "column".to_string(),
+            data_type: DataType::Integer
+        }]
+    );
+
+    let mut parser = get_parser("(column1 INTEGER, column2 BIGINT)");
+    assert_eq!(
+        parse_column_defs(&mut parser).unwrap(),
+        vec![
+            ColumnDef {
+                name: "column1".to_string(),
+                data_type: DataType::Integer
+            },
+            ColumnDef {
+                name: "column2".to_string(),
+                data_type: DataType::BigInt
+            }
+        ]
+    );
+
+    let mut parser = get_parser("(column1 INTEGER, column2 BIGINT");
+    assert!(parse_column_defs(&mut parser).is_err());
 }
