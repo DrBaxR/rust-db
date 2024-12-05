@@ -531,3 +531,25 @@ pub fn parse_column_defs(parser: &mut SqlParser) -> Result<Vec<ColumnDef>, Strin
 
     Ok(column_defs)
 }
+
+/// Parse expression matching `"(" , name , { "," , name } , ")"`.
+// TODO: test
+pub fn parse_identifiers(parser: &mut SqlParser) -> Result<Vec<String>, String> {
+    parser.match_next(Token::Delimiter(Delimiter::OpenParen))?;
+    let mut identifiers = vec![parser.match_next_identifier()?];
+
+    loop {
+        if parser
+            .match_next(Token::Delimiter(Delimiter::Comma))
+            .is_err()
+        {
+            break;
+        }
+
+        identifiers.push(parser.match_next_identifier()?);
+    }
+
+    parser.match_next(Token::Delimiter(Delimiter::CloseParen))?;
+
+    Ok(identifiers)
+}

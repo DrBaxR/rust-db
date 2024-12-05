@@ -57,10 +57,10 @@ pub struct CreateTableStatement {
 
 #[derive(Debug, PartialEq)]
 pub struct CreateIndexStatement {
-    index_name: String,
-    table: String, // ON
+    pub index_name: String,
+    pub table_name: String, // ON
     /// 1+
-    on_columns: Vec<String>,
+    pub columns: Vec<String>,
 }
 
 #[derive(Debug, PartialEq)]

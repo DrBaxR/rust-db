@@ -1,10 +1,11 @@
 use general::{
-    parse_column_defs, parse_expression, parse_expressions, parse_join_expression,
-    parse_order_by_expression, parse_select_expressions, parse_table_expression,
+    parse_column_defs, parse_expression, parse_expressions, parse_identifiers,
+    parse_join_expression, parse_order_by_expression, parse_select_expressions,
+    parse_table_expression,
 };
 
 use super::{
-    ast::{CreateTableStatement, SelectStatement},
+    ast::{CreateIndexStatement, CreateTableStatement, SelectStatement},
     token::{keyword::Keyword, value::Value, Token},
     SqlParser,
 };
@@ -104,4 +105,19 @@ fn parse_create_table_statement(parser: &mut SqlParser) -> Result<CreateTableSta
         table_name,
         columns,
     });
+}
+
+// TODO: test
+fn parse_create_index_statement(parser: &mut SqlParser) -> Result<CreateIndexStatement, String> {
+    parser.match_next(Token::Keyword(Keyword::CreateIndex))?;
+    let index_name = parser.match_next_identifier()?;
+    parser.match_next(Token::Keyword(Keyword::On))?;
+    let table_name = parser.match_next_identifier()?;
+    let columns = parse_identifiers(parser)?;
+
+    Ok(CreateIndexStatement {
+        index_name,
+        table_name,
+        columns,
+    })
 }
