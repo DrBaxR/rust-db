@@ -10,9 +10,10 @@ use crate::parser::{
     parse::general::{
         parse_and_condition, parse_between_operation, parse_column_defs, parse_column_identifier,
         parse_condition, parse_expression, parse_expressions, parse_factor, parse_function,
-        parse_in_operation, parse_join_expression, parse_like_operation, parse_null_operation,
-        parse_operand, parse_operation, parse_order_by_expression, parse_paren_term,
-        parse_row_value_constructor, parse_select_expression, parse_select_expressions, parse_term,
+        parse_identifiers, parse_in_operation, parse_join_expression, parse_like_operation,
+        parse_null_operation, parse_operand, parse_operation, parse_order_by_expression,
+        parse_paren_term, parse_row_value_constructor, parse_select_expression,
+        parse_select_expressions, parse_term,
     },
     token::{data_type::DataType, value::Value, Token, Tokenizer},
     SqlParser,
@@ -689,4 +690,29 @@ fn parse_column_defs_test() {
 
     let mut parser = get_parser("(column1 INTEGER, column2 BIGINT");
     assert!(parse_column_defs(&mut parser).is_err());
+}
+
+#[test]
+fn parse_identifiers_test() {
+    let mut parser = get_parser("(test)");
+    assert_eq!(
+        parse_identifiers(&mut parser).unwrap(),
+        vec!["test".to_string()]
+    );
+
+    let mut parser = get_parser("(test1, test2, test3)");
+    assert_eq!(
+        parse_identifiers(&mut parser).unwrap(),
+        vec![
+            "test1".to_string(),
+            "test2".to_string(),
+            "test3".to_string()
+        ]
+    );
+
+    let mut parser = get_parser("(test");
+    assert!(parse_identifiers(&mut parser).is_err());
+
+    let mut parser = get_parser("()");
+    assert!(parse_identifiers(&mut parser).is_err());
 }

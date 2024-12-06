@@ -5,7 +5,7 @@ use general::{
 };
 
 use super::{
-    ast::{CreateIndexStatement, CreateTableStatement, SelectStatement},
+    ast::{CreateIndexStatement, CreateTableStatement, DeleteStatement, SelectStatement},
     token::{keyword::Keyword, value::Value, Token},
     SqlParser,
 };
@@ -120,4 +120,9 @@ fn parse_create_index_statement(parser: &mut SqlParser) -> Result<CreateIndexSta
         table_name,
         columns,
     })
+}
+
+// TODO: test
+fn parse_delete_statement(parser: &mut SqlParser) -> Result<DeleteStatement, String> {
+    todo!("this")
 }
