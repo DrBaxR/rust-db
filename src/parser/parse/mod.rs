@@ -1,12 +1,15 @@
 use general::{
     parse_column_defs, parse_expression, parse_expressions, parse_identifiers,
     parse_join_expression, parse_order_by_expression, parse_select_expressions,
-    parse_table_expression,
+    parse_table_expression, parse_terms,
 };
 
 use super::{
-    ast::{CreateIndexStatement, CreateTableStatement, DeleteStatement, SelectStatement},
-    token::{keyword::Keyword, value::Value, Token},
+    ast::{
+        CreateIndexStatement, CreateTableStatement, DeleteStatement, InsertStatement,
+        SelectStatement,
+    },
+    token::{identifier, keyword::Keyword, value::Value, Token},
     SqlParser,
 };
 
@@ -124,5 +127,53 @@ fn parse_create_index_statement(parser: &mut SqlParser) -> Result<CreateIndexSta
 
 // TODO: test
 fn parse_delete_statement(parser: &mut SqlParser) -> Result<DeleteStatement, String> {
-    todo!("this")
+    parser.match_next(Token::Keyword(Keyword::Delete))?;
+    parser.match_next(Token::Keyword(Keyword::From))?;
+    let table_name = parser.match_next_identifier()?;
+
+    let where_expression = if parser.match_next(Token::Keyword(Keyword::Where)).is_ok() {
+        Some(parse_expression(parser)?)
+    } else {
+        None
+    };
+
+    let limit = if let Some(_) = parser.match_next_option(&vec![Token::Keyword(Keyword::Limit)])? {
+        let next = parser.pop()?;
+
+        match next {
+            Token::Value(Value::Integer(value)) => Some(*value as usize),
+            _ => return Err("STX: Expected integer after LIMIT".to_string()),
+        }
+    } else {
+        None
+    };
+
+    Ok(DeleteStatement {
+        table_name,
+        where_expression,
+        limit,
+    })
+}
+
+// TODO: test
+fn parse_insert_statement(parser: &mut SqlParser) -> Result<InsertStatement, String> {
+    parser.match_next(Token::Keyword(Keyword::InsertInto))?;
+    let table_name = parser.match_next_identifier()?;
+
+    let slot = parser.save();
+    let columns = if let Ok(identifiers) = parse_identifiers(parser) {
+        identifiers
+    } else {
+        parser.load(slot);
+        vec![]
+    };
+
+    parser.match_next(Token::Keyword(Keyword::Values))?;
+    let values = parse_terms(parser)?;
+
+    Ok(InsertStatement {
+        table_name,
+        columns,
+        values,
+    })
 }

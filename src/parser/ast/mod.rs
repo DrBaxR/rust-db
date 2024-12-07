@@ -65,26 +65,26 @@ pub struct CreateIndexStatement {
 
 #[derive(Debug, PartialEq)]
 pub struct DeleteStatement {
-    table_name: String,                   // FROM
-    where_expression: Option<Expression>, // WHERE
-    limit: Option<usize>,                 // LIMIT
+    pub table_name: String,                   // FROM
+    pub where_expression: Option<Expression>, // WHERE
+    pub limit: Option<usize>,                 // LIMIT
 }
 
 #[derive(Debug, PartialEq)]
 pub struct InsertStatement {
-    table_name: String, // INTO
+    pub table_name: String, // INTO
     // 0+
-    columns: Vec<String>,
+    pub columns: Vec<String>,
     // 1+
-    values: Vec<Term>, // VALUES
+    pub values: Vec<Term>, // VALUES
 }
 
 #[derive(Debug, PartialEq)]
 pub struct UpdateStatement {
-    table_name: String,
+    pub table_name: String,
     /// 1+; represents (column_name, value)
-    values: Vec<(String, Value)>, // SET
-    where_expression: Expression,
+    pub values: Vec<(String, Value)>, // SET
+    pub where_expression: Expression,
 }
 
 #[derive(Debug, PartialEq)]

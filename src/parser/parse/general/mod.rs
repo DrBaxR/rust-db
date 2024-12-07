@@ -552,3 +552,25 @@ pub fn parse_identifiers(parser: &mut SqlParser) -> Result<Vec<String>, String> 
 
     Ok(identifiers)
 }
+
+/// Parse expression matching `"(" , term , { "," , term } , ")"`.
+// TODO: test
+pub fn parse_terms(parser: &mut SqlParser) -> Result<Vec<Term>, String> {
+    parser.match_next(Token::Delimiter(Delimiter::OpenParen))?;
+    let mut identifiers = vec![parse_term(parser)?];
+
+    loop {
+        if parser
+            .match_next(Token::Delimiter(Delimiter::Comma))
+            .is_err()
+        {
+            break;
+        }
+
+        identifiers.push(parse_term(parser)?);
+    }
+
+    parser.match_next(Token::Delimiter(Delimiter::CloseParen))?;
+
+    Ok(identifiers)
+}
