@@ -1,13 +1,13 @@
 use general::{
     parse_column_defs, parse_expression, parse_expressions, parse_identifiers,
-    parse_join_expression, parse_order_by_expression, parse_select_expressions,
+    parse_join_expression, parse_order_by_expression, parse_select_expressions, parse_set_values,
     parse_table_expression, parse_terms,
 };
 
 use super::{
     ast::{
-        CreateIndexStatement, CreateTableStatement, DeleteStatement, InsertStatement,
-        SelectStatement,
+        CreateIndexStatement, CreateTableStatement, DeleteStatement, ExplainStatement,
+        InsertStatement, SelectStatement, TransactionStatement, UpdateStatement,
     },
     token::{identifier, keyword::Keyword, value::Value, Token},
     SqlParser,
@@ -176,4 +176,58 @@ fn parse_insert_statement(parser: &mut SqlParser) -> Result<InsertStatement, Str
         columns,
         values,
     })
+}
+
+// TODO: test
+fn parse_update_statement(parser: &mut SqlParser) -> Result<UpdateStatement, String> {
+    parser.match_next(Token::Keyword(Keyword::Update))?;
+    let table_name = parser.match_next_identifier()?;
+
+    parser.match_next(Token::Keyword(Keyword::Set))?;
+    let values = parse_set_values(parser)?;
+
+    parser.match_next(Token::Keyword(Keyword::Where))?;
+    let where_expression = parse_expression(parser)?;
+
+    Ok(UpdateStatement {
+        table_name,
+        values,
+        where_expression,
+    })
+}
+
+// TODO: test
+fn parse_explain_statement(parser: &mut SqlParser) -> Result<ExplainStatement, String> {
+    parser.match_next(Token::Keyword(Keyword::Explain))?;
+
+    if let Ok(select_statement) = parse_select_statement(parser) {
+        return Ok(ExplainStatement::Select(select_statement));
+    }
+
+    if let Ok(update_statement) = parse_update_statement(parser) {
+        return Ok(ExplainStatement::Update(update_statement));
+    }
+
+    if let Ok(delete_statement) = parse_delete_statement(parser) {
+        return Ok(ExplainStatement::Delete(delete_statement));
+    }
+
+    Err("STX: Expected select, update or delete statement".to_string())
+}
+
+// TODO: test
+fn parse_transaction_statement(parser: &mut SqlParser) -> Result<TransactionStatement, String> {
+    if parser.match_next(Token::Keyword(Keyword::Begin)).is_ok() {
+        return Ok(TransactionStatement::Begin);
+    }
+
+    if parser.match_next(Token::Keyword(Keyword::Commit)).is_ok() {
+        return Ok(TransactionStatement::Commit);
+    }
+
+    if parser.match_next(Token::Keyword(Keyword::Rollback)).is_ok() {
+        return Ok(TransactionStatement::Rollback);
+    }
+
+    Err("STX: Expected BEGIN, COMMIT or ROLLBACK".to_string())
 }

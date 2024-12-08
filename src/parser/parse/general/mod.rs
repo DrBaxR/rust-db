@@ -6,7 +6,9 @@ use crate::parser::{
         },
         JoinExpression, JoinType, OrderByExpression, SelectExpression,
     },
-    token::{delimiter::Delimiter, function, keyword::Keyword, operator::Operator, Token},
+    token::{
+        delimiter::Delimiter, function, keyword::Keyword, operator::Operator, value::Value, Token,
+    },
     SqlParser,
 };
 
@@ -573,4 +575,23 @@ pub fn parse_terms(parser: &mut SqlParser) -> Result<Vec<Term>, String> {
     parser.match_next(Token::Delimiter(Delimiter::CloseParen))?;
 
     Ok(identifiers)
+}
+
+/// Parse expression matching `column_ref , "=" , value , { "," , column_ref , "=" , value }`.
+// TODO: test
+pub fn parse_set_values(parser: &mut SqlParser) -> Result<Vec<(String, Value)>, String> {
+    let mut values = vec![(parser.match_next_identifier()?, parser.match_next_value()?)];
+
+    loop {
+        if parser
+            .match_next(Token::Delimiter(Delimiter::Comma))
+            .is_err()
+        {
+            break;
+        }
+
+        values.push((parser.match_next_identifier()?, parser.match_next_value()?));
+    }
+
+    Ok(values)
 }
