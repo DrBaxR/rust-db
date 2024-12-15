@@ -40,6 +40,7 @@ impl SqlParser {
     /// # Errors
     /// Will return an `Err` if there was a lexing error, or if there was a syntax error.
     pub fn parse(&mut self) -> Result<(), ()> {
+        // TODO: this and we are done
         todo!("Use AST terminal nodes defined in the parse module and implement the rules in the grammar")
     }
 

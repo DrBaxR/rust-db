@@ -9,11 +9,12 @@ use super::{
         CreateIndexStatement, CreateTableStatement, DeleteStatement, ExplainStatement,
         InsertStatement, SelectStatement, TransactionStatement, UpdateStatement,
     },
-    token::{identifier, keyword::Keyword, value::Value, Token},
+    token::{keyword::Keyword, value::Value, Token},
     SqlParser,
 };
 
 mod general;
+mod tests;
 
 // TODO: test
 fn parse_select_statement(parser: &mut SqlParser) -> Result<SelectStatement, String> {

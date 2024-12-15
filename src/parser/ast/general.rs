@@ -67,13 +67,13 @@ pub struct TableExpression {
 /// Represents an `OR` expression for boolean operations.
 #[derive(Debug, PartialEq)]
 pub struct Expression {
-    /// 1+
+    /// 1+ (separated by OR)
     pub and_conditions: Vec<AndCondition>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct AndCondition {
-    /// 1+
+    /// 1+ (separated by AND)
     pub conditions: Vec<Condition>,
 }
 
