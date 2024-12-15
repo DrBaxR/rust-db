@@ -556,7 +556,6 @@ pub fn parse_identifiers(parser: &mut SqlParser) -> Result<Vec<String>, String> 
 }
 
 /// Parse expression matching `"(" , term , { "," , term } , ")"`.
-// TODO: test
 pub fn parse_terms(parser: &mut SqlParser) -> Result<Vec<Term>, String> {
     parser.match_next(Token::Delimiter(Delimiter::OpenParen))?;
     let mut identifiers = vec![parse_term(parser)?];
@@ -578,9 +577,11 @@ pub fn parse_terms(parser: &mut SqlParser) -> Result<Vec<Term>, String> {
 }
 
 /// Parse expression matching `column_ref , "=" , value , { "," , column_ref , "=" , value }`.
-// TODO: test
 pub fn parse_set_values(parser: &mut SqlParser) -> Result<Vec<(String, Value)>, String> {
-    let mut values = vec![(parser.match_next_identifier()?, parser.match_next_value()?)];
+    let column = parser.match_next_identifier()?;
+    parser.match_next(Token::Operator(Operator::Equal))?;
+    let value = parser.match_next_value()?;
+    let mut values = vec![(column, value)];
 
     loop {
         if parser
@@ -590,7 +591,10 @@ pub fn parse_set_values(parser: &mut SqlParser) -> Result<Vec<(String, Value)>, 
             break;
         }
 
-        values.push((parser.match_next_identifier()?, parser.match_next_value()?));
+        let column = parser.match_next_identifier()?;
+        parser.match_next(Token::Operator(Operator::Equal))?;
+        let value = parser.match_next_value()?;
+        values.push((column, value));
     }
 
     Ok(values)

@@ -13,7 +13,7 @@ use crate::parser::{
         parse_identifiers, parse_in_operation, parse_join_expression, parse_like_operation,
         parse_null_operation, parse_operand, parse_operation, parse_order_by_expression,
         parse_paren_term, parse_row_value_constructor, parse_select_expression,
-        parse_select_expressions, parse_term,
+        parse_select_expressions, parse_set_values, parse_term, parse_terms,
     },
     token::{data_type::DataType, value::Value, Token, Tokenizer},
     SqlParser,
@@ -715,4 +715,47 @@ fn parse_identifiers_test() {
 
     let mut parser = get_parser("()");
     assert!(parse_identifiers(&mut parser).is_err());
+}
+
+#[test]
+fn parse_terms_test() {
+    let mut parser = get_parser("(1, 2, 3)");
+    assert_eq!(
+        parse_terms(&mut parser).unwrap(),
+        vec![
+            Term::Value(Value::Integer(1)),
+            Term::Value(Value::Integer(2)),
+            Term::Value(Value::Integer(3))
+        ]
+    );
+
+    let mut parser = get_parser("(3)");
+    assert_eq!(
+        parse_terms(&mut parser).unwrap(),
+        vec![Term::Value(Value::Integer(3))]
+    );
+
+    let mut parser = get_parser("(3");
+    assert!(parse_terms(&mut parser).is_err(),);
+}
+
+#[test]
+fn parse_set_values_test() {
+    let mut parser = get_parser("col = 1");
+    assert_eq!(
+        parse_set_values(&mut parser).unwrap(),
+        vec![("col".to_string(), Value::Integer(1))]
+    );
+
+    let mut parser = get_parser("col = 1, col2 = 2");
+    assert_eq!(
+        parse_set_values(&mut parser).unwrap(),
+        vec![
+            ("col".to_string(), Value::Integer(1)),
+            ("col2".to_string(), Value::Integer(2))
+        ]
+    );
+
+    let mut parser = get_parser("col = 1, col2 =");
+    assert!(parse_set_values(&mut parser).is_err());
 }
