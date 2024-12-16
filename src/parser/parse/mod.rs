@@ -174,7 +174,6 @@ fn parse_insert_statement(parser: &mut SqlParser) -> Result<InsertStatement, Str
     })
 }
 
-// TODO: test
 fn parse_update_statement(parser: &mut SqlParser) -> Result<UpdateStatement, String> {
     parser.match_next(Token::Keyword(Keyword::Update))?;
     let table_name = parser.match_next_identifier()?;
@@ -192,7 +191,6 @@ fn parse_update_statement(parser: &mut SqlParser) -> Result<UpdateStatement, Str
     })
 }
 
-// TODO: test
 fn parse_explain_statement(parser: &mut SqlParser) -> Result<ExplainStatement, String> {
     parser.match_next(Token::Keyword(Keyword::Explain))?;
 
@@ -211,7 +209,6 @@ fn parse_explain_statement(parser: &mut SqlParser) -> Result<ExplainStatement, S
     Err("STX: Expected select, update or delete statement".to_string())
 }
 
-// TODO: test
 fn parse_transaction_statement(parser: &mut SqlParser) -> Result<TransactionStatement, String> {
     if parser.match_next(Token::Keyword(Keyword::Begin)).is_ok() {
         return Ok(TransactionStatement::Begin);

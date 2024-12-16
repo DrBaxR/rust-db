@@ -3,12 +3,10 @@ use crate::parser::{
         general::{
             AndCondition, ColumnDef, CompareType, Condition, Expression, Factor, Operand,
             Operation, TableExpression, Term,
-        },
-        CreateIndexStatement, CreateTableStatement, DeleteStatement, JoinExpression, JoinType,
-        OrderByExpression, SelectExpression, SelectStatement,
+        }, CreateIndexStatement, CreateTableStatement, DeleteStatement, ExplainStatement, InsertStatement, JoinExpression, JoinType, OrderByExpression, SelectExpression, SelectStatement, TransactionStatement, UpdateStatement
     },
     parse::{
-        parse_create_index_statement, parse_create_table_statement, parse_delete_statement, parse_insert_statement, parse_select_statement
+        parse_create_index_statement, parse_create_table_statement, parse_delete_statement, parse_explain_statement, parse_insert_statement, parse_select_statement, parse_transaction_statement, parse_update_statement
     },
     token::{data_type::DataType, value::Value, Tokenizer},
     SqlParser,
@@ -166,8 +164,79 @@ fn parse_delete_statement_test() {
 
 #[test]
 fn parse_insert_statement_test() {
-    let mut parser = get_parser("raw");
-    let expected = todo!();
+    let mut parser = get_parser("INSERT INTO my_table (a, b) VALUES (1, 2)");
+    let expected = InsertStatement {
+        table_name: "my_table".to_string(),
+        columns: vec!["a".to_string(), "b".to_string()],
+        values: vec![
+            Term::Value(Value::Integer(1)),
+            Term::Value(Value::Integer(2)),
+        ],
+    };
 
     assert_eq!(parse_insert_statement(&mut parser).unwrap(), expected);
+}
+
+#[test]
+fn parse_update_statement_test() {
+    let mut parser = get_parser("UPDATE my_table SET a = 1, b = 2 WHERE id = 3");
+    let expected = UpdateStatement {
+        table_name: "my_table".to_string(),
+        values: vec![
+            ("a".to_string(), Value::Integer(1)),
+            ("b".to_string(), Value::Integer(2)),
+        ],
+        where_expression: Expression {
+            and_conditions: vec![AndCondition {
+                conditions: vec![Condition::Operation {
+                    operand: Operand {
+                        left: Factor {
+                            left: Box::new(Term::Column {
+                                table_alias: None,
+                                name: "id".to_string(),
+                            }),
+                            right: vec![],
+                        },
+                        right: vec![],
+                    },
+                    operation: Some(Operation::Comparison {
+                        cmp_type: CompareType::EQ,
+                        operand: Operand {
+                            left: Factor {
+                                left: Box::new(Term::Value(Value::Integer(3))),
+                                right: vec![],
+                            },
+                            right: vec![],
+                        },
+                    }),
+                }],
+            }],
+        },
+    };
+
+    assert_eq!(parse_update_statement(&mut parser).unwrap(), expected);
+}
+
+#[test]
+fn parse_explain_statement_test() {
+    let mut parser = get_parser("EXPLAIN DELETE FROM my_table WHERE true LIMIT 100");
+    let expected = ExplainStatement::Delete(DeleteStatement {
+        table_name: "my_table".to_string(),
+        where_expression: Some(get_bool_expression(true)),
+        limit: Some(100),
+    });
+
+    assert_eq!(parse_explain_statement(&mut parser).unwrap(), expected);
+}
+
+#[test]
+fn parse_transaction_statement_test() {
+    let mut parser = get_parser("COMMIT");
+    assert_eq!(parse_transaction_statement(&mut parser).unwrap(), TransactionStatement::Commit);
+
+    let mut parser = get_parser("BEGIN");
+    assert_eq!(parse_transaction_statement(&mut parser).unwrap(), TransactionStatement::Begin);
+
+    let mut parser = get_parser("ROLLBACK");
+    assert_eq!(parse_transaction_statement(&mut parser).unwrap(), TransactionStatement::Rollback);
 }
