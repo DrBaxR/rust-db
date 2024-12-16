@@ -1,13 +1,16 @@
 use crate::parser::{
     ast::{
         general::{
-            AndCondition, CompareType, Condition, Expression, Factor, Operand, Operation,
-            TableExpression, Term,
+            AndCondition, ColumnDef, CompareType, Condition, Expression, Factor, Operand,
+            Operation, TableExpression, Term,
         },
-        JoinExpression, JoinType, OrderByExpression, SelectExpression, SelectStatement,
+        CreateIndexStatement, CreateTableStatement, DeleteStatement, JoinExpression, JoinType,
+        OrderByExpression, SelectExpression, SelectStatement,
     },
-    parse::parse_select_statement,
-    token::{value::Value, Tokenizer},
+    parse::{
+        parse_create_index_statement, parse_create_table_statement, parse_delete_statement, parse_insert_statement, parse_select_statement
+    },
+    token::{data_type::DataType, value::Value, Tokenizer},
     SqlParser,
 };
 
@@ -115,4 +118,56 @@ fn parse_select_statement_test() {
     };
 
     assert_eq!(parse_select_statement(&mut parser).unwrap(), expected);
+}
+
+#[test]
+fn parse_create_table_statement_test() {
+    let mut parser = get_parser("CREATE TABLE my_table (a INTEGER, b VARCHAR)");
+    let expected = CreateTableStatement {
+        table_name: "my_table".to_string(),
+        columns: vec![
+            ColumnDef {
+                name: "a".to_string(),
+                data_type: DataType::Integer,
+            },
+            ColumnDef {
+                name: "b".to_string(),
+                data_type: DataType::Varchar,
+            },
+        ],
+    };
+
+    assert_eq!(parse_create_table_statement(&mut parser).unwrap(), expected);
+}
+
+#[test]
+fn parse_create_index_statement_test() {
+    let mut parser = get_parser("CREATE INDEX my_index ON my_table (a, b)");
+    let expected = CreateIndexStatement {
+        index_name: "my_index".to_string(),
+        table_name: "my_table".to_string(),
+        columns: vec!["a".to_string(), "b".to_string()],
+    };
+
+    assert_eq!(parse_create_index_statement(&mut parser).unwrap(), expected)
+}
+
+#[test]
+fn parse_delete_statement_test() {
+    let mut parser = get_parser("DELETE FROM my_table WHERE true LIMIT 100");
+    let expected = DeleteStatement {
+        table_name: "my_table".to_string(),
+        where_expression: Some(get_bool_expression(true)),
+        limit: Some(100),
+    };
+
+    assert_eq!(parse_delete_statement(&mut parser).unwrap(), expected);
+}
+
+#[test]
+fn parse_insert_statement_test() {
+    let mut parser = get_parser("raw");
+    let expected = todo!();
+
+    assert_eq!(parse_insert_statement(&mut parser).unwrap(), expected);
 }

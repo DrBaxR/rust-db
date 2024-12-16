@@ -16,7 +16,6 @@ use super::{
 mod general;
 mod tests;
 
-// TODO: test
 fn parse_select_statement(parser: &mut SqlParser) -> Result<SelectStatement, String> {
     // SELECT
     parser
@@ -99,7 +98,6 @@ fn parse_select_statement(parser: &mut SqlParser) -> Result<SelectStatement, Str
     })
 }
 
-// TODO: test
 fn parse_create_table_statement(parser: &mut SqlParser) -> Result<CreateTableStatement, String> {
     parser.match_next(Token::Keyword(Keyword::CreateTable))?;
     let table_name = parser.match_next_identifier()?;
@@ -111,7 +109,6 @@ fn parse_create_table_statement(parser: &mut SqlParser) -> Result<CreateTableSta
     });
 }
 
-// TODO: test
 fn parse_create_index_statement(parser: &mut SqlParser) -> Result<CreateIndexStatement, String> {
     parser.match_next(Token::Keyword(Keyword::CreateIndex))?;
     let index_name = parser.match_next_identifier()?;
@@ -126,7 +123,6 @@ fn parse_create_index_statement(parser: &mut SqlParser) -> Result<CreateIndexSta
     })
 }
 
-// TODO: test
 fn parse_delete_statement(parser: &mut SqlParser) -> Result<DeleteStatement, String> {
     parser.match_next(Token::Keyword(Keyword::Delete))?;
     parser.match_next(Token::Keyword(Keyword::From))?;
@@ -156,7 +152,6 @@ fn parse_delete_statement(parser: &mut SqlParser) -> Result<DeleteStatement, Str
     })
 }
 
-// TODO: test
 fn parse_insert_statement(parser: &mut SqlParser) -> Result<InsertStatement, String> {
     parser.match_next(Token::Keyword(Keyword::InsertInto))?;
     let table_name = parser.match_next_identifier()?;
