@@ -2,7 +2,14 @@ use std::collections::HashMap;
 
 use ast::{
     general::{CompareType, Expression, TableExpression},
-    JoinExpression, OrderByExpression, SelectExpression, SelectStatement,
+    CreateIndexStatement, CreateTableStatement, DeleteStatement, ExplainStatement, InsertStatement,
+    JoinExpression, OrderByExpression, SelectExpression, SelectStatement, TransactionStatement,
+    UpdateStatement,
+};
+use parse::{
+    parse_create_index_statement, parse_create_table_statement, parse_delete_statement,
+    parse_explain_statement, parse_insert_statement, parse_select_statement,
+    parse_transaction_statement, parse_update_statement,
 };
 use token::{
     data_type::DataType,
@@ -18,6 +25,18 @@ mod tests;
 mod ast;
 mod parse;
 mod token;
+
+#[derive(Debug, PartialEq)]
+enum SqlStatement {
+    CreateTable(CreateTableStatement),
+    CreateIndex(CreateIndexStatement),
+    Select(SelectStatement),
+    Insert(InsertStatement),
+    Update(UpdateStatement),
+    Delete(DeleteStatement),
+    Explain(ExplainStatement),
+    Transaction(TransactionStatement),
+}
 
 struct SqlParser {
     tokens: Vec<Token>,
@@ -39,9 +58,40 @@ impl SqlParser {
     ///
     /// # Errors
     /// Will return an `Err` if there was a lexing error, or if there was a syntax error.
-    pub fn parse(&mut self) -> Result<(), ()> {
-        // TODO: this and we are done
-        todo!("Use AST terminal nodes defined in the parse module and implement the rules in the grammar")
+    pub fn parse(&mut self) -> Result<SqlStatement, String> {
+        if let Ok(create_table) = parse_create_table_statement(self) {
+            return Ok(SqlStatement::CreateTable(create_table));
+        }
+
+        if let Ok(create_index) = parse_create_index_statement(self) {
+            return Ok(SqlStatement::CreateIndex(create_index));
+        }
+
+        if let Ok(select) = parse_select_statement(self) {
+            return Ok(SqlStatement::Select(select));
+        }
+
+        if let Ok(insert) = parse_insert_statement(self) {
+            return Ok(SqlStatement::Insert(insert));
+        }
+
+        if let Ok(update) = parse_update_statement(self) {
+            return Ok(SqlStatement::Update(update));
+        }
+
+        if let Ok(delete) = parse_delete_statement(self) {
+            return Ok(SqlStatement::Delete(delete));
+        }
+
+        if let Ok(explain) = parse_explain_statement(self) {
+            return Ok(SqlStatement::Explain(explain));
+        }
+
+        if let Ok(transaction) = parse_transaction_statement(self) {
+            return Ok(SqlStatement::Transaction(transaction));
+        }
+
+        Err("STX: Invalid SQL statement".to_string())
     }
 
     fn pop(&mut self) -> Result<&Token, String> {

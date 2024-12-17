@@ -16,7 +16,7 @@ use super::{
 mod general;
 mod tests;
 
-fn parse_select_statement(parser: &mut SqlParser) -> Result<SelectStatement, String> {
+pub fn parse_select_statement(parser: &mut SqlParser) -> Result<SelectStatement, String> {
     // SELECT
     parser
         .match_next_option(&vec![Token::Keyword(Keyword::Select)])?
@@ -98,7 +98,7 @@ fn parse_select_statement(parser: &mut SqlParser) -> Result<SelectStatement, Str
     })
 }
 
-fn parse_create_table_statement(parser: &mut SqlParser) -> Result<CreateTableStatement, String> {
+pub fn parse_create_table_statement(parser: &mut SqlParser) -> Result<CreateTableStatement, String> {
     parser.match_next(Token::Keyword(Keyword::CreateTable))?;
     let table_name = parser.match_next_identifier()?;
     let columns = parse_column_defs(parser)?;
@@ -109,7 +109,7 @@ fn parse_create_table_statement(parser: &mut SqlParser) -> Result<CreateTableSta
     });
 }
 
-fn parse_create_index_statement(parser: &mut SqlParser) -> Result<CreateIndexStatement, String> {
+pub fn parse_create_index_statement(parser: &mut SqlParser) -> Result<CreateIndexStatement, String> {
     parser.match_next(Token::Keyword(Keyword::CreateIndex))?;
     let index_name = parser.match_next_identifier()?;
     parser.match_next(Token::Keyword(Keyword::On))?;
@@ -123,7 +123,7 @@ fn parse_create_index_statement(parser: &mut SqlParser) -> Result<CreateIndexSta
     })
 }
 
-fn parse_delete_statement(parser: &mut SqlParser) -> Result<DeleteStatement, String> {
+pub fn parse_delete_statement(parser: &mut SqlParser) -> Result<DeleteStatement, String> {
     parser.match_next(Token::Keyword(Keyword::Delete))?;
     parser.match_next(Token::Keyword(Keyword::From))?;
     let table_name = parser.match_next_identifier()?;
@@ -152,7 +152,7 @@ fn parse_delete_statement(parser: &mut SqlParser) -> Result<DeleteStatement, Str
     })
 }
 
-fn parse_insert_statement(parser: &mut SqlParser) -> Result<InsertStatement, String> {
+pub fn parse_insert_statement(parser: &mut SqlParser) -> Result<InsertStatement, String> {
     parser.match_next(Token::Keyword(Keyword::InsertInto))?;
     let table_name = parser.match_next_identifier()?;
 
@@ -174,7 +174,7 @@ fn parse_insert_statement(parser: &mut SqlParser) -> Result<InsertStatement, Str
     })
 }
 
-fn parse_update_statement(parser: &mut SqlParser) -> Result<UpdateStatement, String> {
+pub fn parse_update_statement(parser: &mut SqlParser) -> Result<UpdateStatement, String> {
     parser.match_next(Token::Keyword(Keyword::Update))?;
     let table_name = parser.match_next_identifier()?;
 
@@ -191,7 +191,7 @@ fn parse_update_statement(parser: &mut SqlParser) -> Result<UpdateStatement, Str
     })
 }
 
-fn parse_explain_statement(parser: &mut SqlParser) -> Result<ExplainStatement, String> {
+pub fn parse_explain_statement(parser: &mut SqlParser) -> Result<ExplainStatement, String> {
     parser.match_next(Token::Keyword(Keyword::Explain))?;
 
     if let Ok(select_statement) = parse_select_statement(parser) {
@@ -209,7 +209,7 @@ fn parse_explain_statement(parser: &mut SqlParser) -> Result<ExplainStatement, S
     Err("STX: Expected select, update or delete statement".to_string())
 }
 
-fn parse_transaction_statement(parser: &mut SqlParser) -> Result<TransactionStatement, String> {
+pub fn parse_transaction_statement(parser: &mut SqlParser) -> Result<TransactionStatement, String> {
     if parser.match_next(Token::Keyword(Keyword::Begin)).is_ok() {
         return Ok(TransactionStatement::Begin);
     }
