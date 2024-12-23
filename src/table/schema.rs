@@ -9,7 +9,7 @@ impl Schema {
     ///
     /// # Panics
     /// Will panic when `columns` is empty.
-    fn new(columns: Vec<Column>) -> Self {
+    pub fn new(columns: Vec<Column>) -> Self {
         assert!(columns.len() >= 1);
 
         let mut offsets = vec![0];
@@ -26,14 +26,27 @@ impl Schema {
         }
     }
 
-    /// Returns the offset at which data of the column with the index `col_index` starts relative to the start of the tuple.
-    fn get_offset(&self, col_index: usize) -> Option<usize> {
+    /// Returns the offset at which data of the column with the index `col_index` starts relative to the start of the tuple. `None` if out of bounds.
+    pub fn get_offset(&self, col_index: usize) -> Option<usize> {
         self.offsets.get(col_index).map(|o| *o)
     }
 
+    /// Returns the size (in bytes) of the type in the column at `col_index`.
+    pub fn get_length(&self, col_index: usize) -> Option<usize> {
+        self.columns.get(col_index).map(|c| c.col_type.size())
+    }
+
     /// Returns the length of the tuple.
-    fn get_tuple_len(&self) -> usize {
+    pub fn get_tuple_len(&self) -> usize {
         self.tuple_length
+    }
+
+    pub fn get_cols_count(&self) -> usize {
+        self.columns.len()
+    }
+
+    pub fn get_col_type(&self, index: usize) -> ColumnType {
+        self.columns[index].col_type.clone()
     }
 }
 
@@ -44,7 +57,7 @@ pub struct Column {
 
 impl Column {
     /// Create fixed-size column.
-    fn new_fixed(name: String, col_type: ColumnType) -> Self {
+    pub fn new_fixed(name: String, col_type: ColumnType) -> Self {
         if let ColumnType::Varchar(_) = col_type {
             panic!("Constructor doesn't support VARCHAR type");
         }
@@ -53,7 +66,7 @@ impl Column {
     }
 
     /// Create varchar column.
-    fn new_varchar(name: String, length: usize) -> Self {
+    pub fn new_varchar(name: String, length: usize) -> Self {
         Self {
             name,
             col_type: ColumnType::Varchar(length),
@@ -66,7 +79,7 @@ impl Column {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum ColumnType {
     Boolean,
     TinyInt,

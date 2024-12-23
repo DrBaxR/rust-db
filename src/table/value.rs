@@ -2,29 +2,70 @@ use core::str;
 
 use super::schema::ColumnType;
 
+#[derive(Debug, PartialEq, Clone)]
 pub enum ColumnValue {
-    Boolean(bool),
-    TinyInt(i8),
-    SmallInt(i16),
-    Integer(i32),
-    BigInt(i64),
-    Decimal(f64),
-    Timestamp(u64),
-    Varchar(u32, String),
+    Boolean(BooleanValue),
+    TinyInt(TinyIntValue),
+    SmallInt(SmallIntValue),
+    Integer(IntegerValue),
+    BigInt(BigIntValue),
+    Decimal(DecimalValue),
+    Timestamp(TimestampValue),
+    Varchar(VarcharValue),
 }
 
-pub trait Value {
-    fn deserialize(data: &[u8]) -> Self;
-    fn serialize(&self) -> Vec<u8>;
-    fn storage_size(&self) -> usize;
+impl ColumnValue {
+    pub fn deserialize(data: &[u8], typ: ColumnType) -> ColumnValue {
+        match typ {
+            ColumnType::Boolean => ColumnValue::Boolean(BooleanValue::deserialize(data)),
+            ColumnType::TinyInt => ColumnValue::TinyInt(TinyIntValue::deserialize(data)),
+            ColumnType::SmallInt => ColumnValue::SmallInt(SmallIntValue::deserialize(data)),
+            ColumnType::Integer => ColumnValue::Integer(IntegerValue::deserialize(data)),
+            ColumnType::BigInt => ColumnValue::BigInt(BigIntValue::deserialize(data)),
+            ColumnType::Decimal => ColumnValue::Decimal(DecimalValue::deserialize(data)),
+            ColumnType::Timestamp => ColumnValue::Timestamp(TimestampValue::deserialize(data)),
+            ColumnType::Varchar(len) => {
+                let varchar_val = VarcharValue::deserialize(data);
+                assert_eq!(len, varchar_val.length);
+
+                ColumnValue::Varchar(varchar_val)
+            }
+        }
+    }
+
+    pub fn is_of_type(&self, typ: ColumnType) -> bool {
+        match self {
+            ColumnValue::Boolean(boolean_value) => boolean_value.is_of_type(typ),
+            ColumnValue::TinyInt(tiny_int_value) => tiny_int_value.is_of_type(typ),
+            ColumnValue::SmallInt(small_int_value) => small_int_value.is_of_type(typ),
+            ColumnValue::Integer(integer_value) => integer_value.is_of_type(typ),
+            ColumnValue::BigInt(big_int_value) => big_int_value.is_of_type(typ),
+            ColumnValue::Decimal(decimal_value) => decimal_value.is_of_type(typ),
+            ColumnValue::Timestamp(timestamp_value) => timestamp_value.is_of_type(typ),
+            ColumnValue::Varchar(varchar_value) => varchar_value.is_of_type(typ),
+        }
+    }
+
+    pub fn serialize(&self) -> Vec<u8> {
+        match self {
+            ColumnValue::Boolean(boolean_value) => boolean_value.serialize(),
+            ColumnValue::TinyInt(tiny_int_value) => tiny_int_value.serialize(),
+            ColumnValue::SmallInt(small_int_value) => small_int_value.serialize(),
+            ColumnValue::Integer(integer_value) => integer_value.serialize(),
+            ColumnValue::BigInt(big_int_value) => big_int_value.serialize(),
+            ColumnValue::Decimal(decimal_value) => decimal_value.serialize(),
+            ColumnValue::Timestamp(timestamp_value) => timestamp_value.serialize(),
+            ColumnValue::Varchar(varchar_value) => varchar_value.serialize(),
+        }
+    }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct BooleanValue {
-    value: bool,
+    pub value: bool,
 }
 
-impl Value for BooleanValue {
+impl BooleanValue {
     fn serialize(&self) -> Vec<u8> {
         vec![if self.value { 1 as u8 } else { 0 as u8 }]
     }
@@ -44,14 +85,18 @@ impl Value for BooleanValue {
             panic!("Invalid boolean value, can only be 0 or 1")
         }
     }
+
+    fn is_of_type(&self, typ: ColumnType) -> bool {
+        typ == ColumnType::Boolean
+    }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct TinyIntValue {
-    value: i8,
+    pub value: i8,
 }
 
-impl Value for TinyIntValue {
+impl TinyIntValue {
     fn serialize(&self) -> Vec<u8> {
         vec![self.value as u8]
     }
@@ -67,14 +112,18 @@ impl Value for TinyIntValue {
             value: data[0] as i8,
         }
     }
+
+    fn is_of_type(&self, typ: ColumnType) -> bool {
+        typ == ColumnType::TinyInt
+    }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SmallIntValue {
-    value: i16,
+    pub value: i16,
 }
 
-impl Value for SmallIntValue {
+impl SmallIntValue {
     fn serialize(&self) -> Vec<u8> {
         vec![(self.value >> 8) as u8, self.value as u8]
     }
@@ -90,14 +139,18 @@ impl Value for SmallIntValue {
             value: i16::from_be_bytes([data[0], data[1]]),
         }
     }
+
+    fn is_of_type(&self, typ: ColumnType) -> bool {
+        typ == ColumnType::SmallInt
+    }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct IntegerValue {
-    value: i32,
+    pub value: i32,
 }
 
-impl Value for IntegerValue {
+impl IntegerValue {
     fn serialize(&self) -> Vec<u8> {
         vec![
             (self.value >> 24) as u8,
@@ -118,14 +171,18 @@ impl Value for IntegerValue {
             value: i32::from_be_bytes([data[0], data[1], data[2], data[3]]),
         }
     }
+
+    fn is_of_type(&self, typ: ColumnType) -> bool {
+        typ == ColumnType::Integer
+    }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct BigIntValue {
-    value: i64,
+    pub value: i64,
 }
 
-impl Value for BigIntValue {
+impl BigIntValue {
     fn serialize(&self) -> Vec<u8> {
         vec![
             (self.value >> 56) as u8,
@@ -152,14 +209,18 @@ impl Value for BigIntValue {
             ]),
         }
     }
+
+    fn is_of_type(&self, typ: ColumnType) -> bool {
+        typ == ColumnType::BigInt
+    }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct DecimalValue {
-    value: f64,
+    pub value: f64,
 }
 
-impl Value for DecimalValue {
+impl DecimalValue {
     fn serialize(&self) -> Vec<u8> {
         self.value.to_be_bytes().to_vec()
     }
@@ -177,14 +238,18 @@ impl Value for DecimalValue {
             ]),
         }
     }
+
+    fn is_of_type(&self, typ: ColumnType) -> bool {
+        typ == ColumnType::Decimal
+    }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct TimestampValue {
-    value: u64,
+    pub value: u64,
 }
 
-impl Value for TimestampValue {
+impl TimestampValue {
     fn serialize(&self) -> Vec<u8> {
         vec![
             (self.value >> 56) as u8,
@@ -211,15 +276,19 @@ impl Value for TimestampValue {
             ]),
         }
     }
+
+    fn is_of_type(&self, typ: ColumnType) -> bool {
+        typ == ColumnType::Timestamp
+    }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct VarcharValue {
-    value: String,
-    length: usize,
+    pub value: String,
+    pub length: usize,
 }
 
-impl Value for VarcharValue {
+impl VarcharValue {
     /// Structure: `| len (4) | content (len) |`
     fn serialize(&self) -> Vec<u8> {
         let mut bytes = (self.length as u32).to_be_bytes().to_vec();
@@ -228,7 +297,6 @@ impl Value for VarcharValue {
         content.resize(self.length, b'\0');
 
         bytes.append(&mut content);
-        dbg!(bytes.len());
 
         bytes
     }
@@ -251,13 +319,17 @@ impl Value for VarcharValue {
 
         Self { value, length }
     }
+
+    fn is_of_type(&self, typ: ColumnType) -> bool {
+        typ == ColumnType::Varchar(self.length)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::table::value::{BigIntValue, DecimalValue, IntegerValue, TimestampValue};
 
-    use super::{BooleanValue, SmallIntValue, TinyIntValue, Value, VarcharValue};
+    use super::{BooleanValue, SmallIntValue, TinyIntValue, VarcharValue};
 
     #[test]
     fn boolean_value_serialization_consistency() {
