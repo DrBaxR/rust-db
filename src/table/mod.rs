@@ -6,6 +6,7 @@ use crate::disk::disk_manager::PageID;
 mod schema;
 mod value;
 
+#[derive(Debug, PartialEq)]
 pub struct Tuple {
     pub rid: RID, // RID is set externally, after tuple is created
     data: Vec<u8>,
@@ -100,6 +101,8 @@ impl RID {
 
 #[cfg(test)]
 mod tests {
+    use crate::table::value::{BigIntValue, TimestampValue};
+
     use super::{schema::{Column, ColumnType, Schema}, value::{BooleanValue, ColumnValue, TinyIntValue, VarcharValue}, Tuple, RID};
 
     #[test]
@@ -111,8 +114,25 @@ mod tests {
     }
 
     #[test]
+    fn tuple_serialization_consistency() {
+        let schema = Schema::new(vec![
+            Column::new_fixed("tiny".to_string(), ColumnType::TinyInt),
+            Column::new_varchar("varchar".to_string(), 255),
+            Column::new_fixed("bool".to_string(), ColumnType::Boolean),
+        ]);
+        let values: Vec<ColumnValue> = vec![
+            ColumnValue::TinyInt(TinyIntValue { value: 8 }),
+            ColumnValue::Varchar(VarcharValue { value: "test".to_string(), length: 255 }),
+            ColumnValue::Boolean(BooleanValue { value: true })
+        ];
+
+        let tuple = Tuple::new(values, &schema);
+        let deserialized = Tuple::deserialize(&tuple.serialize());
+        assert_eq!(tuple, deserialized);
+    }
+
+    #[test]
     fn tuple_get_values() {
-        // TODO: make this shit pass and write some more tests
         let schema = Schema::new(vec![
             Column::new_fixed("tiny".to_string(), ColumnType::TinyInt),
             Column::new_varchar("varchar".to_string(), 255),
@@ -128,5 +148,65 @@ mod tests {
         assert_eq!(tuple.get_value(&schema, 0), values[0]);
         assert_eq!(tuple.get_value(&schema, 1), values[1]);
         assert_eq!(tuple.get_value(&schema, 2), values[2]);
+    }
+
+    #[test]
+    fn tuple_get_values_complex() {
+        let schema = Schema::new(vec![
+            Column::new_fixed("tiny".to_string(), ColumnType::TinyInt),
+            Column::new_varchar("varchar".to_string(), 255),
+            Column::new_fixed("bool".to_string(), ColumnType::Boolean),
+            Column::new_fixed("bigint".to_string(), ColumnType::BigInt),
+            Column::new_fixed("timestamp".to_string(), ColumnType::Timestamp),
+        ]);
+        let values: Vec<ColumnValue> = vec![
+            ColumnValue::TinyInt(TinyIntValue { value: 8 }),
+            ColumnValue::Varchar(VarcharValue { value: "test".to_string(), length: 255 }),
+            ColumnValue::Boolean(BooleanValue { value: true }),
+            ColumnValue::BigInt(BigIntValue { value: 1237900123 }),
+            ColumnValue::Timestamp(TimestampValue { value: 99912395390 }),
+        ];
+
+        let tuple = Tuple::new(values.clone(), &schema);
+        assert_eq!(tuple.get_value(&schema, 0), values[0]);
+        assert_eq!(tuple.get_value(&schema, 1), values[1]);
+        assert_eq!(tuple.get_value(&schema, 2), values[2]);
+        assert_eq!(tuple.get_value(&schema, 3), values[3]);
+        assert_eq!(tuple.get_value(&schema, 4), values[4]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn tuple_create_wrong_schema() {
+        let schema = Schema::new(vec![
+            Column::new_fixed("tiny".to_string(), ColumnType::TinyInt),
+            Column::new_varchar("varchar".to_string(), 255),
+            Column::new_fixed("bool".to_string(), ColumnType::Boolean),
+        ]);
+        let values: Vec<ColumnValue> = vec![
+            ColumnValue::TinyInt(TinyIntValue { value: 8 }),
+            ColumnValue::Boolean(BooleanValue { value: true }),
+            ColumnValue::Varchar(VarcharValue { value: "test".to_string(), length: 255 }),
+        ];
+
+        Tuple::new(values.clone(), &schema);
+    }
+
+    #[test]
+    #[should_panic]
+    fn tuple_get_values_column_overflow() {
+        let schema = Schema::new(vec![
+            Column::new_fixed("tiny".to_string(), ColumnType::TinyInt),
+            Column::new_varchar("varchar".to_string(), 255),
+            Column::new_fixed("bool".to_string(), ColumnType::Boolean),
+        ]);
+        let values: Vec<ColumnValue> = vec![
+            ColumnValue::TinyInt(TinyIntValue { value: 8 }),
+            ColumnValue::Varchar(VarcharValue { value: "test".to_string(), length: 255 }),
+            ColumnValue::Boolean(BooleanValue { value: true })
+        ];
+
+        let tuple = Tuple::new(values.clone(), &schema);
+        tuple.get_value(&schema, 10);
     }
 }

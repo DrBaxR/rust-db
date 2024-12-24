@@ -101,7 +101,7 @@ impl ColumnType {
             ColumnType::BigInt => 8,
             ColumnType::Decimal => 8,
             ColumnType::Timestamp => 8,
-            ColumnType::Varchar(length) => *length,
+            ColumnType::Varchar(length) => *length + 4,
         }
     }
 }
@@ -131,8 +131,8 @@ mod tests {
         ]);
 
         // tuple structure: |.....|........|....|........|........|
-        assert_eq!(schema.offsets, vec![0, 5, 13, 17, 25]);
-        assert_eq!(schema.tuple_length, 33);
+        assert_eq!(schema.offsets, vec![0, 9, 17, 21, 29]);
+        assert_eq!(schema.tuple_length, 37);
     }
 
     #[test]
