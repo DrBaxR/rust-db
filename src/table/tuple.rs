@@ -12,7 +12,7 @@ impl Tuple {
     ///
     /// # Panics
     /// Will panic if the values don't match the `schema`.
-    fn new(values: Vec<ColumnValue>, schema: &Schema) -> Self {
+    pub fn new(values: Vec<ColumnValue>, schema: &Schema) -> Self {
         assert_eq!(values.len(), schema.get_cols_count());
 
         let mut data = vec![];
@@ -28,14 +28,14 @@ impl Tuple {
     }
 
     /// Structure: `| length (4) | data (length) |`
-    fn serialize(&self) -> Vec<u8> {
+    pub fn serialize(&self) -> Vec<u8> {
         let mut bytes = (self.data.len() as u32).to_be_bytes().to_vec();
         bytes.append(&mut self.data.clone());
 
         bytes
     }
 
-    fn deserialize(data: &[u8]) -> Self {
+    pub fn deserialize(data: &[u8]) -> Self {
         assert!(data.len() > 4);
         let length = u32::from_be_bytes([data[0], data[1], data[2], data[3]]) as usize;
 
@@ -45,7 +45,7 @@ impl Tuple {
         Self { data }
     }
 
-    fn get_value(&self, schema: &Schema, col_index: usize) -> ColumnValue {
+    pub fn get_value(&self, schema: &Schema, col_index: usize) -> ColumnValue {
         let offset = schema
             .get_offset(col_index)
             .expect("Column index out of schema bounds");
@@ -57,6 +57,10 @@ impl Tuple {
             &self.data[offset..offset + length],
             schema.get_col_type(col_index),
         )
+    }
+
+    pub fn size(&self) -> usize {
+        self.data.len()
     }
 }
 
