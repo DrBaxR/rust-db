@@ -66,8 +66,8 @@ impl Tuple {
 
 #[derive(Debug, PartialEq)]
 pub struct RID {
-    page_id: PageID,
-    slot_num: u32,
+    pub page_id: PageID,
+    pub slot_num: u32,
 }
 
 impl RID {
@@ -78,11 +78,11 @@ impl RID {
         }
     }
 
-    fn new(page_id: PageID, slot_num: u32) -> Self {
+    pub fn new(page_id: PageID, slot_num: u32) -> Self {
         Self { page_id, slot_num }
     }
 
-    fn from_rid(rid: u64) -> Self {
+    pub fn from_rid(rid: u64) -> Self {
         Self {
             page_id: (rid >> 32) as PageID,
             slot_num: rid as u32,
@@ -90,7 +90,7 @@ impl RID {
     }
 
     /// Get the number representation of the RID.
-    fn get(&self) -> u64 {
+    pub fn get(&self) -> u64 {
         (self.page_id as u64) << 32 | self.slot_num as u64
     }
 }
