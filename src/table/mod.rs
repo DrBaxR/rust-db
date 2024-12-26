@@ -63,14 +63,28 @@ impl TablePage {
         let mut data = vec![0; DB_PAGE_SIZE as usize];
         data[0..4].copy_from_slice(&self.next_page.to_be_bytes());
         data[4..6].copy_from_slice(&self.num_tuples.to_be_bytes());
-        data[6..TABLE_PAGE_HEADER_SIZE as usize].copy_from_slice(&self.num_deleted_tuples.to_be_bytes());
+        data[6..TABLE_PAGE_HEADER_SIZE as usize]
+            .copy_from_slice(&self.num_deleted_tuples.to_be_bytes());
 
         assert_eq!(self.tuples_data.len(), self.tuples_info.len());
         for i in 0..self.tuples_info.len() {
-            // serialize meta
-            todo!();
+            // serialize info
+            let (offset, size, meta) = &self.tuples_info[i];
+
+            let mut serialized_info = offset.to_be_bytes().to_vec();
+            serialized_info.append(&mut size.to_be_bytes().to_vec());
+            serialized_info.append(&mut meta.ts.to_be_bytes().to_vec());
+            serialized_info.append(&mut vec![if meta.is_deleted { 1u8 } else { 0u8 }]);
+            assert_eq!(serialized_info.len() as u16, TUPLE_INFO_SIZE);
+
+            let info_start = TABLE_PAGE_HEADER_SIZE + i as u16 * TUPLE_INFO_SIZE;
+            let info_end = info_start + TUPLE_INFO_SIZE;
+            data[info_start as usize..info_end as usize].copy_from_slice(&serialized_info);
+
             // serialize data
-            todo!();
+            let tuple_end = *offset as usize + self.tuples_data[i as usize].size();
+            data[*offset as usize..tuple_end]
+                .copy_from_slice(&self.tuples_data[i as usize].serialize());
         }
 
         data
