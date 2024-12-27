@@ -2,7 +2,7 @@ use crate::disk::disk_manager::PageID;
 
 use super::{schema::Schema, value::ColumnValue};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Tuple {
     data: Vec<u8>,
 }
@@ -60,7 +60,7 @@ impl Tuple {
     }
 
     pub fn size(&self) -> usize {
-        self.data.len()
+        self.data.len() + 4
     }
 }
 

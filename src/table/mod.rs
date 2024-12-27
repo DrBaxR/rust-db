@@ -6,6 +6,7 @@ mod schema;
 mod tuple;
 mod value;
 
+#[derive(Debug, PartialEq)]
 struct TupleMeta {
     ts: u64, // not sure what this is yet, some sort of timestamp
     is_deleted: bool,
@@ -34,6 +35,7 @@ const TUPLE_INFO_SIZE: u16 = 13; // 2 (offset) + 2 (size) + 8 (meta.ts) + 1 (met
 /// ```text
 /// | tuple_offset (2) | tuple_size (2) | ts (8) | is_deleted (1) |
 /// ```
+#[derive(Debug, PartialEq)]
 struct TablePage {
     next_page: PageID,
     num_tuples: u16,
@@ -56,7 +58,42 @@ impl TablePage {
     }
 
     pub fn deserialize(data: &[u8]) -> Self {
-        todo!()
+        assert_eq!(data.len(), DB_PAGE_SIZE as usize);
+        let next_page = u32::from_be_bytes(data[0..4].try_into().unwrap());
+        let num_tuples = u16::from_be_bytes(data[4..6].try_into().unwrap());
+        let num_deleted_tuples =
+            u16::from_be_bytes(data[6..TABLE_PAGE_HEADER_SIZE as usize].try_into().unwrap());
+
+        let mut tuples_info = vec![];
+        let mut tuples_data = vec![];
+        for i in 0..num_tuples as usize {
+            // info
+            let info_start = TABLE_PAGE_HEADER_SIZE as usize + i * TUPLE_INFO_SIZE as usize;
+            let offset = u16::from_be_bytes(data[info_start..info_start + 2].try_into().unwrap());
+            let size = u16::from_be_bytes(data[info_start + 2..info_start + 4].try_into().unwrap());
+            let meta = TupleMeta {
+                ts: u64::from_be_bytes(data[info_start + 4..info_start + 12].try_into().unwrap()),
+                is_deleted: if data[info_start + 12] == 1 {
+                    true
+                } else {
+                    false
+                },
+            };
+            let tuple_info = (offset, size, meta);
+            tuples_info.push(tuple_info);
+
+            // data
+            let tuple_data = Tuple::deserialize(&data[offset as usize..(offset + size) as usize]);
+            tuples_data.push(tuple_data);
+        }
+
+        Self {
+            next_page,
+            num_tuples,
+            num_deleted_tuples,
+            tuples_info,
+            tuples_data,
+        }
     }
 
     pub fn serialize(&self) -> Vec<u8> {
@@ -82,7 +119,8 @@ impl TablePage {
             data[info_start as usize..info_end as usize].copy_from_slice(&serialized_info);
 
             // serialize data
-            let tuple_end = *offset as usize + self.tuples_data[i as usize].size();
+            assert_eq!(*size as usize, self.tuples_data[i as usize].size());
+            let tuple_end = *offset as usize + *size as usize;
             data[*offset as usize..tuple_end]
                 .copy_from_slice(&self.tuples_data[i as usize].serialize());
         }
@@ -155,7 +193,49 @@ impl TablePage {
 
 #[cfg(test)]
 mod tests {
-    fn test() {
-        todo!()
+    use super::{
+        schema::{Column, ColumnType, Schema},
+        tuple::Tuple,
+        value::{BooleanValue, ColumnValue},
+        TablePage, TupleMeta,
+    };
+
+    #[test]
+    fn serialization_consistency() {
+        let tuple = Tuple::new(
+            vec![ColumnValue::Boolean(BooleanValue { value: true })],
+            &Schema::new(vec![Column::new_fixed(
+                "bool".to_string(),
+                ColumnType::Boolean,
+            )]),
+        );
+
+        let page = TablePage {
+            next_page: 12,
+            num_tuples: 2,
+            num_deleted_tuples: 1,
+            tuples_info: vec![
+                (
+                    4091,
+                    5,
+                    TupleMeta {
+                        ts: 123,
+                        is_deleted: true,
+                    },
+                ),
+                (
+                    4086,
+                    5,
+                    TupleMeta {
+                        ts: 456,
+                        is_deleted: false,
+                    },
+                ),
+            ],
+            tuples_data: vec![tuple.clone(), tuple.clone()],
+        };
+
+        let deserialized = TablePage::deserialize(&page.serialize());
+        assert_eq!(page, deserialized);
     }
 }
