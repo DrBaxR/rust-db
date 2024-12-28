@@ -64,10 +64,10 @@ impl Tuple {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct RID {
     pub page_id: PageID,
-    pub slot_num: u32,
+    pub slot_num: u16,
 }
 
 impl RID {
@@ -78,14 +78,14 @@ impl RID {
         }
     }
 
-    pub fn new(page_id: PageID, slot_num: u32) -> Self {
+    pub fn new(page_id: PageID, slot_num: u16) -> Self {
         Self { page_id, slot_num }
     }
 
     pub fn from_rid(rid: u64) -> Self {
         Self {
             page_id: (rid >> 32) as PageID,
-            slot_num: rid as u32,
+            slot_num: rid as u16,
         }
     }
 

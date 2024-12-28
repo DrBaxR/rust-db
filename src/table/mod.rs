@@ -6,7 +6,7 @@ mod schema;
 mod tuple;
 mod value;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct TupleMeta {
     ts: u64, // not sure what this is yet, some sort of timestamp
     is_deleted: bool,
@@ -17,6 +17,7 @@ type TupleInfo = (u16, u16, TupleMeta);
 
 const TABLE_PAGE_HEADER_SIZE: u16 = 8;
 const TUPLE_INFO_SIZE: u16 = 13; // 2 (offset) + 2 (size) + 8 (meta.ts) + 1 (meta.is_deleted)
+const MAX_TUPLE_SIZE: u16 = DB_PAGE_SIZE as u16 - TABLE_PAGE_HEADER_SIZE - TUPLE_INFO_SIZE;
 
 /// A page that stores tuples. These can be chained together in a linked-list-like structure.
 ///
@@ -148,6 +149,10 @@ impl TablePage {
 
     /// Returns the offset of the next (to be inserted) tuple. Will return `None` if `tuple` doesn't fit in the page.
     fn get_next_tuple_offset(&self, tuple: &Tuple) -> Option<u16> {
+        if tuple.size() > MAX_TUPLE_SIZE as usize {
+            return None;
+        }
+
         let tuple_end = if self.num_tuples > 0 {
             self.tuples_info[self.num_tuples as usize - 1].0
         } else {
@@ -165,7 +170,7 @@ impl TablePage {
     }
 
     /// Updates a tuple's meta data, returning the RID of the tuple.
-    pub fn update_tuple_meta(&mut self, meta: TupleMeta, rid: RID) -> Result<RID, ()> {
+    pub fn update_tuple_meta(&mut self, meta: TupleMeta, rid: &RID) -> Result<RID, ()> {
         let slot = rid.slot_num as usize;
         let (offset, size, old_meta) = self.tuples_info.get(slot).ok_or(())?;
 
@@ -177,10 +182,10 @@ impl TablePage {
 
         self.tuples_info[slot] = (*offset, *size, meta);
 
-        Ok(rid)
+        Ok((*rid).clone())
     }
 
-    pub fn get_tuple(&self, rid: RID) -> Option<(&TupleMeta, &Tuple)> {
+    pub fn get_tuple(&self, rid: &RID) -> Option<(&TupleMeta, &Tuple)> {
         assert_eq!(self.tuples_data.len(), self.tuples_info.len());
         let slot = rid.slot_num as usize;
         if slot >= self.tuples_data.len() {
@@ -193,23 +198,38 @@ impl TablePage {
 
 #[cfg(test)]
 mod tests {
+    use crate::table::MAX_TUPLE_SIZE;
+
     use super::{
         schema::{Column, ColumnType, Schema},
-        tuple::Tuple,
-        value::{BooleanValue, ColumnValue},
+        tuple::{Tuple, RID},
+        value::{BooleanValue, ColumnValue, VarcharValue},
         TablePage, TupleMeta,
     };
 
-    #[test]
-    fn serialization_consistency() {
-        let tuple = Tuple::new(
+    fn get_simple_tuple() -> Tuple {
+        Tuple::new(
             vec![ColumnValue::Boolean(BooleanValue { value: true })],
             &Schema::new(vec![Column::new_fixed(
                 "bool".to_string(),
                 ColumnType::Boolean,
             )]),
-        );
+        )
+    }
 
+    fn get_varchar_tuple(len: usize) -> Tuple {
+        Tuple::new(
+            vec![ColumnValue::Varchar(VarcharValue {
+                value: "hi :)".to_string(),
+                length: len,
+            })],
+            &Schema::new(vec![Column::new_varchar("big".to_string(), len)]),
+        )
+    }
+
+    #[test]
+    fn serialization_consistency() {
+        let tuple = get_simple_tuple();
         let page = TablePage {
             next_page: 12,
             num_tuples: 2,
@@ -237,5 +257,53 @@ mod tests {
 
         let deserialized = TablePage::deserialize(&page.serialize());
         assert_eq!(page, deserialized);
+    }
+
+    #[test]
+    fn insert_tuple() {
+        let mut page = TablePage::empty();
+        let meta = TupleMeta {
+            ts: 0,
+            is_deleted: false,
+        };
+        let tuple = get_simple_tuple();
+        let slot = page.insert_tuple(meta.clone(), tuple.clone()).unwrap();
+
+        let (page_meta, page_tuple) = page.get_tuple(&RID::new(0, slot)).unwrap();
+        assert_eq!(page_meta.clone(), meta);
+        assert_eq!(page_tuple.clone(), tuple);
+    }
+
+    #[test]
+    fn insert_tuple_overflow() {
+        let mut page = TablePage::empty();
+        let meta = TupleMeta {
+            ts: 0,
+            is_deleted: false,
+        };
+
+        // 8 = 4 (length of the string) + 4 (length of the tuple)
+        assert!(page
+            .insert_tuple(meta.clone(), get_varchar_tuple(MAX_TUPLE_SIZE as usize - 8))
+            .is_some());
+        assert!(page
+            .insert_tuple(meta.clone(), get_varchar_tuple(MAX_TUPLE_SIZE as usize - 7))
+            .is_none());
+    }
+
+    #[test]
+    fn update_tuple_meta() {
+        let mut page = TablePage::empty();
+        let meta = TupleMeta {
+            ts: 0,
+            is_deleted: false,
+        };
+        let tuple = get_simple_tuple();
+        let slot = page.insert_tuple(meta.clone(), tuple.clone()).unwrap();
+        let rid  = RID::new(0, slot);
+        let _ = page.update_tuple_meta(TupleMeta { ts: 1, is_deleted: true }, &rid);
+
+        let (page_meta, _) = page.get_tuple(&rid).unwrap();
+        assert_eq!(page_meta.clone(), TupleMeta { ts: 1, is_deleted: true });
     }
 }
