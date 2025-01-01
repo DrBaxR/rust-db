@@ -1,6 +1,9 @@
 use crate::{config::DB_PAGE_SIZE, disk::disk_manager::PageID};
 
-use super::tuple::{Tuple, RID};
+use super::{
+    tuple::{Tuple, RID},
+    END_PAGE_ID,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TupleMeta {
@@ -34,7 +37,7 @@ const MAX_TUPLE_SIZE: u16 = DB_PAGE_SIZE as u16 - TABLE_PAGE_HEADER_SIZE - TUPLE
 /// ```
 #[derive(Debug, PartialEq)]
 pub struct TablePage {
-    next_page: PageID,
+    pub next_page: PageID,
     num_tuples: u16,
     num_deleted_tuples: u16,
     /// `tuples_info[i]` corresponds to `tuples_data[i]`
@@ -44,9 +47,9 @@ pub struct TablePage {
 }
 
 impl TablePage {
-    fn empty() -> Self {
+    pub fn empty() -> Self {
         Self {
-            next_page: 0,
+            next_page: END_PAGE_ID,
             num_tuples: 0,
             num_deleted_tuples: 0,
             tuples_info: vec![],
