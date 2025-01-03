@@ -73,11 +73,22 @@ impl TableHeap {
     }
 
     pub fn update_tuple_meta(&self, meta: TupleMeta, rid: &RID) {
-        todo!()
+        let mut page = self.bpm.get_write_page(rid.page_id);
+        let mut t_page = TablePage::deserialize(page.read());
+
+        t_page
+            .update_tuple_meta(meta, rid)
+            .expect("Invalid RID received for updating tuple meta");
+
+        page.write(t_page.serialize());
     }
 
-    pub fn get_tuple(&self, rid: &RID) -> Option<(&TupleMeta, &Tuple)> {
-        todo!()
+    pub fn get_tuple(&self, rid: &RID) -> Option<(TupleMeta, Tuple)> {
+        let page = self.bpm.get_read_page(rid.page_id);
+        let t_page = TablePage::deserialize(page.read());
+        let (meta, tuple) = t_page.get_tuple(rid)?;
+
+        Some((meta.clone(), tuple.clone()))
     }
 
     pub fn sequencial_dump(&self) -> Vec<(&TupleMeta, &Tuple)> {
