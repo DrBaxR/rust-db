@@ -193,6 +193,16 @@ impl TablePage {
 
         Some((&self.tuples_info[slot].2, &self.tuples_data[slot]))
     }
+
+    pub fn get_tuples(&self) -> Vec<(&TupleMeta, &Tuple)> {
+        assert_eq!(self.tuples_data.len(), self.tuples_info.len());
+
+        self.tuples_info
+            .iter()
+            .map(|(_, _, meta)| meta)
+            .zip(self.tuples_data.iter())
+            .collect()
+    }
 }
 
 #[cfg(test)]

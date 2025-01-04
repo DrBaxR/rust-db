@@ -91,7 +91,25 @@ impl TableHeap {
         Some((meta.clone(), tuple.clone()))
     }
 
-    pub fn sequencial_dump(&self) -> Vec<(&TupleMeta, &Tuple)> {
-        todo!()
+    pub fn sequencial_dump(&self) -> Vec<(TupleMeta, Tuple)> {
+        let mut data = vec![];
+        let mut current_pid = self.first_page;
+
+        while current_pid != END_PAGE_ID {
+            let page = self.bpm.get_read_page(current_pid);
+            let t_page = TablePage::deserialize(page.read());
+
+            data.append(
+                &mut t_page
+                    .get_tuples()
+                    .iter()
+                    .map(|(m, t)| ((*m).clone(), (*t).clone()))
+                    .collect(),
+            );
+
+            current_pid = t_page.next_page;
+        }
+
+        data
     }
 }
