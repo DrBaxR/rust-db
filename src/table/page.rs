@@ -7,8 +7,8 @@ use super::{
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct TupleMeta {
-    ts: u64, // not sure what this is yet, some sort of timestamp
-    is_deleted: bool,
+    pub ts: u64, // not sure what this is yet, some sort of timestamp
+    pub is_deleted: bool,
 }
 
 /// `(offset, size, meta)` of the tuple
@@ -133,15 +133,10 @@ impl TablePage {
         let tuple_offset = self.get_next_tuple_offset(&tuple)?;
 
         assert_eq!(self.tuples_info.len(), self.tuples_data.len());
-        self.tuples_info.push((
-            tuple_offset,
-            tuple.size() as u16,
-            TupleMeta {
-                ts: 0,
-                is_deleted: false,
-            },
-        ));
+        self.tuples_info
+            .push((tuple_offset, tuple.size() as u16, meta));
         self.tuples_data.push(tuple);
+        self.num_tuples = self.tuples_data.len() as u16;
 
         Some(self.tuples_data.len() as u16 - 1)
     }
@@ -281,6 +276,20 @@ mod tests {
         let (page_meta, page_tuple) = page.get_tuple(&RID::new(0, slot)).unwrap();
         assert_eq!(page_meta.clone(), meta);
         assert_eq!(page_tuple.clone(), tuple);
+    }
+
+    #[test]
+    fn serialization_with_insert() {
+        let mut page = TablePage::empty();
+        let meta = TupleMeta {
+            ts: 0,
+            is_deleted: false,
+        };
+        let tuple = get_simple_tuple();
+        let _ = page.insert_tuple(meta.clone(), tuple.clone()).unwrap();
+
+        let deserialized = TablePage::deserialize(&page.serialize());
+        assert_eq!(page, deserialized);
     }
 
     #[test]

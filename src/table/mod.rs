@@ -113,3 +113,75 @@ impl TableHeap {
         data
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{env::temp_dir, fs::remove_file, sync::Arc};
+
+    use crate::{
+        disk::buffer_pool_manager::BufferPoolManager,
+        table::{
+            page::TupleMeta,
+            schema::{Column, ColumnType, Schema},
+            tuple::Tuple,
+            value::{ColumnValue, SmallIntValue, VarcharValue},
+            TableHeap,
+        },
+    };
+
+    fn simple_schema() -> Schema {
+        Schema::new(vec![
+            Column::new_varchar("name".to_string(), 10),
+            Column::new_fixed("count".to_string(), ColumnType::SmallInt),
+        ])
+    }
+
+    fn simple_tuple(name: &str, count: i16, simple_schema: &Schema) -> Tuple {
+        Tuple::new(
+            vec![
+                ColumnValue::Varchar(VarcharValue {
+                    value: name.to_string(),
+                    length: 10,
+                }),
+                ColumnValue::SmallInt(SmallIntValue { value: count }),
+            ],
+            &simple_schema,
+        )
+    }
+
+    #[test]
+    fn insert_different_rids() {
+        // init
+        let db_path = temp_dir().join("th_insert_different_rids.db");
+        let db_file_path = db_path.to_str().unwrap().to_string();
+        let bpm = Arc::new(BufferPoolManager::new(String::from(db_file_path), 100, 2));
+        let mut table_heap = TableHeap::new(bpm);
+
+        // test
+        let simple_schema = simple_schema();
+        let rids: Vec<_> = (0..10).map(|i| {
+            table_heap.insert_tuple(
+                TupleMeta {
+                    ts: 0,
+                    is_deleted: false,
+                },
+                simple_tuple(&format!("name {i}"), i, &simple_schema),
+            )
+        }).collect();
+
+        let mut duplicate_rids = false;
+        for i in 0..rids.len() {
+            for j in i + 1..rids.len() {
+                duplicate_rids = duplicate_rids || rids[i] == rids[j];
+            }
+        }
+
+        // assert all rids are different
+        assert!(!duplicate_rids);
+
+        // cleanup
+        remove_file(db_path).expect("Couldn't remove test DB file");
+    }
+
+    // TODO: test that inserted values can be read
+}
