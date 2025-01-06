@@ -64,7 +64,7 @@ impl Tuple {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct RID {
     pub page_id: PageID,
     pub slot_num: u16,
@@ -97,7 +97,13 @@ impl RID {
 
 #[cfg(test)]
 mod tests {
-    use crate::table::{schema::{Column, ColumnType, Schema}, tuple::{Tuple, RID}, value::{BigIntValue, BooleanValue, ColumnValue, TimestampValue, TinyIntValue, VarcharValue}};
+    use crate::table::{
+        schema::{Column, ColumnType, Schema},
+        tuple::{Tuple, RID},
+        value::{
+            BigIntValue, BooleanValue, ColumnValue, TimestampValue, TinyIntValue, VarcharValue,
+        },
+    };
 
     #[test]
     fn rid_consistency() {

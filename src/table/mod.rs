@@ -116,7 +116,7 @@ impl TableHeap {
 
 #[cfg(test)]
 mod tests {
-    use std::{env::temp_dir, fs::remove_file, sync::Arc};
+    use std::{collections::HashMap, env::temp_dir, fs::remove_file, sync::Arc};
 
     use crate::{
         disk::buffer_pool_manager::BufferPoolManager,
@@ -159,15 +159,17 @@ mod tests {
 
         // test
         let simple_schema = simple_schema();
-        let rids: Vec<_> = (0..10).map(|i| {
-            table_heap.insert_tuple(
-                TupleMeta {
-                    ts: 0,
-                    is_deleted: false,
-                },
-                simple_tuple(&format!("name {i}"), i, &simple_schema),
-            )
-        }).collect();
+        let rids: Vec<_> = (0..10)
+            .map(|i| {
+                table_heap.insert_tuple(
+                    TupleMeta {
+                        ts: 0,
+                        is_deleted: false,
+                    },
+                    simple_tuple(&format!("name {i}"), i, &simple_schema),
+                )
+            })
+            .collect();
 
         let mut duplicate_rids = false;
         for i in 0..rids.len() {
@@ -183,5 +185,39 @@ mod tests {
         remove_file(db_path).expect("Couldn't remove test DB file");
     }
 
-    // TODO: test that inserted values can be read
+    #[test]
+    fn inserted_tuples_accessible() {
+        // init
+        let db_path = temp_dir().join("th_inserted_tuples_accessible.db");
+        let db_file_path = db_path.to_str().unwrap().to_string();
+        let bpm = Arc::new(BufferPoolManager::new(String::from(db_file_path), 100, 2));
+        let mut table_heap = TableHeap::new(bpm);
+
+        // test
+        let simple_schema = simple_schema();
+        let mut tuples_map = HashMap::new();
+        for i in 0..10 {
+            let tuple = simple_tuple(&format!("name {i}"), i, &simple_schema);
+            let rid = table_heap
+                .insert_tuple(
+                    TupleMeta {
+                        ts: 0,
+                        is_deleted: false,
+                    },
+                    tuple.clone(),
+                )
+                .unwrap();
+
+            tuples_map.insert(rid, tuple);
+        }
+
+        // assert all tuples inserted can also be read
+        for (rid, tuple) in tuples_map.iter() {
+            let (_, heap_tuple) = table_heap.get_tuple(rid).unwrap();
+            assert_eq!(tuple.clone(), heap_tuple);
+        }
+
+        // cleanup
+        remove_file(db_path).expect("Couldn't remove test DB file");
+    }
 }
