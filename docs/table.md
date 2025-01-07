@@ -11,20 +11,21 @@ A non-persistent "database" that contains meta-data about the database, it handl
 The main structures that are used within the table heap are as follows:
 - `TablePage`: A page that contains a bunch of tuples (also acts like a node in a linked list of pages). With the interface it exposes, you can manage the tuples inside the page. The structure of the page can be seen below:
 
-```
-Slotted page format:
- ---------------------------------------------------------
- | HEADER | ... FREE SPACE ... | ... INSERTED TUPLES ... |
- ---------------------------------------------------------
-                               ^
-                               free space pointer
-
- Header format (size in bytes):
- ----------------------------------------------------------------------------------------------------------------
- | NextPageId (4)| NumTuples(2) | NumDeletedTuples(2) | Tuple_1 offset+size (4) | Tuple_2 offset+size (4) | ... |
- ----------------------------------------------------------------------------------------------------------------
+```text
+| next_page_id (4) | num_tuples (2) | num_deleted_tuples (2) | ... tuples_info ... | ... free ... | ... tuples_data ... |
+                                                                   page header end ^              ^ page data start
 ```
 
+Here is what each of the segments mean:
+- `next_page_id`: The PID of the next page in the linked list
+- `num_tuples`: The number of tuples stored in this page
+- `num_deleted_tuples`: The number of deleted tuples in this page
+- `tuples_data`: A list of serialzed tuples
+- `tuples_info`: A list of entries where each one of them has this structure:
+
+```text
+| tuple_offset (2) | tuple_size (2) | ts (8) | is_deleted (1) |
+```
 
 - `TupleMeta`: Meta-data about a tuple
 - `Tuple`: Storage for a single tuple's data. The tuple gets created from a list of values and a schema - for more details check `tuple.cpp`

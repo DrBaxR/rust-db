@@ -5,7 +5,7 @@ This note is meant to document the progress that has been made in developing thi
 - [x] Buffer Pool (caches pages on disk in memory)
 - [x] Index (representation of an index)
 - [x] Extendible Hash Table (hash table implementation that can be used for indexes)
-- [ ] (WIP) Table (representation of a table)
+- [x] Table (representation of a table)
 - [ ] User Client (similar to `psql` - takes user commands and feeds to database engine)
 - [x] Parser (takes in a SQL string and spits out an AST)
 - [ ] Planner (takes the binder's output and creates a plan tree)

@@ -116,7 +116,7 @@ impl TableHeap {
 
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap, env::temp_dir, fs::remove_file, sync::Arc};
+    use std::{cmp::Ordering, collections::HashMap, env::temp_dir, fs::remove_file, sync::Arc};
 
     use crate::{
         disk::buffer_pool_manager::BufferPoolManager,
@@ -196,7 +196,7 @@ mod tests {
         // test
         let simple_schema = simple_schema();
         let mut tuples_map = HashMap::new();
-        for i in 0..10 {
+        for i in 0..4096 {
             let tuple = simple_tuple(&format!("name {i}"), i, &simple_schema);
             let rid = table_heap
                 .insert_tuple(
@@ -216,6 +216,64 @@ mod tests {
             let (_, heap_tuple) = table_heap.get_tuple(rid).unwrap();
             assert_eq!(tuple.clone(), heap_tuple);
         }
+
+        // cleanup
+        remove_file(db_path).expect("Couldn't remove test DB file");
+    }
+
+    #[test]
+    fn update_tuple_meta() {
+        // init
+        let db_path = temp_dir().join("th_update_tuple_meta.db");
+        let db_file_path = db_path.to_str().unwrap().to_string();
+        let bpm = Arc::new(BufferPoolManager::new(String::from(db_file_path), 100, 2));
+        let mut table_heap = TableHeap::new(bpm);
+
+        // test
+        let simple_schema = simple_schema();
+        let rid1 = table_heap
+            .insert_tuple(
+                TupleMeta {
+                    ts: 0,
+                    is_deleted: false,
+                },
+                simple_tuple("tuple 1", 1, &simple_schema),
+            )
+            .unwrap();
+        let rid2 = table_heap
+            .insert_tuple(
+                TupleMeta {
+                    ts: 0,
+                    is_deleted: false,
+                },
+                simple_tuple("tuple 2", 2, &simple_schema),
+            )
+            .unwrap();
+
+        let (meta, _) = table_heap.get_tuple(&rid2).unwrap();
+        assert_eq!(
+            meta,
+            TupleMeta {
+                ts: 0,
+                is_deleted: false
+            }
+        );
+
+        table_heap.update_tuple_meta(
+            TupleMeta {
+                ts: 1,
+                is_deleted: true,
+            },
+            &rid2,
+        );
+        let (meta, _) = table_heap.get_tuple(&rid2).unwrap();
+        assert_eq!(
+            meta,
+            TupleMeta {
+                ts: 1,
+                is_deleted: true
+            }
+        );
 
         // cleanup
         remove_file(db_path).expect("Couldn't remove test DB file");
