@@ -50,6 +50,7 @@ impl Schema {
     }
 }
 
+#[derive(Clone)]
 pub struct Column {
     name: String,
     col_type: ColumnType,

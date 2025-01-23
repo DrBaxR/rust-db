@@ -25,7 +25,8 @@ Notes:
 - Execotors are a tree-like structure that hold plan nodes and know how to *execute* the nodes
 
 Implementation flow:
-- [ ] General structure of plan node
+- [x] Expressions
+- [x] General structure of plan node
 - [ ] General structure of executor
 - [ ] Values
 - [ ] Projection

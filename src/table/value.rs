@@ -33,6 +33,19 @@ impl ColumnValue {
         }
     }
 
+    pub fn serialize(&self) -> Vec<u8> {
+        match self {
+            ColumnValue::Boolean(boolean_value) => boolean_value.serialize(),
+            ColumnValue::TinyInt(tiny_int_value) => tiny_int_value.serialize(),
+            ColumnValue::SmallInt(small_int_value) => small_int_value.serialize(),
+            ColumnValue::Integer(integer_value) => integer_value.serialize(),
+            ColumnValue::BigInt(big_int_value) => big_int_value.serialize(),
+            ColumnValue::Decimal(decimal_value) => decimal_value.serialize(),
+            ColumnValue::Timestamp(timestamp_value) => timestamp_value.serialize(),
+            ColumnValue::Varchar(varchar_value) => varchar_value.serialize(),
+        }
+    }
+
     pub fn is_of_type(&self, typ: ColumnType) -> bool {
         match self {
             ColumnValue::Boolean(boolean_value) => boolean_value.is_of_type(typ),
@@ -46,16 +59,16 @@ impl ColumnValue {
         }
     }
 
-    pub fn serialize(&self) -> Vec<u8> {
+    pub fn typ(&self) -> ColumnType {
         match self {
-            ColumnValue::Boolean(boolean_value) => boolean_value.serialize(),
-            ColumnValue::TinyInt(tiny_int_value) => tiny_int_value.serialize(),
-            ColumnValue::SmallInt(small_int_value) => small_int_value.serialize(),
-            ColumnValue::Integer(integer_value) => integer_value.serialize(),
-            ColumnValue::BigInt(big_int_value) => big_int_value.serialize(),
-            ColumnValue::Decimal(decimal_value) => decimal_value.serialize(),
-            ColumnValue::Timestamp(timestamp_value) => timestamp_value.serialize(),
-            ColumnValue::Varchar(varchar_value) => varchar_value.serialize(),
+            ColumnValue::Boolean(_) => ColumnType::Boolean,
+            ColumnValue::TinyInt(_) => ColumnType::TinyInt,
+            ColumnValue::SmallInt(_) => ColumnType::SmallInt,
+            ColumnValue::Integer(_) => ColumnType::Integer,
+            ColumnValue::BigInt(_) => ColumnType::BigInt,
+            ColumnValue::Decimal(_) => ColumnType::Decimal,
+            ColumnValue::Timestamp(_) => ColumnType::Timestamp,
+            ColumnValue::Varchar(varchar_value) => ColumnType::Varchar(varchar_value.length),
         }
     }
 }
