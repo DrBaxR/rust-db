@@ -9,9 +9,9 @@ use crate::disk::{
 };
 
 mod page;
-mod schema;
-mod tuple;
-mod value;
+pub mod schema;
+pub mod tuple;
+pub mod value;
 
 const END_PAGE_ID: PageID = 0;
 
