@@ -1,7 +1,10 @@
+#[cfg(test)]
+mod tests;
+
 use crate::table::{
     schema::{Column, ColumnType, Schema},
     tuple::Tuple,
-    value::{ColumnValue, IntegerValue},
+    value::{BooleanValue, ColumnValue, IntegerValue},
 };
 
 pub trait Evaluate {
@@ -19,6 +22,7 @@ pub trait Evaluate {
 pub enum Expression {
     Constant(ConstantExpression),
     Arithmetic(ArithmeticExpression),
+    Boolean(BooleanExpression),
     ColumnValue(ColumnValueExpression),
 }
 
@@ -27,6 +31,7 @@ impl Evaluate for Expression {
         match self {
             Expression::Constant(expr) => expr.evaluate(tuple, schema),
             Expression::Arithmetic(expr) => expr.evaluate(tuple, schema),
+            Expression::Boolean(expr) => expr.evaluate(tuple, schema),
             Expression::ColumnValue(expr) => expr.evaluate(tuple, schema),
         }
     }
@@ -43,6 +48,7 @@ impl Evaluate for Expression {
             Expression::Arithmetic(expr) => {
                 expr.evaluate_join(l_tuple, l_schema, r_tuple, r_schema)
             }
+            Expression::Boolean(expr) => expr.evaluate_join(l_tuple, l_schema, r_tuple, r_schema),
             Expression::ColumnValue(expr) => {
                 expr.evaluate_join(l_tuple, l_schema, r_tuple, r_schema)
             }
@@ -53,6 +59,7 @@ impl Evaluate for Expression {
         match self {
             Expression::Constant(expr) => expr.return_type(),
             Expression::Arithmetic(expr) => expr.return_type(),
+            Expression::Boolean(expr) => expr.return_type(),
             Expression::ColumnValue(expr) => expr.return_type(),
         }
     }
@@ -140,6 +147,61 @@ impl Evaluate for ArithmeticExpression {
     }
 }
 
+pub enum BooleanType {
+    And,
+    Or,
+}
+
+pub struct BooleanExpression {
+    pub left: Box<Expression>,
+    pub right: Box<Expression>,
+    pub typ: BooleanType,
+}
+
+impl BooleanExpression {
+    fn compute(&self, l: ColumnValue, r: ColumnValue) -> ColumnValue {
+        match (l, r) {
+            (ColumnValue::Boolean(l), ColumnValue::Boolean(r)) => match self.typ {
+                BooleanType::And => ColumnValue::Boolean(BooleanValue {
+                    value: l.value && r.value,
+                }),
+                BooleanType::Or => ColumnValue::Boolean(BooleanValue {
+                    value: l.value || r.value,
+                }),
+            },
+            _ => panic!("Only supprted compute operands are (Boolean, Boolean)"),
+        }
+    }
+}
+
+impl Evaluate for BooleanExpression {
+    fn evaluate(&self, tuple: &Tuple, schema: &Schema) -> ColumnValue {
+        let l_val = self.left.evaluate(tuple, schema);
+        let r_val = self.right.evaluate(tuple, schema);
+        self.compute(l_val, r_val)
+    }
+
+    fn evaluate_join(
+        &self,
+        l_tuple: &Tuple,
+        l_schema: &Schema,
+        r_tuple: &Tuple,
+        r_schema: &Schema,
+    ) -> ColumnValue {
+        let l_val = self
+            .left
+            .evaluate_join(l_tuple, l_schema, r_tuple, r_schema);
+        let r_val = self
+            .right
+            .evaluate_join(l_tuple, l_schema, r_tuple, r_schema);
+        self.compute(l_val, r_val)
+    }
+
+    fn return_type(&self) -> Column {
+        Column::new_fixed("_result_".to_string(), ColumnType::Boolean)
+    }
+}
+
 pub enum JoinSide {
     Left,
     Right,
@@ -174,123 +236,3 @@ impl Evaluate for ColumnValueExpression {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::table::value::DecimalValue;
-
-    use super::*;
-
-    #[test]
-    fn constant_expression() {
-        let schema = Schema::new(vec![Column::new_fixed(
-            "col1".to_string(),
-            ColumnType::Integer,
-        )]);
-        let tuple = Tuple::new(
-            vec![ColumnValue::Integer(IntegerValue { value: 10 })],
-            &schema,
-        );
-
-        let expr = ConstantExpression {
-            value: ColumnValue::Integer(IntegerValue { value: 10 }),
-        };
-        assert_eq!(
-            expr.evaluate(&tuple, &schema),
-            ColumnValue::Integer(IntegerValue { value: 10 })
-        );
-
-        let expr = ConstantExpression {
-            value: ColumnValue::Decimal(DecimalValue { value: 12.3 }),
-        };
-        assert_eq!(
-            expr.evaluate(&tuple, &schema),
-            ColumnValue::Decimal(DecimalValue { value: 12.3 })
-        );
-    }
-
-    #[test]
-    fn column_value_expression() {
-        let schema = Schema::new(vec![
-            Column::new_fixed("col1".to_string(), ColumnType::Integer),
-            Column::new_fixed("col2".to_string(), ColumnType::Integer),
-        ]);
-        let tuple = Tuple::new(
-            vec![
-                ColumnValue::Integer(IntegerValue { value: 10 }),
-                ColumnValue::Integer(IntegerValue { value: 20 }),
-            ],
-            &schema,
-        );
-
-        let expr = ColumnValueExpression {
-            join_side: JoinSide::Left,
-            col_index: 0,
-            return_type: Column::new_fixed("col1".to_string(), ColumnType::Integer),
-        };
-        assert_eq!(
-            expr.evaluate(&tuple, &schema),
-            ColumnValue::Integer(IntegerValue { value: 10 })
-        );
-
-        let expr = ColumnValueExpression {
-            join_side: JoinSide::Left,
-            col_index: 1,
-            return_type: Column::new_fixed("col2".to_string(), ColumnType::Integer),
-        };
-        assert_eq!(
-            expr.evaluate(&tuple, &schema),
-            ColumnValue::Integer(IntegerValue { value: 20 })
-        );
-    }
-
-    #[test]
-    fn arithmetic_expression() {
-        let schema = Schema::new(vec![
-            Column::new_fixed("col1".to_string(), ColumnType::Integer),
-            Column::new_fixed("col2".to_string(), ColumnType::Integer),
-        ]);
-        let tuple = Tuple::new(
-            vec![
-                ColumnValue::Integer(IntegerValue { value: 10 }),
-                ColumnValue::Integer(IntegerValue { value: 20 }),
-            ],
-            &schema,
-        );
-
-        let expr = ArithmeticExpression {
-            left: Box::new(Expression::ColumnValue(ColumnValueExpression {
-                join_side: JoinSide::Left,
-                col_index: 0,
-                return_type: Column::new_fixed("col1".to_string(), ColumnType::Integer),
-            })),
-            right: Box::new(Expression::ColumnValue(ColumnValueExpression {
-                join_side: JoinSide::Left,
-                col_index: 1,
-                return_type: Column::new_fixed("col2".to_string(), ColumnType::Integer),
-            })),
-            typ: ArithmeticType::Plus,
-        };
-        assert_eq!(
-            expr.evaluate(&tuple, &schema),
-            ColumnValue::Integer(IntegerValue { value: 30 })
-        );
-
-        let expr = ArithmeticExpression {
-            left: Box::new(Expression::ColumnValue(ColumnValueExpression {
-                join_side: JoinSide::Left,
-                col_index: 0,
-                return_type: Column::new_fixed("col1".to_string(), ColumnType::Integer),
-            })),
-            right: Box::new(Expression::ColumnValue(ColumnValueExpression {
-                join_side: JoinSide::Left,
-                col_index: 1,
-                return_type: Column::new_fixed("col2".to_string(), ColumnType::Integer),
-            })),
-            typ: ArithmeticType::Minus,
-        };
-        assert_eq!(
-            expr.evaluate(&tuple, &schema),
-            ColumnValue::Integer(IntegerValue { value: -10 })
-        );
-    }
-}

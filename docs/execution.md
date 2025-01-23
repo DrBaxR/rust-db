@@ -28,6 +28,6 @@ Implementation flow:
 - [x] Expressions
 - [x] General structure of plan node
 - [ ] General structure of executor
-- [ ] Values
-- [ ] Projection
-- [ ] Filter
+- [ ] (WIP) Values
+- [ ] (WIP) Projection
+- [ ] (WIP) Filter
