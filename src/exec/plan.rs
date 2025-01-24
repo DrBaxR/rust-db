@@ -12,12 +12,30 @@ pub trait AbstractPlanNode {
 pub enum PlanNode {
     Values(ValuesPlanNode),
     Projection(ProjectionPlanNode),
-    Filter,
+    Filter(FilterNode),
 }
 
-struct ValuesPlanNode {
+impl AbstractPlanNode for PlanNode {
+    fn get_children(&self) -> Vec<&PlanNode> {
+        match self {
+            PlanNode::Values(node) => node.get_children(),
+            PlanNode::Projection(node) => node.get_children(),
+            PlanNode::Filter(node) => node.get_children(),
+        }
+    }
+
+    fn get_output_schema(&self) -> &Schema {
+        match self {
+            PlanNode::Values(node) => node.get_output_schema(),
+            PlanNode::Projection(node) => node.get_output_schema(),
+            PlanNode::Filter(node) => node.get_output_schema(),
+        }
+    }
+}
+
+pub struct ValuesPlanNode {
     pub output_schema: Schema,
-    pub values: Vec<Expression>,
+    pub values: Vec<Vec<Expression>>,
 }
 
 impl AbstractPlanNode for ValuesPlanNode {
@@ -30,9 +48,9 @@ impl AbstractPlanNode for ValuesPlanNode {
     }
 }
 
-struct ProjectionPlanNode {
+pub struct ProjectionPlanNode {
     pub output_schema: Schema,
-    pub expressions: Vec<Expression>,
+    pub expressions: Vec<Vec<Expression>>,
     pub child: Box<PlanNode>,
 }
 
@@ -46,7 +64,7 @@ impl AbstractPlanNode for ProjectionPlanNode {
     }
 }
 
-struct FilterNode {
+pub struct FilterNode {
     pub output_schema: Schema,
     pub predicate: BooleanExpression,
     pub child: Box<PlanNode>,

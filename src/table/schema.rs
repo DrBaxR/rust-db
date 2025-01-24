@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Schema {
     columns: Vec<Column>,
     offsets: Vec<usize>,

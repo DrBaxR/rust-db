@@ -71,6 +71,19 @@ impl ColumnValue {
             ColumnValue::Varchar(varchar_value) => ColumnType::Varchar(varchar_value.length),
         }
     }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            ColumnValue::Boolean(boolean_value) => boolean_value.value.to_string(),
+            ColumnValue::TinyInt(tiny_int_value) => tiny_int_value.value.to_string(),
+            ColumnValue::SmallInt(small_int_value) => small_int_value.value.to_string(),
+            ColumnValue::Integer(integer_value) => integer_value.value.to_string(),
+            ColumnValue::BigInt(big_int_value) => big_int_value.value.to_string(),
+            ColumnValue::Decimal(decimal_value) => decimal_value.value.to_string(),
+            ColumnValue::Timestamp(timestamp_value) => timestamp_value.value.to_string(),
+            ColumnValue::Varchar(varchar_value) => varchar_value.value.clone(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]

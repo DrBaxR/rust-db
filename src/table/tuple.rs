@@ -13,7 +13,7 @@ impl Tuple {
     /// # Panics
     /// Will panic if the values don't match the `schema`.
     pub fn new(values: Vec<ColumnValue>, schema: &Schema) -> Self {
-        assert_eq!(values.len(), schema.get_cols_count());
+        assert_eq!(values.len(), schema.get_cols_count()); // values don't match schema
 
         let mut data = vec![];
         for (i, value) in values.iter().enumerate() {
@@ -62,6 +62,21 @@ impl Tuple {
     pub fn size(&self) -> usize {
         self.data.len() + 4
     }
+
+    pub fn to_string(&self, schema: &Schema) -> String {
+        let mut result = String::from("{ ");
+        for i in 0..schema.get_cols_count() {
+            let value = self.get_value(schema, i);
+            result.push_str(&value.to_string());
+
+            if i < schema.get_cols_count() - 1 {
+                result.push_str(" , ");
+            }
+        }
+        result.push_str(" }");
+
+        result
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -71,7 +86,7 @@ pub struct RID {
 }
 
 impl RID {
-    fn invalid() -> Self {
+    pub fn invalid() -> Self {
         Self {
             page_id: 0,
             slot_num: 0,

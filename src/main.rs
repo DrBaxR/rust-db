@@ -1,71 +1,71 @@
 use std::{sync::Arc, thread};
 
 use disk::buffer_pool_manager::BufferPoolManager;
+use exec::{
+    expression::{ConstantExpression, Expression},
+    Executor, ValuesExecutor,
+};
 use index::disk_extendible_hash_table::DiskExtendibleHashTable;
+use table::{
+    schema::{Column, ColumnType, Schema},
+    value::{self, BooleanValue, ColumnValue, IntegerValue},
+};
 
 mod b_tree;
 mod config;
 mod disk;
+mod exec;
 mod index;
 mod parser;
 mod table;
-mod exec;
+
+fn const_integer_expression(value: i32) -> Expression {
+    Expression::Constant(ConstantExpression {
+        value: ColumnValue::Integer(IntegerValue { value }),
+    })
+}
+
+fn const_boolean_expression(value: bool) -> Expression {
+    Expression::Constant(ConstantExpression {
+        value: ColumnValue::Boolean(BooleanValue { value }),
+    })
+}
+
+fn const_decimal_expression(value: f64) -> Expression {
+    Expression::Constant(ConstantExpression {
+        value: ColumnValue::Decimal(value::DecimalValue { value }),
+    })
+}
 
 fn main() {
-    let bpm = Arc::new(BufferPoolManager::new(String::from("db/test.db"), 100, 2));
-    let ht =
-        DiskExtendibleHashTable::<i32, i32>::new(Arc::clone(&bpm), 0, 4, String::from("index"));
-    let ht = Arc::new(ht);
+    // sample usage of the values executor
+    let schema = Schema::new(vec![
+        Column::new_fixed("int".to_string(), ColumnType::Integer),
+        Column::new_fixed("bool".to_string(), ColumnType::Boolean),
+        Column::new_fixed("decimal".to_string(), ColumnType::Decimal),
+    ]);
 
-    // insert initial elements
-    for i in 0..3000 {
-        ht.insert(i, i).unwrap();
-    }
+    let values = vec![
+        vec![const_integer_expression(1), const_boolean_expression(true), const_decimal_expression(10.1)],
+        vec![const_integer_expression(2), const_boolean_expression(false), const_decimal_expression(20.2)],
+        vec![const_integer_expression(3), const_boolean_expression(true), const_decimal_expression(30.3)],
+        vec![const_integer_expression(4), const_boolean_expression(false), const_decimal_expression(40.4)],
+        vec![const_integer_expression(5), const_boolean_expression(false), const_decimal_expression(50.5)],
+        vec![const_integer_expression(6), const_boolean_expression(false), const_decimal_expression(60.6)],
+    ];
 
-    let mut handles = vec![];
-    // insert more elements
-    for i in 0..4 {
-        let ht = Arc::clone(&ht);
+    let values_plan = exec::plan::ValuesPlanNode {
+        output_schema: schema.clone(),
+        values,
+    };
 
-        let handle = thread::spawn(move || {
-            let start = 3000 + i * 500;
-            let end = start + 500;
+    let mut values_executor = exec::ValuesExecutor {
+        plan: values_plan,
+        cursor: 0,
+    };
 
-            for i in start..end {
-                ht.insert(i, i).unwrap();
-            }
-        });
-
-        handles.push(handle);
-    }
-
-    // remove all elements
-    for i in 0..4 {
-        let ht = Arc::clone(&ht);
-
-        let handle = thread::spawn(move || {
-            let start = i * 750;
-            let end = start + 750;
-
-            for i in start..end {
-                ht.remove(i);
-            }
-        });
-
-        handles.push(handle);
-    }
-
-    for handle in handles {
-        handle.join().unwrap();
-    }
-
-    ht.print();
-
-    for i in 0..3000 {
-        assert_eq!(ht.lookup(i), vec![]);
-    }
-
-    for i in 3000..5000 {
-        assert_eq!(ht.lookup(i), vec![i]);
+    values_executor.init();
+    while let Some((tuple, _)) = values_executor.next() {
+        println!("{}", tuple.to_string(&schema));
     }
 }
