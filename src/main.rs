@@ -1,11 +1,4 @@
-use std::{sync::Arc, thread};
-
-use disk::buffer_pool_manager::BufferPoolManager;
-use exec::{
-    expression::{ConstantExpression, Expression},
-    Executor, ValuesExecutor,
-};
-use index::disk_extendible_hash_table::DiskExtendibleHashTable;
+use exec::{executor::{values::ValuesExecutor, Execute}, expression::{ConstantExpression, Expression}};
 use table::{
     schema::{Column, ColumnType, Schema},
     value::{self, BooleanValue, ColumnValue, IntegerValue},
@@ -46,12 +39,36 @@ fn main() {
     ]);
 
     let values = vec![
-        vec![const_integer_expression(1), const_boolean_expression(true), const_decimal_expression(10.1)],
-        vec![const_integer_expression(2), const_boolean_expression(false), const_decimal_expression(20.2)],
-        vec![const_integer_expression(3), const_boolean_expression(true), const_decimal_expression(30.3)],
-        vec![const_integer_expression(4), const_boolean_expression(false), const_decimal_expression(40.4)],
-        vec![const_integer_expression(5), const_boolean_expression(false), const_decimal_expression(50.5)],
-        vec![const_integer_expression(6), const_boolean_expression(false), const_decimal_expression(60.6)],
+        vec![
+            const_integer_expression(1),
+            const_boolean_expression(true),
+            const_decimal_expression(10.1),
+        ],
+        vec![
+            const_integer_expression(2),
+            const_boolean_expression(false),
+            const_decimal_expression(20.2),
+        ],
+        vec![
+            const_integer_expression(3),
+            const_boolean_expression(true),
+            const_decimal_expression(30.3),
+        ],
+        vec![
+            const_integer_expression(4),
+            const_boolean_expression(false),
+            const_decimal_expression(40.4),
+        ],
+        vec![
+            const_integer_expression(5),
+            const_boolean_expression(false),
+            const_decimal_expression(50.5),
+        ],
+        vec![
+            const_integer_expression(6),
+            const_boolean_expression(false),
+            const_decimal_expression(60.6),
+        ],
     ];
 
     let values_plan = exec::plan::ValuesPlanNode {
@@ -59,7 +76,7 @@ fn main() {
         values,
     };
 
-    let mut values_executor = exec::ValuesExecutor {
+    let mut values_executor = ValuesExecutor {
         plan: values_plan,
         cursor: 0,
     };
