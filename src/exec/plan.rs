@@ -50,7 +50,7 @@ impl AbstractPlanNode for ValuesPlanNode {
 
 pub struct ProjectionPlanNode {
     pub output_schema: Schema,
-    pub expressions: Vec<Vec<Expression>>,
+    pub expressions: Vec<Expression>,
     pub child: Box<PlanNode>,
 }
 

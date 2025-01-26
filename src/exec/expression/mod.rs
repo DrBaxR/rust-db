@@ -8,7 +8,20 @@ use crate::table::{
 };
 
 pub trait Evaluate {
+    /// Evaluate the expression for a single tuple.
+    ///
+    /// # Arguments
+    /// * `tuple` - The tuple to evaluate the expression for.
+    /// * `schema` - The schema of the tuple.
     fn evaluate(&self, tuple: &Tuple, schema: &Schema) -> ColumnValue;
+
+    /// Evaluate the expression in the context of a join operation.
+    ///
+    /// # Arguments
+    /// * `l_tuple` - The left tuple to evaluate the expression for.
+    /// * `l_schema` - The schema of the left tuple.
+    /// * `r_tuple` - The right tuple to evaluate the expression for.
+    /// * `r_schema` - The schema of the right tuple.
     fn evaluate_join(
         &self,
         l_tuple: &Tuple,
@@ -16,6 +29,8 @@ pub trait Evaluate {
         r_tuple: &Tuple,
         r_schema: &Schema,
     ) -> ColumnValue;
+
+    /// Get the type of the return value of the expression.
     fn return_type(&self) -> Column;
 }
 
@@ -235,4 +250,3 @@ impl Evaluate for ColumnValueExpression {
         self.return_type.clone()
     }
 }
-

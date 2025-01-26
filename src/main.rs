@@ -38,6 +38,7 @@ fn main() {
         Column::new_fixed("decimal".to_string(), ColumnType::Decimal),
     ]);
 
+    // TODO: Replace function calls with macros!!!
     let values = vec![
         vec![
             const_integer_expression(1),
