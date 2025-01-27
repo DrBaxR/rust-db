@@ -80,6 +80,33 @@ impl Evaluate for Expression {
     }
 }
 
+#[macro_export]
+macro_rules! const_int {
+    ($value: expr) => {
+        Expression::Constant(ConstantExpression {
+            value: ColumnValue::Integer(IntegerValue { value: $value }),
+        })
+    };
+}
+
+#[macro_export]
+macro_rules! const_bool {
+    ($value: expr) => {
+        Expression::Constant(ConstantExpression {
+            value: ColumnValue::Boolean(BooleanValue { value: $value }),
+        })
+    };
+}
+
+#[macro_export]
+macro_rules! const_decimal {
+    ($value: expr) => {
+        Expression::Constant(ConstantExpression {
+            value: ColumnValue::Decimal(value::DecimalValue { value: $value }),
+        })
+    };
+}
+
 pub struct ConstantExpression {
     pub value: ColumnValue,
 }

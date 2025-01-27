@@ -1,4 +1,7 @@
-use exec::{executor::{values::ValuesExecutor, Execute}, expression::{ConstantExpression, Expression}};
+use exec::{
+    executor::{values::ValuesExecutor, Execute},
+    expression::{ConstantExpression, Expression},
+};
 use table::{
     schema::{Column, ColumnType, Schema},
     value::{self, BooleanValue, ColumnValue, IntegerValue},
@@ -12,24 +15,6 @@ mod index;
 mod parser;
 mod table;
 
-fn const_integer_expression(value: i32) -> Expression {
-    Expression::Constant(ConstantExpression {
-        value: ColumnValue::Integer(IntegerValue { value }),
-    })
-}
-
-fn const_boolean_expression(value: bool) -> Expression {
-    Expression::Constant(ConstantExpression {
-        value: ColumnValue::Boolean(BooleanValue { value }),
-    })
-}
-
-fn const_decimal_expression(value: f64) -> Expression {
-    Expression::Constant(ConstantExpression {
-        value: ColumnValue::Decimal(value::DecimalValue { value }),
-    })
-}
-
 fn main() {
     // sample usage of the values executor
     let schema = Schema::new(vec![
@@ -38,38 +23,13 @@ fn main() {
         Column::new_fixed("decimal".to_string(), ColumnType::Decimal),
     ]);
 
-    // TODO: Replace function calls with macros!!!
     let values = vec![
-        vec![
-            const_integer_expression(1),
-            const_boolean_expression(true),
-            const_decimal_expression(10.1),
-        ],
-        vec![
-            const_integer_expression(2),
-            const_boolean_expression(false),
-            const_decimal_expression(20.2),
-        ],
-        vec![
-            const_integer_expression(3),
-            const_boolean_expression(true),
-            const_decimal_expression(30.3),
-        ],
-        vec![
-            const_integer_expression(4),
-            const_boolean_expression(false),
-            const_decimal_expression(40.4),
-        ],
-        vec![
-            const_integer_expression(5),
-            const_boolean_expression(false),
-            const_decimal_expression(50.5),
-        ],
-        vec![
-            const_integer_expression(6),
-            const_boolean_expression(false),
-            const_decimal_expression(60.6),
-        ],
+        vec![const_int!(1), const_bool!(true), const_decimal!(10.1)],
+        vec![const_int!(2), const_bool!(false), const_decimal!(20.2)],
+        vec![const_int!(3), const_bool!(true), const_decimal!(30.3)],
+        vec![const_int!(4), const_bool!(false), const_decimal!(40.4)],
+        vec![const_int!(5), const_bool!(false), const_decimal!(50.5)],
+        vec![const_int!(6), const_bool!(false), const_decimal!(60.6)],
     ];
 
     let values_plan = exec::plan::ValuesPlanNode {

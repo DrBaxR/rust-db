@@ -3,7 +3,6 @@ use std::{borrow::BorrowMut, collections::HashMap};
 #[cfg(test)]
 mod tests;
 
-// TODO: document how these structures work
 /// Can match a value to a character sequence. Internally, acts something like a trie, only internally
 /// explicitly specifies whether a node represents a match (containing the matched value) or not.
 ///
