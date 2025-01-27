@@ -34,6 +34,7 @@ pub trait Evaluate {
     fn return_type(&self) -> Column;
 }
 
+#[derive(Clone)]
 pub enum Expression {
     Constant(ConstantExpression),
     Arithmetic(ArithmeticExpression),
@@ -107,6 +108,7 @@ macro_rules! const_decimal {
     };
 }
 
+#[derive(Clone)]
 pub struct ConstantExpression {
     pub value: ColumnValue,
 }
@@ -134,11 +136,13 @@ impl Evaluate for ConstantExpression {
     }
 }
 
+#[derive(Clone)]
 pub enum ArithmeticType {
     Plus,
     Minus,
 }
 
+#[derive(Clone)]
 pub struct ArithmeticExpression {
     pub left: Box<Expression>,
     pub right: Box<Expression>,
@@ -189,11 +193,13 @@ impl Evaluate for ArithmeticExpression {
     }
 }
 
+#[derive(Clone)]
 pub enum BooleanType {
     And,
     Or,
 }
 
+#[derive(Clone)]
 pub struct BooleanExpression {
     pub left: Box<Expression>,
     pub right: Box<Expression>,
@@ -244,11 +250,13 @@ impl Evaluate for BooleanExpression {
     }
 }
 
+#[derive(Clone)]
 pub enum JoinSide {
     Left,
     Right,
 }
 
+#[derive(Clone)]
 pub struct ColumnValueExpression {
     pub join_side: JoinSide,
     pub col_index: usize,

@@ -1,6 +1,7 @@
 use exec::{
-    executor::{values::ValuesExecutor, Execute},
-    expression::{ConstantExpression, Expression},
+    executor::{projection::ProjectionExecutor, values::ValuesExecutor, Execute, Executor},
+    expression::{ColumnValueExpression, ConstantExpression, Expression, JoinSide},
+    plan::PlanNode,
 };
 use table::{
     schema::{Column, ColumnType, Schema},
@@ -15,12 +16,11 @@ mod index;
 mod parser;
 mod table;
 
-fn main() {
-    // sample usage of the values executor
+fn values_executor() -> (ValuesExecutor, Schema) {
     let schema = Schema::new(vec![
-        Column::new_fixed("int".to_string(), ColumnType::Integer),
-        Column::new_fixed("bool".to_string(), ColumnType::Boolean),
-        Column::new_fixed("decimal".to_string(), ColumnType::Decimal),
+        Column::new_fixed("v_int".to_string(), ColumnType::Integer),
+        Column::new_fixed("v_bool".to_string(), ColumnType::Boolean),
+        Column::new_fixed("v_decimal".to_string(), ColumnType::Decimal),
     ]);
 
     let values = vec![
@@ -37,13 +37,54 @@ fn main() {
         values,
     };
 
-    let mut values_executor = ValuesExecutor {
-        plan: values_plan,
-        cursor: 0,
+    (
+        ValuesExecutor {
+            plan: values_plan,
+            cursor: 0,
+        },
+        schema,
+    )
+}
+
+fn projection_executor(child_pln: PlanNode, child_exec: Executor) -> (ProjectionExecutor, Schema) {
+    let int_col = Column::new_fixed("p_int".to_string(), ColumnType::Integer);
+    let dec_col = Column::new_fixed("p_decimal".to_string(), ColumnType::Decimal);
+
+    let schema = Schema::new(vec![int_col.clone(), dec_col.clone()]);
+
+    let expressions = vec![
+        Expression::ColumnValue(ColumnValueExpression {
+            join_side: JoinSide::Left,
+            col_index: 0,
+            return_type: int_col,
+        }),
+        Expression::ColumnValue(ColumnValueExpression {
+            join_side: JoinSide::Left,
+            col_index: 2,
+            return_type: dec_col,
+        }),
+    ];
+
+    let projection_plan = exec::plan::ProjectionPlanNode {
+        output_schema: schema.clone(),
+        expressions,
+        child: Box::new(child_pln),
     };
 
-    values_executor.init();
-    while let Some((tuple, _)) = values_executor.next() {
+    (
+        ProjectionExecutor {
+            plan: projection_plan,
+            child: Box::new(child_exec),
+        },
+        schema,
+    )
+}
+
+fn main() {
+    let (values_executor, _) = values_executor();
+    let (mut projection_executor, schema) = projection_executor(PlanNode::Values(values_executor.plan.clone()), Executor::Values(values_executor));
+
+    while let Some((tuple, _)) = projection_executor.next() {
         println!("{}", tuple.to_string(&schema));
     }
 }

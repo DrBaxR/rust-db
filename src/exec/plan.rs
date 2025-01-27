@@ -33,6 +33,7 @@ impl AbstractPlanNode for PlanNode {
     }
 }
 
+#[derive(Clone)]
 pub struct ValuesPlanNode {
     pub output_schema: Schema,
     pub values: Vec<Vec<Expression>>,
