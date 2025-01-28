@@ -131,8 +131,8 @@ mod tests {
 
     fn simple_schema() -> Schema {
         Schema::new(vec![
-            Column::new_varchar("name".to_string(), 10),
-            Column::new_fixed("count".to_string(), ColumnType::SmallInt),
+            Column::new_named("name".to_string(), ColumnType::Varchar(10)),
+            Column::new_named("count".to_string(), ColumnType::SmallInt),
         ])
     }
 

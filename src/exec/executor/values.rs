@@ -19,7 +19,7 @@ pub struct ValuesExecutor {
 
 impl ValuesExecutor {
     fn dummy_schema() -> Schema {
-        Schema::new(vec![Column::new_fixed(
+        Schema::new(vec![Column::new_named(
             "dummy".to_string(),
             ColumnType::Integer,
         )])
@@ -61,4 +61,3 @@ impl Execute for ValuesExecutor {
     }
 }
 
-// TODO: tests

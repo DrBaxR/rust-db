@@ -131,9 +131,9 @@ mod tests {
     #[test]
     fn tuple_serialization_consistency() {
         let schema = Schema::new(vec![
-            Column::new_fixed("tiny".to_string(), ColumnType::TinyInt),
-            Column::new_varchar("varchar".to_string(), 255),
-            Column::new_fixed("bool".to_string(), ColumnType::Boolean),
+            Column::new_named("tiny".to_string(), ColumnType::TinyInt),
+            Column::new_named("varchar".to_string(), ColumnType::Varchar(255)),
+            Column::new_named("bool".to_string(), ColumnType::Boolean),
         ]);
         let values: Vec<ColumnValue> = vec![
             ColumnValue::TinyInt(TinyIntValue { value: 8 }),
@@ -152,9 +152,9 @@ mod tests {
     #[test]
     fn tuple_get_values() {
         let schema = Schema::new(vec![
-            Column::new_fixed("tiny".to_string(), ColumnType::TinyInt),
-            Column::new_varchar("varchar".to_string(), 255),
-            Column::new_fixed("bool".to_string(), ColumnType::Boolean),
+            Column::new_named("tiny".to_string(), ColumnType::TinyInt),
+            Column::new_named("varchar".to_string(), ColumnType::Varchar(255)),
+            Column::new_named("bool".to_string(), ColumnType::Boolean),
         ]);
         let values: Vec<ColumnValue> = vec![
             ColumnValue::TinyInt(TinyIntValue { value: 8 }),
@@ -174,11 +174,11 @@ mod tests {
     #[test]
     fn tuple_get_values_complex() {
         let schema = Schema::new(vec![
-            Column::new_fixed("tiny".to_string(), ColumnType::TinyInt),
-            Column::new_varchar("varchar".to_string(), 255),
-            Column::new_fixed("bool".to_string(), ColumnType::Boolean),
-            Column::new_fixed("bigint".to_string(), ColumnType::BigInt),
-            Column::new_fixed("timestamp".to_string(), ColumnType::Timestamp),
+            Column::new_named("tiny".to_string(), ColumnType::TinyInt),
+            Column::new_named("varchar".to_string(), ColumnType::Varchar(255)),
+            Column::new_named("bool".to_string(), ColumnType::Boolean),
+            Column::new_named("bigint".to_string(), ColumnType::BigInt),
+            Column::new_named("timestamp".to_string(), ColumnType::Timestamp),
         ]);
         let values: Vec<ColumnValue> = vec![
             ColumnValue::TinyInt(TinyIntValue { value: 8 }),
@@ -203,9 +203,9 @@ mod tests {
     #[should_panic]
     fn tuple_create_wrong_schema() {
         let schema = Schema::new(vec![
-            Column::new_fixed("tiny".to_string(), ColumnType::TinyInt),
-            Column::new_varchar("varchar".to_string(), 255),
-            Column::new_fixed("bool".to_string(), ColumnType::Boolean),
+            Column::new_named("tiny".to_string(), ColumnType::TinyInt),
+            Column::new_named("varchar".to_string(), ColumnType::Varchar(255)),
+            Column::new_named("bool".to_string(), ColumnType::Boolean),
         ]);
         let values: Vec<ColumnValue> = vec![
             ColumnValue::TinyInt(TinyIntValue { value: 8 }),
@@ -223,9 +223,9 @@ mod tests {
     #[should_panic]
     fn tuple_get_values_column_overflow() {
         let schema = Schema::new(vec![
-            Column::new_fixed("tiny".to_string(), ColumnType::TinyInt),
-            Column::new_varchar("varchar".to_string(), 255),
-            Column::new_fixed("bool".to_string(), ColumnType::Boolean),
+            Column::new_named("tiny".to_string(), ColumnType::TinyInt),
+            Column::new_named("varchar".to_string(), ColumnType::Varchar(255)),
+            Column::new_named("bool".to_string(), ColumnType::Boolean),
         ]);
         let values: Vec<ColumnValue> = vec![
             ColumnValue::TinyInt(TinyIntValue { value: 8 }),

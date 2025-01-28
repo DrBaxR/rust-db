@@ -214,7 +214,7 @@ mod tests {
     fn get_simple_tuple() -> Tuple {
         Tuple::new(
             vec![ColumnValue::Boolean(BooleanValue { value: true })],
-            &Schema::new(vec![Column::new_fixed(
+            &Schema::new(vec![Column::new_named(
                 "bool".to_string(),
                 ColumnType::Boolean,
             )]),
@@ -227,7 +227,7 @@ mod tests {
                 value: "hi :)".to_string(),
                 length: len,
             })],
-            &Schema::new(vec![Column::new_varchar("big".to_string(), len)]),
+            &Schema::new(vec![Column::new_named("big".to_string(), ColumnType::Varchar(len))]),
         )
     }
 

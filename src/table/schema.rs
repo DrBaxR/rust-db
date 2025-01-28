@@ -27,6 +27,17 @@ impl Schema {
         }
     }
 
+    /// Less flexible (but more convenient) constructor for creating a schema with columns of the same type.
+    pub fn with_types(types: Vec<ColumnType>) -> Self {
+        let columns = types
+            .into_iter()
+            .enumerate()
+            .map(|(i, t)| Column::new_named(i.to_string(), t))
+            .collect();
+
+        Self::new(columns)
+    }
+
     /// Returns the offset at which data of the column with the index `col_index` starts relative to the start of the tuple. `None` if out of bounds.
     pub fn get_offset(&self, col_index: usize) -> Option<usize> {
         self.offsets.get(col_index).map(|o| *o)
@@ -58,20 +69,18 @@ pub struct Column {
 }
 
 impl Column {
-    /// Create fixed-size column.
-    pub fn new_fixed(name: String, col_type: ColumnType) -> Self {
-        if let ColumnType::Varchar(_) = col_type {
-            panic!("Constructor doesn't support VARCHAR type");
+    /// Create a new column with an empty name and an integer type. In case you want more control, use the other constructor.
+    pub fn new(typ: ColumnType) -> Self {
+        Self {
+            name: "".to_string(),
+            col_type: typ,
         }
-
-        Self { name, col_type }
     }
 
-    /// Create varchar column.
-    pub fn new_varchar(name: String, length: usize) -> Self {
+    pub fn new_named(name: String, typ: ColumnType) -> Self {
         Self {
             name,
-            col_type: ColumnType::Varchar(length),
+            col_type: typ,
         }
     }
 
@@ -115,9 +124,9 @@ mod tests {
     #[test]
     fn schema_constructor_multi_cols() {
         let schema = Schema::new(vec![
-            Column::new_fixed("tiny".to_string(), ColumnType::TinyInt),
-            Column::new_fixed("small".to_string(), ColumnType::SmallInt),
-            Column::new_fixed("bool".to_string(), ColumnType::Boolean),
+            Column::new_named("tiny".to_string(), ColumnType::TinyInt),
+            Column::new_named("small".to_string(), ColumnType::SmallInt),
+            Column::new_named("bool".to_string(), ColumnType::Boolean),
         ]);
 
         // tuple structure: |.|..|.|
@@ -125,11 +134,11 @@ mod tests {
         assert_eq!(schema.tuple_length, 4);
 
         let schema = Schema::new(vec![
-            Column::new_varchar("varchar".to_string(), 5),
-            Column::new_fixed("timestamp".to_string(), ColumnType::Timestamp),
-            Column::new_fixed("int".to_string(), ColumnType::Integer),
-            Column::new_fixed("decimal".to_string(), ColumnType::Decimal),
-            Column::new_fixed("timestamp".to_string(), ColumnType::Timestamp),
+            Column::new_named("varchar".to_string(), ColumnType::Varchar(5)),
+            Column::new_named("timestamp".to_string(), ColumnType::Timestamp),
+            Column::new_named("int".to_string(), ColumnType::Integer),
+            Column::new_named("decimal".to_string(), ColumnType::Decimal),
+            Column::new_named("timestamp".to_string(), ColumnType::Timestamp),
         ]);
 
         // tuple structure: |.....|........|....|........|........|
@@ -139,7 +148,7 @@ mod tests {
 
     #[test]
     fn schema_constructor_one_col() {
-        let schema = Schema::new(vec![Column::new_fixed(
+        let schema = Schema::new(vec![Column::new_named(
             "int".to_string(),
             ColumnType::Integer,
         )]);

@@ -17,10 +17,10 @@ mod parser;
 mod table;
 
 fn values_executor() -> (ValuesExecutor, Schema) {
-    let schema = Schema::new(vec![
-        Column::new_fixed("v_int".to_string(), ColumnType::Integer),
-        Column::new_fixed("v_bool".to_string(), ColumnType::Boolean),
-        Column::new_fixed("v_decimal".to_string(), ColumnType::Decimal),
+    let schema = Schema::with_types(vec![
+        ColumnType::Integer,
+        ColumnType::Boolean,
+        ColumnType::Decimal,
     ]);
 
     let values = vec![
@@ -47,10 +47,10 @@ fn values_executor() -> (ValuesExecutor, Schema) {
 }
 
 fn projection_executor(child_pln: PlanNode, child_exec: Executor) -> (ProjectionExecutor, Schema) {
-    let int_col = Column::new_fixed("p_int".to_string(), ColumnType::Integer);
-    let dec_col = Column::new_fixed("p_decimal".to_string(), ColumnType::Decimal);
+    let int_col = Column::new(ColumnType::Integer);
+    let dec_col = Column::new(ColumnType::Decimal);
 
-    let schema = Schema::new(vec![int_col.clone(), dec_col.clone()]);
+    let schema = Schema::with_types(vec![ColumnType::Integer, ColumnType::Decimal]);
 
     let expressions = vec![
         Expression::ColumnValue(ColumnValueExpression {
@@ -82,7 +82,10 @@ fn projection_executor(child_pln: PlanNode, child_exec: Executor) -> (Projection
 
 fn main() {
     let (values_executor, _) = values_executor();
-    let (mut projection_executor, schema) = projection_executor(PlanNode::Values(values_executor.plan.clone()), Executor::Values(values_executor));
+    let (mut projection_executor, schema) = projection_executor(
+        PlanNode::Values(values_executor.plan.clone()),
+        Executor::Values(values_executor),
+    );
 
     while let Some((tuple, _)) = projection_executor.next() {
         println!("{}", tuple.to_string(&schema));

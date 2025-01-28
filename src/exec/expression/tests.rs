@@ -4,7 +4,7 @@ use super::*;
 
 #[test]
 fn constant_expression() {
-    let schema = Schema::new(vec![Column::new_fixed(
+    let schema = Schema::new(vec![Column::new_named(
         "col1".to_string(),
         ColumnType::Integer,
     )]);
@@ -33,8 +33,8 @@ fn constant_expression() {
 #[test]
 fn column_value_expression() {
     let schema = Schema::new(vec![
-        Column::new_fixed("col1".to_string(), ColumnType::Integer),
-        Column::new_fixed("col2".to_string(), ColumnType::Integer),
+        Column::new_named("col1".to_string(), ColumnType::Integer),
+        Column::new_named("col2".to_string(), ColumnType::Integer),
     ]);
     let tuple = Tuple::new(
         vec![
@@ -47,7 +47,7 @@ fn column_value_expression() {
     let expr = ColumnValueExpression {
         join_side: JoinSide::Left,
         col_index: 0,
-        return_type: Column::new_fixed("col1".to_string(), ColumnType::Integer),
+        return_type: Column::new_named("col1".to_string(), ColumnType::Integer),
     };
     assert_eq!(
         expr.evaluate(&tuple, &schema),
@@ -57,7 +57,7 @@ fn column_value_expression() {
     let expr = ColumnValueExpression {
         join_side: JoinSide::Left,
         col_index: 1,
-        return_type: Column::new_fixed("col2".to_string(), ColumnType::Integer),
+        return_type: Column::new_named("col2".to_string(), ColumnType::Integer),
     };
     assert_eq!(
         expr.evaluate(&tuple, &schema),
@@ -68,8 +68,8 @@ fn column_value_expression() {
 #[test]
 fn arithmetic_expression() {
     let schema = Schema::new(vec![
-        Column::new_fixed("col1".to_string(), ColumnType::Integer),
-        Column::new_fixed("col2".to_string(), ColumnType::Integer),
+        Column::new_named("col1".to_string(), ColumnType::Integer),
+        Column::new_named("col2".to_string(), ColumnType::Integer),
     ]);
     let tuple = Tuple::new(
         vec![
@@ -83,12 +83,12 @@ fn arithmetic_expression() {
         left: Box::new(Expression::ColumnValue(ColumnValueExpression {
             join_side: JoinSide::Left,
             col_index: 0,
-            return_type: Column::new_fixed("col1".to_string(), ColumnType::Integer),
+            return_type: Column::new_named("col1".to_string(), ColumnType::Integer),
         })),
         right: Box::new(Expression::ColumnValue(ColumnValueExpression {
             join_side: JoinSide::Left,
             col_index: 1,
-            return_type: Column::new_fixed("col2".to_string(), ColumnType::Integer),
+            return_type: Column::new_named("col2".to_string(), ColumnType::Integer),
         })),
         typ: ArithmeticType::Plus,
     };
@@ -101,12 +101,12 @@ fn arithmetic_expression() {
         left: Box::new(Expression::ColumnValue(ColumnValueExpression {
             join_side: JoinSide::Left,
             col_index: 0,
-            return_type: Column::new_fixed("col1".to_string(), ColumnType::Integer),
+            return_type: Column::new_named("col1".to_string(), ColumnType::Integer),
         })),
         right: Box::new(Expression::ColumnValue(ColumnValueExpression {
             join_side: JoinSide::Left,
             col_index: 1,
-            return_type: Column::new_fixed("col2".to_string(), ColumnType::Integer),
+            return_type: Column::new_named("col2".to_string(), ColumnType::Integer),
         })),
         typ: ArithmeticType::Minus,
     };
@@ -119,8 +119,8 @@ fn arithmetic_expression() {
 #[test]
 fn boolean_expression() {
     let schema = Schema::new(vec![
-        Column::new_fixed("col1".to_string(), ColumnType::Boolean),
-        Column::new_fixed("col2".to_string(), ColumnType::Boolean),
+        Column::new_named("col1".to_string(), ColumnType::Boolean),
+        Column::new_named("col2".to_string(), ColumnType::Boolean),
     ]);
     let tuple = Tuple::new(
         vec![
@@ -134,12 +134,12 @@ fn boolean_expression() {
         left: Box::new(Expression::ColumnValue(ColumnValueExpression {
             join_side: JoinSide::Left,
             col_index: 0,
-            return_type: Column::new_fixed("col1".to_string(), ColumnType::Boolean),
+            return_type: Column::new_named("col1".to_string(), ColumnType::Boolean),
         })),
         right: Box::new(Expression::ColumnValue(ColumnValueExpression {
             join_side: JoinSide::Left,
             col_index: 1,
-            return_type: Column::new_fixed("col2".to_string(), ColumnType::Boolean),
+            return_type: Column::new_named("col2".to_string(), ColumnType::Boolean),
         })),
         typ: BooleanType::And,
     };
@@ -152,12 +152,12 @@ fn boolean_expression() {
         left: Box::new(Expression::ColumnValue(ColumnValueExpression {
             join_side: JoinSide::Left,
             col_index: 0,
-            return_type: Column::new_fixed("col1".to_string(), ColumnType::Boolean),
+            return_type: Column::new_named("col1".to_string(), ColumnType::Boolean),
         })),
         right: Box::new(Expression::ColumnValue(ColumnValueExpression {
             join_side: JoinSide::Left,
             col_index: 1,
-            return_type: Column::new_fixed("col2".to_string(), ColumnType::Boolean),
+            return_type: Column::new_named("col2".to_string(), ColumnType::Boolean),
         })),
         typ: BooleanType::Or,
     };

@@ -130,8 +130,8 @@ impl Evaluate for ConstantExpression {
 
     fn return_type(&self) -> Column {
         match self.value.typ() {
-            ColumnType::Varchar(len) => Column::new_varchar("_const_".to_string(), len),
-            typ => Column::new_fixed("_const_".to_string(), typ),
+            ColumnType::Varchar(len) => Column::new_named("_const_".to_string(), ColumnType::Varchar(len)),
+            typ => Column::new_named("_const_".to_string(), typ),
         }
     }
 }
@@ -189,7 +189,7 @@ impl Evaluate for ArithmeticExpression {
     }
 
     fn return_type(&self) -> Column {
-        Column::new_fixed("_result_".to_string(), ColumnType::Integer)
+        Column::new_named("_result_".to_string(), ColumnType::Integer)
     }
 }
 
@@ -246,7 +246,7 @@ impl Evaluate for BooleanExpression {
     }
 
     fn return_type(&self) -> Column {
-        Column::new_fixed("_result_".to_string(), ColumnType::Boolean)
+        Column::new_named("_result_".to_string(), ColumnType::Boolean)
     }
 }
 

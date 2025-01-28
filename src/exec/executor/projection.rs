@@ -37,5 +37,3 @@ impl Execute for ProjectionExecutor {
         self.plan.get_output_schema()
     }
 }
-
-// TODO: tests
