@@ -1,7 +1,7 @@
 use crate::{
     exec::{
         expression::Evaluate,
-        plan::{AbstractPlanNode, ProjectionPlanNode},
+        plan::{projection::ProjectionPlanNode, AbstractPlanNode},
     },
     table::{
         schema::Schema,

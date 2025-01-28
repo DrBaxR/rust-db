@@ -1,7 +1,7 @@
 use exec::{
     executor::{projection::ProjectionExecutor, values::ValuesExecutor, Execute, Executor},
     expression::{ColumnValueExpression, ConstantExpression, Expression, JoinSide},
-    plan::PlanNode,
+    plan::{projection::ProjectionPlanNode, values::ValuesPlanNode, PlanNode},
 };
 use table::{
     schema::{Column, ColumnType, Schema},
@@ -32,7 +32,7 @@ fn values_executor() -> (ValuesExecutor, Schema) {
         vec![const_int!(6), const_bool!(false), const_decimal!(60.6)],
     ];
 
-    let values_plan = exec::plan::ValuesPlanNode {
+    let values_plan = ValuesPlanNode {
         output_schema: schema.clone(),
         values,
     };
@@ -65,7 +65,7 @@ fn projection_executor(child_pln: PlanNode, child_exec: Executor) -> (Projection
         }),
     ];
 
-    let projection_plan = exec::plan::ProjectionPlanNode {
+    let projection_plan = ProjectionPlanNode {
         output_schema: schema.clone(),
         expressions,
         child: Box::new(child_pln),
