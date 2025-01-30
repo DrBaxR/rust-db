@@ -130,7 +130,9 @@ impl Evaluate for ConstantExpression {
 
     fn return_type(&self) -> Column {
         match self.value.typ() {
-            ColumnType::Varchar(len) => Column::new_named("_const_".to_string(), ColumnType::Varchar(len)),
+            ColumnType::Varchar(len) => {
+                Column::new_named("_const_".to_string(), ColumnType::Varchar(len))
+            }
             typ => Column::new_named("_const_".to_string(), typ),
         }
     }
@@ -195,8 +197,16 @@ impl Evaluate for ArithmeticExpression {
 
 #[derive(Clone)]
 pub enum BooleanType {
+    // composite
     And,
     Or,
+    // arithmetic
+    EQ,
+    NE,
+    GT,
+    GE,
+    LT,
+    LE,
 }
 
 #[derive(Clone)]
@@ -216,8 +226,51 @@ impl BooleanExpression {
                 BooleanType::Or => ColumnValue::Boolean(BooleanValue {
                     value: l.value || r.value,
                 }),
+                _ => panic!("Only supported boolean operations are (And, Or)"),
             },
-            _ => panic!("Only supprted compute operands are (Boolean, Boolean)"),
+            (ColumnValue::Integer(l), ColumnValue::Integer(r)) => match self.typ {
+                BooleanType::EQ => ColumnValue::Boolean(BooleanValue {
+                    value: l.value == r.value,
+                }),
+                BooleanType::NE => ColumnValue::Boolean(BooleanValue {
+                    value: l.value != r.value,
+                }),
+                BooleanType::GT => ColumnValue::Boolean(BooleanValue {
+                    value: l.value > r.value,
+                }),
+                BooleanType::GE => ColumnValue::Boolean(BooleanValue {
+                    value: l.value >= r.value,
+                }),
+                BooleanType::LT => ColumnValue::Boolean(BooleanValue {
+                    value: l.value < r.value,
+                }),
+                BooleanType::LE => ColumnValue::Boolean(BooleanValue {
+                    value: l.value <= r.value,
+                }),
+                _ => panic!("Only supported boolean operations for integers are (EQ, NE, GT, GE, LT, LE)"),
+            },
+            (ColumnValue::Decimal(l), ColumnValue::Decimal(r)) => match self.typ {
+                BooleanType::EQ => ColumnValue::Boolean(BooleanValue {
+                    value: l.value == r.value,
+                }),
+                BooleanType::NE => ColumnValue::Boolean(BooleanValue {
+                    value: l.value != r.value,
+                }),
+                BooleanType::GT => ColumnValue::Boolean(BooleanValue {
+                    value: l.value > r.value,
+                }),
+                BooleanType::GE => ColumnValue::Boolean(BooleanValue {
+                    value: l.value >= r.value,
+                }),
+                BooleanType::LT => ColumnValue::Boolean(BooleanValue {
+                    value: l.value < r.value,
+                }),
+                BooleanType::LE => ColumnValue::Boolean(BooleanValue {
+                    value: l.value <= r.value,
+                }),
+                _ => panic!("Only supported boolean operations for decimals are (EQ, NE, GT, GE, LT, LE)"),
+            },
+            _ => panic!("Operands types combinations are not supported"),
         }
     }
 }
