@@ -1,6 +1,6 @@
 use exec::{
     executor::{projection::ProjectionExecutor, values::ValuesExecutor, Execute, Executor},
-    expression::{constant::ConstantExpression, value::{ColumnValueExpression, JoinSide}, Expression},
+    expression::{constant::{const_bool, const_decimal, const_int, ConstantExpression}, value::{ColumnValueExpression, JoinSide}, Expression},
     plan::{projection::ProjectionPlanNode, values::ValuesPlanNode, PlanNode},
 };
 use table::{
@@ -24,12 +24,12 @@ fn values_executor() -> (ValuesExecutor, Schema) {
     ]);
 
     let values = vec![
-        vec![const_int!(1), const_bool!(true), const_decimal!(10.1)],
-        vec![const_int!(2), const_bool!(false), const_decimal!(20.2)],
-        vec![const_int!(3), const_bool!(true), const_decimal!(30.3)],
-        vec![const_int!(4), const_bool!(false), const_decimal!(40.4)],
-        vec![const_int!(5), const_bool!(false), const_decimal!(50.5)],
-        vec![const_int!(6), const_bool!(false), const_decimal!(60.6)],
+        vec![const_int(1), const_bool(true), const_decimal(10.1)],
+        vec![const_int(2), const_bool(false), const_decimal(20.2)],
+        vec![const_int(3), const_bool(true), const_decimal(30.3)],
+        vec![const_int(4), const_bool(false), const_decimal(40.4)],
+        vec![const_int(5), const_bool(false), const_decimal(50.5)],
+        vec![const_int(6), const_bool(false), const_decimal(60.6)],
     ];
 
     let values_plan = ValuesPlanNode {

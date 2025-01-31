@@ -1,32 +1,42 @@
-use crate::table::{schema::{Column, ColumnType, Schema}, tuple::Tuple, value::ColumnValue};
+use crate::table::{
+    schema::{Column, ColumnType, Schema},
+    tuple::Tuple,
+    value::{BooleanValue, ColumnValue, DecimalValue, IntegerValue, TimestampValue, VarcharValue},
+};
 
-use super::Evaluate;
+use super::{Evaluate, Expression};
 
-#[macro_export]
-macro_rules! const_int {
-    ($value: expr) => {
-        Expression::Constant(ConstantExpression {
-            value: ColumnValue::Integer(IntegerValue { value: $value }),
-        })
-    };
+pub fn const_int(value: i32) -> Expression {
+    Expression::Constant(ConstantExpression {
+        value: ColumnValue::Integer(IntegerValue { value }),
+    })
 }
 
-#[macro_export]
-macro_rules! const_bool {
-    ($value: expr) => {
-        Expression::Constant(ConstantExpression {
-            value: ColumnValue::Boolean(BooleanValue { value: $value }),
-        })
-    };
+pub fn const_bool(value: bool) -> Expression {
+    Expression::Constant(ConstantExpression {
+        value: ColumnValue::Boolean(BooleanValue { value }),
+    })
 }
 
-#[macro_export]
-macro_rules! const_decimal {
-    ($value: expr) => {
-        Expression::Constant(ConstantExpression {
-            value: ColumnValue::Decimal(value::DecimalValue { value: $value }),
-        })
-    };
+pub fn const_decimal(value: f64) -> Expression {
+    Expression::Constant(ConstantExpression {
+        value: ColumnValue::Decimal(DecimalValue { value }),
+    })
+}
+
+pub fn const_timestamp(value: u64) -> Expression {
+    Expression::Constant(ConstantExpression {
+        value: ColumnValue::Timestamp(TimestampValue { value }),
+    })
+}
+
+pub fn const_varchar(value: String) -> Expression {
+    Expression::Constant(ConstantExpression {
+        value: ColumnValue::Varchar(VarcharValue {
+            length: value.len(),
+            value,
+        }),
+    })
 }
 
 #[derive(Clone)]

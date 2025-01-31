@@ -113,8 +113,3 @@ impl Evaluate for BooleanExpression {
         Column::new_named("_result_".to_string(), ColumnType::Boolean)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    // TODO: comparission boolean expression with different types
-}

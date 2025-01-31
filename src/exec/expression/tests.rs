@@ -1,6 +1,8 @@
 use crate::{
     exec::expression::{
-        arithmetic::ArithmeticType, boolean::BooleanType, constant::ConstantExpression,
+        arithmetic::ArithmeticType,
+        boolean::BooleanType,
+        constant::{const_decimal, const_int, ConstantExpression},
         value::JoinSide,
     },
     table::{
@@ -9,7 +11,7 @@ use crate::{
     },
 };
 
-use super::*;
+use super::{constant::{const_timestamp, const_varchar}, *};
 
 #[test]
 fn constant_expression() {
@@ -173,5 +175,125 @@ fn boolean_expression() {
     assert_eq!(
         expr.evaluate(&tuple, &schema),
         ColumnValue::Boolean(BooleanValue { value: true })
+    );
+}
+
+fn dummy_schema() -> Schema {
+    Schema::new(vec![
+        Column::new_named("col1".to_string(), ColumnType::Integer),
+        Column::new_named("col2".to_string(), ColumnType::Integer),
+    ])
+}
+
+fn dummy_tuple() -> Tuple {
+    Tuple::new(
+        vec![
+            ColumnValue::Integer(IntegerValue { value: 10 }),
+            ColumnValue::Integer(IntegerValue { value: 20 }),
+        ],
+        &dummy_schema(),
+    )
+}
+
+#[test]
+fn bool_same_type_comparisson() {
+    // 1 == 2
+    let left = const_int(1);
+    let right = const_int(2);
+
+    let expr = BooleanExpression {
+        left: Box::new(left),
+        right: Box::new(right),
+        typ: BooleanType::EQ,
+    };
+
+    assert_eq!(
+        expr.evaluate(&dummy_tuple(), &dummy_schema()),
+        ColumnValue::Boolean(BooleanValue { value: false })
+    );
+
+    // 1 == 1
+    let left = const_int(1);
+    let right = const_int(1);
+
+    let expr = BooleanExpression {
+        left: Box::new(left),
+        right: Box::new(right),
+        typ: BooleanType::EQ,
+    };
+
+    assert_eq!(
+        expr.evaluate(&dummy_tuple(), &dummy_schema()),
+        ColumnValue::Boolean(BooleanValue { value: true })
+    );
+}
+
+#[test]
+fn bool_different_numeric_types_comparisson() {
+    // 1 < 2.0
+    let left = const_int(1);
+    let right = const_decimal(2.0);
+
+    let expr = BooleanExpression {
+        left: Box::new(left),
+        right: Box::new(right),
+        typ: BooleanType::LT,
+    };
+
+    assert_eq!(
+        expr.evaluate(&dummy_tuple(), &dummy_schema()),
+        ColumnValue::Boolean(BooleanValue { value: true })
+    );
+
+    // 1 > 2.0
+    let left = const_int(1);
+    let right = const_decimal(2.0);
+
+    let expr = BooleanExpression {
+        left: Box::new(left),
+        right: Box::new(right),
+        typ: BooleanType::GT,
+    };
+
+    assert_eq!(
+        expr.evaluate(&dummy_tuple(), &dummy_schema()),
+        ColumnValue::Boolean(BooleanValue { value: false })
+    );
+}
+
+#[test]
+fn bool_timestamps_comparisson() {
+    let expr = BooleanExpression {
+        left: Box::new(const_timestamp(12345678)),
+        right: Box::new(const_timestamp(12345679)),
+        typ: BooleanType::LT,
+    };
+
+    assert_eq!(
+        expr.evaluate(&dummy_tuple(), &dummy_schema()),
+        ColumnValue::Boolean(BooleanValue { value: true })
+    );
+}
+
+#[test]
+fn bool_varchar_comparisson() {
+    let expr = BooleanExpression {
+        left: Box::new(const_varchar("a".to_string())),
+        right: Box::new(const_varchar("b".to_string())),
+        typ: BooleanType::LT,
+    };
+    assert_eq!(
+        expr.evaluate(&dummy_tuple(), &dummy_schema()),
+        ColumnValue::Boolean(BooleanValue { value: true })
+    );
+
+    let expr = BooleanExpression {
+        left: Box::new(const_varchar("a".to_string())),
+        right: Box::new(const_varchar("a".to_string())),
+        typ: BooleanType::NE,
+    };
+    assert_eq!(
+        expr.evaluate(&dummy_tuple(), &dummy_schema()),
+        ColumnValue::Boolean(BooleanValue { value: false })
     );
 }
