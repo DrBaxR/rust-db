@@ -1,6 +1,6 @@
 use exec::{
     executor::{projection::ProjectionExecutor, values::ValuesExecutor, Execute, Executor},
-    expression::{ColumnValueExpression, ConstantExpression, Expression, JoinSide},
+    expression::{constant::ConstantExpression, value::{ColumnValueExpression, JoinSide}, Expression},
     plan::{projection::ProjectionPlanNode, values::ValuesPlanNode, PlanNode},
 };
 use table::{

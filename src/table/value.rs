@@ -1,4 +1,5 @@
 use core::str;
+use std::cmp::Ordering;
 
 use super::schema::ColumnType;
 
@@ -82,6 +83,68 @@ impl ColumnValue {
             ColumnValue::Decimal(decimal_value) => decimal_value.value.to_string(),
             ColumnValue::Timestamp(timestamp_value) => timestamp_value.value.to_string(),
             ColumnValue::Varchar(varchar_value) => varchar_value.value.clone(),
+        }
+    }
+
+    /// Casts value to decimal `ColumnValue`. Works for all the numeric types.
+    ///
+    /// # Errors
+    /// Will return `Err` if called on boolean or varchar.
+    pub fn to_decimal(&self) -> Result<ColumnValue, ()> {
+        match self {
+            ColumnValue::TinyInt(tiny_int_value) => Ok(ColumnValue::Decimal(DecimalValue {
+                value: tiny_int_value.value as f64,
+            })),
+            ColumnValue::SmallInt(small_int_value) => Ok(ColumnValue::Decimal(DecimalValue {
+                value: small_int_value.value as f64,
+            })),
+            ColumnValue::Integer(integer_value) => Ok(ColumnValue::Decimal(DecimalValue {
+                value: integer_value.value as f64,
+            })),
+            ColumnValue::BigInt(big_int_value) => Ok(ColumnValue::Decimal(DecimalValue {
+                value: big_int_value.value as f64,
+            })),
+            ColumnValue::Decimal(decimal_value) => Ok(ColumnValue::Decimal(decimal_value.clone())),
+            ColumnValue::Timestamp(timestamp_value) => Ok(ColumnValue::Decimal(DecimalValue {
+                value: timestamp_value.value as f64,
+            })),
+            _ => Err(()),
+        }
+    }
+
+    /// Compare two values. Returns `Ok(Ordering)` if the values are of the same type and `Err(())` otherwise.
+    pub fn compare(&self, other: &ColumnValue) -> Result<Ordering, ()> {
+        if !other.is_of_type(self.typ()) {
+            return Err(());
+        }
+
+        match (self, other) {
+            (ColumnValue::Boolean(left), ColumnValue::Boolean(right)) => {
+                Ok(left.value.cmp(&right.value))
+            }
+            (ColumnValue::TinyInt(left), ColumnValue::TinyInt(right)) => {
+                Ok(left.value.cmp(&right.value))
+            }
+            (ColumnValue::SmallInt(left), ColumnValue::SmallInt(right)) => {
+                Ok(left.value.cmp(&right.value))
+            }
+            (ColumnValue::Integer(left), ColumnValue::Integer(right)) => {
+                Ok(left.value.cmp(&right.value))
+            }
+            (ColumnValue::BigInt(left), ColumnValue::BigInt(right)) => {
+                Ok(left.value.cmp(&right.value))
+            }
+            (ColumnValue::Decimal(left), ColumnValue::Decimal(right)) => Ok(left
+                .value
+                .partial_cmp(&right.value)
+                .expect("Invalid decimal comparison")),
+            (ColumnValue::Timestamp(left), ColumnValue::Timestamp(right)) => {
+                Ok(left.value.cmp(&right.value))
+            }
+            (ColumnValue::Varchar(left), ColumnValue::Varchar(right)) => {
+                Ok(left.value.cmp(&right.value))
+            }
+            _ => Err(()),
         }
     }
 }

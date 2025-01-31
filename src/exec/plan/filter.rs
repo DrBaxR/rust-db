@@ -1,4 +1,4 @@
-use crate::{exec::expression::BooleanExpression, table::schema::Schema};
+use crate::{exec::expression::boolean::BooleanExpression, table::schema::Schema};
 
 use super::{AbstractPlanNode, PlanNode};
 
