@@ -7,6 +7,7 @@ use crate::table::{
 
 pub mod values;
 pub mod projection;
+pub mod filter;
 
 pub trait Execute {
     fn init(&mut self);
@@ -37,3 +38,5 @@ impl Execute for Executor {
         }
     }
 }
+
+// TODO: tests for executors

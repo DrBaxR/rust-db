@@ -86,6 +86,7 @@ fn main() {
         PlanNode::Values(values_executor.plan.clone()),
         Executor::Values(values_executor),
     );
+    // TODO: showcase the filter executor
 
     while let Some((tuple, _)) = projection_executor.next() {
         println!("{}", tuple.to_string(&schema));
