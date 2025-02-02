@@ -10,6 +10,9 @@ use super::{Evaluate, Expression};
 pub enum ArithmeticType {
     Plus,
     Minus,
+    Multiply,
+    Divide,
+    Mod,
 }
 
 #[derive(Clone)]
@@ -29,6 +32,15 @@ impl ArithmeticExpression {
                 }),
                 ArithmeticType::Minus => ColumnValue::Integer(IntegerValue {
                     value: l.value - r.value,
+                }),
+                ArithmeticType::Divide => ColumnValue::Integer(IntegerValue {
+                    value: l.value / r.value,
+                }),
+                ArithmeticType::Multiply => ColumnValue::Integer(IntegerValue {
+                    value: l.value * r.value,
+                }),
+                ArithmeticType::Mod => ColumnValue::Integer(IntegerValue {
+                    value: l.value % r.value,
                 }),
             },
             _ => panic!("Only supprted compute operands are (Integer, Integer)"),

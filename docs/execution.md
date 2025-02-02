@@ -30,4 +30,6 @@ Implementation flow:
 - [x] General structure of executor
 - [x] Values
 - [x] Projection
-- [ ] (WIP) Filter
+- [x] Filter
+- [ ] (WIP) Executors tests
+- [ ] Research next executors to implement

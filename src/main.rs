@@ -1,7 +1,16 @@
 use exec::{
-    executor::{projection::ProjectionExecutor, values::ValuesExecutor, Execute, Executor},
-    expression::{constant::{const_bool, const_decimal, const_int, ConstantExpression}, value::{ColumnValueExpression, JoinSide}, Expression},
-    plan::{projection::ProjectionPlanNode, values::ValuesPlanNode, PlanNode},
+    executor::{
+        filter::FilterExecutor, projection::ProjectionExecutor, values::ValuesExecutor, Execute,
+        Executor,
+    },
+    expression::{
+        arithmetic::{ArithmeticExpression, ArithmeticType},
+        boolean::{BooleanExpression, BooleanType},
+        constant::{const_bool, const_decimal, const_int, ConstantExpression},
+        value::{ColumnValueExpression, JoinSide},
+        Expression,
+    },
+    plan::{filter::FilterNode, projection::ProjectionPlanNode, values::ValuesPlanNode, PlanNode},
 };
 use table::{
     schema::{Column, ColumnType, Schema},
@@ -80,15 +89,66 @@ fn projection_executor(child_pln: PlanNode, child_exec: Executor) -> (Projection
     )
 }
 
+fn filter_executor(child_pln: PlanNode, child_exec: Executor) -> (FilterExecutor, Schema) {
+    let schema = Schema::with_types(vec![ColumnType::Integer, ColumnType::Decimal]);
+
+    // filter: col0 % 2 == 0
+    let predicate = BooleanExpression {
+        left: Box::new(Expression::Arithmetic(ArithmeticExpression {
+            left: Box::new(Expression::ColumnValue(ColumnValueExpression {
+                join_side: JoinSide::Left,
+                col_index: 0,
+                return_type: Column::new(ColumnType::Integer),
+            })),
+            right: Box::new(Expression::Constant(ConstantExpression {
+                value: ColumnValue::Integer(IntegerValue { value: 2 }),
+            })),
+            typ: ArithmeticType::Mod,
+        })),
+        right: Box::new(Expression::Constant(ConstantExpression {
+            value: ColumnValue::Integer(IntegerValue { value: 0 }),
+        })),
+        typ: BooleanType::EQ,
+    };
+
+    // filter: true && true
+    // let predicate = BooleanExpression {
+    //     left: Box::new(Expression::Constant(ConstantExpression {
+    //         value: ColumnValue::Boolean(BooleanValue { value: true }),
+    //     })),
+    //     right: Box::new(Expression::Constant(ConstantExpression {
+    //         value: ColumnValue::Boolean(BooleanValue { value: true }),
+    //     })),
+    //     typ: BooleanType::And,
+    // };
+
+    let filter_plan = FilterNode {
+        output_schema: schema.clone(),
+        predicate,
+        child: Box::new(child_pln),
+    };
+
+    (
+        FilterExecutor {
+            plan: filter_plan,
+            child: Box::new(child_exec),
+        },
+        schema,
+    )
+}
+
 fn main() {
     let (values_executor, _) = values_executor();
-    let (mut projection_executor, schema) = projection_executor(
+    let (projection_executor, schema) = projection_executor(
         PlanNode::Values(values_executor.plan.clone()),
         Executor::Values(values_executor),
     );
-    // TODO: showcase the filter executor
+    let (mut filter_executor, _) = filter_executor(
+        PlanNode::Projection(projection_executor.plan.clone()),
+        Executor::Projection(projection_executor),
+    );
 
-    while let Some((tuple, _)) = projection_executor.next() {
+    while let Some((tuple, _)) = filter_executor.next() {
         println!("{}", tuple.to_string(&schema));
     }
 }

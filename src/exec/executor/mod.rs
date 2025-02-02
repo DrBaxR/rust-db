@@ -1,3 +1,5 @@
+use filter::FilterExecutor;
+use projection::ProjectionExecutor;
 use values::ValuesExecutor;
 
 use crate::table::{
@@ -5,9 +7,9 @@ use crate::table::{
     tuple::{Tuple, RID},
 };
 
-pub mod values;
-pub mod projection;
 pub mod filter;
+pub mod projection;
+pub mod values;
 
 pub trait Execute {
     fn init(&mut self);
@@ -17,24 +19,32 @@ pub trait Execute {
 
 pub enum Executor {
     Values(ValuesExecutor),
+    Projection(ProjectionExecutor),
+    Filter(FilterExecutor),
 }
 
 impl Execute for Executor {
     fn init(&mut self) {
         match self {
             Executor::Values(executor) => executor.init(),
+            Executor::Projection(executor) => executor.init(),
+            Executor::Filter(executor) => executor.init(),
         }
     }
 
     fn next(&mut self) -> Option<(Tuple, RID)> {
         match self {
             Executor::Values(executor) => executor.next(),
+            Executor::Projection(executor) => executor.next(),
+            Executor::Filter(executor) => executor.next(),
         }
     }
 
     fn output_schema(&self) -> &Schema {
         match self {
             Executor::Values(executor) => executor.output_schema(),
+            Executor::Projection(executor) => executor.output_schema(),
+            Executor::Filter(executor) => executor.output_schema(),
         }
     }
 }
