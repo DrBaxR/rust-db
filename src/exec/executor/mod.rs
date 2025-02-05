@@ -7,6 +7,9 @@ use crate::table::{
     tuple::{Tuple, RID},
 };
 
+#[cfg(test)]
+pub mod tests;
+
 pub mod filter;
 pub mod projection;
 pub mod values;
@@ -49,4 +52,3 @@ impl Execute for Executor {
     }
 }
 
-// TODO: tests for executors

@@ -14,7 +14,7 @@ use exec::{
 };
 use table::{
     schema::{Column, ColumnType, Schema},
-    value::{self, BooleanValue, ColumnValue, IntegerValue},
+    value::{ColumnValue, IntegerValue},
 };
 
 mod b_tree;
