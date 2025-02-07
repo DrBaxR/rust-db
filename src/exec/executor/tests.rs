@@ -3,11 +3,14 @@ use crate::{
         executor::Execute,
         expression::{
             arithmetic::{ArithmeticExpression, ArithmeticType},
+            boolean::{BooleanExpression, BooleanType},
             constant::{const_int, ConstantExpression},
             value::{ColumnValueExpression, JoinSide},
             Expression,
         },
-        plan::{projection::ProjectionPlanNode, values::ValuesPlanNode, PlanNode},
+        plan::{
+            filter::FilterNode, projection::ProjectionPlanNode, values::ValuesPlanNode, PlanNode,
+        },
     },
     table::{
         schema::{Column, ColumnType, Schema},
@@ -15,7 +18,9 @@ use crate::{
     },
 };
 
-use super::{projection::ProjectionExecutor, values::ValuesExecutor, Executor};
+use super::{
+    filter::FilterExecutor, projection::ProjectionExecutor, values::ValuesExecutor, Executor,
+};
 
 /// Creates a values executor with tuples of 1 column of type int. The values in that columns are those
 /// passed via the `values` parameter.
@@ -133,4 +138,70 @@ fn projection_executor() {
         })
         .collect();
     assert_eq!(results, vec![2, 4, 6, 8, 10, 12]);
+}
+
+/// Creates a filter executor that filters out all rows where the first column is not even.
+///
+/// Executor: `(Integer) -> (Integer)`
+fn get_filter_executor(child_pln: PlanNode, child_exec: Executor) -> (FilterExecutor, Schema) {
+    let schema = Schema::with_types(vec![ColumnType::Integer]);
+
+    // filter: col0 % 2 == 0
+    let predicate = BooleanExpression {
+        left: Box::new(Expression::Arithmetic(ArithmeticExpression {
+            left: Box::new(Expression::ColumnValue(ColumnValueExpression {
+                join_side: JoinSide::Left,
+                col_index: 0,
+                return_type: Column::new(ColumnType::Integer),
+            })),
+            right: Box::new(Expression::Constant(ConstantExpression {
+                value: ColumnValue::Integer(IntegerValue { value: 2 }),
+            })),
+            typ: ArithmeticType::Mod,
+        })),
+        right: Box::new(Expression::Constant(ConstantExpression {
+            value: ColumnValue::Integer(IntegerValue { value: 0 }),
+        })),
+        typ: BooleanType::EQ,
+    };
+
+    let filter_plan = FilterNode {
+        output_schema: schema.clone(),
+        predicate,
+        child: Box::new(child_pln),
+    };
+
+    (
+        FilterExecutor {
+            plan: filter_plan,
+            child: Box::new(child_exec),
+        },
+        schema,
+    )
+}
+
+#[test]
+fn filter_executor() {
+    let (values_executor, _) = get_values_executor(vec![1, 2, 3, 4, 5, 6]);
+    let (mut executor, schema) = get_filter_executor(
+        PlanNode::Values(values_executor.plan.clone()),
+        Executor::Values(values_executor),
+    );
+
+    let mut results = vec![];
+    while let Some(batch) = executor.next() {
+        results.push(batch.0);
+    }
+
+    let results: Vec<_> = results
+        .iter()
+        .map(|t| {
+            if let ColumnValue::Integer(val) = t.get_value(&schema, 0) {
+                val.value
+            } else {
+                panic!("Expected integer value")
+            }
+        })
+        .collect();
+    assert_eq!(results, vec![2, 4, 6]);
 }
