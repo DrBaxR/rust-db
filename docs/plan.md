@@ -11,6 +11,7 @@ This note is meant to document the progress that has been made in developing thi
 - [ ] Planner (takes the binder's output and creates a plan tree)
 - [ ] Optimizer (takes a plan tree and spits out an optimized plan tree)
 - [ ] (WIP) Execution Engine (takes in a plan tree and executes it)
+- [ ] (WIP) Catalog (database of database's metadata)
 
 ## System Overview
 
