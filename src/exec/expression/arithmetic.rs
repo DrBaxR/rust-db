@@ -74,4 +74,19 @@ impl Evaluate for ArithmeticExpression {
     fn return_type(&self) -> Column {
         Column::new_named("_result_".to_string(), ColumnType::Integer)
     }
+
+    fn to_string(&self) -> String {
+        format!(
+            "({} {} {})",
+            self.left.to_string(),
+            match self.typ {
+                ArithmeticType::Plus => "+",
+                ArithmeticType::Minus => "-",
+                ArithmeticType::Multiply => "*",
+                ArithmeticType::Divide => "/",
+                ArithmeticType::Mod => "%",
+            },
+            self.right.to_string()
+        )
+    }
 }

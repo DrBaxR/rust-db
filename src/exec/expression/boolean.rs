@@ -112,4 +112,22 @@ impl Evaluate for BooleanExpression {
     fn return_type(&self) -> Column {
         Column::new_named("_result_".to_string(), ColumnType::Boolean)
     }
+
+    fn to_string(&self) -> String {
+        format!(
+            "({} {} {})",
+            self.left.to_string(),
+            match self.typ {
+                BooleanType::And => "AND",
+                BooleanType::Or => "OR",
+                BooleanType::EQ => "=",
+                BooleanType::NE => "!=",
+                BooleanType::GT => ">",
+                BooleanType::GE => ">=",
+                BooleanType::LT => "<",
+                BooleanType::LE => "<=",
+            },
+            self.right.to_string()
+        )
+    }
 }

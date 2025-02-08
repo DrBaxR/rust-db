@@ -42,6 +42,8 @@ pub trait Evaluate {
 
     /// Get the type of the return value of the expression.
     fn return_type(&self) -> Column;
+
+    fn to_string(&self) -> String;
 }
 
 #[derive(Clone)]
@@ -87,6 +89,15 @@ impl Evaluate for Expression {
             Expression::Arithmetic(expr) => expr.return_type(),
             Expression::Boolean(expr) => expr.return_type(),
             Expression::ColumnValue(expr) => expr.return_type(),
+        }
+    }
+
+    fn to_string(&self) -> String {
+        match self {
+            Expression::Constant(expr) => expr.to_string(),
+            Expression::Arithmetic(expr) => expr.to_string(),
+            Expression::Boolean(expr) => expr.to_string(),
+            Expression::ColumnValue(expr) => expr.to_string(),
         }
     }
 }

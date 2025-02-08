@@ -67,4 +67,8 @@ impl Evaluate for ConstantExpression {
             typ => Column::new_named("_const_".to_string(), typ),
         }
     }
+
+    fn to_string(&self) -> String {
+        self.value.to_string()
+    }
 }

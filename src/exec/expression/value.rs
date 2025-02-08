@@ -40,4 +40,8 @@ impl Evaluate for ColumnValueExpression {
     fn return_type(&self) -> Column {
         self.return_type.clone()
     }
+
+    fn to_string(&self) -> String {
+        format!("#{}", self.col_index)
+    }
 }

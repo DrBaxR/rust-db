@@ -59,5 +59,12 @@ impl Execute for ValuesExecutor {
     fn output_schema(&self) -> &Schema {
         self.plan.get_output_schema()
     }
-}
 
+    fn to_string(&self, indent_level: usize) -> String {
+        format!(
+            "Values | Schema: {} | Length: {}",
+            self.output_schema().to_string(),
+            self.plan.values.len()
+        )
+    }
+}

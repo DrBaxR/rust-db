@@ -31,5 +31,6 @@ Implementation flow:
 - [x] Values
 - [x] Projection
 - [x] Filter
-- [ ] (WIP) Executors tests
+- [x] Executors tests
+- [x] Stringified version of the whole executor tree
 - [ ] Research next executors to implement

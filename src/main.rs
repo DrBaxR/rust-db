@@ -14,7 +14,7 @@ use exec::{
 };
 use table::{
     schema::{Column, ColumnType, Schema},
-    value::{ColumnValue, IntegerValue},
+    value::{BooleanValue, ColumnValue, IntegerValue},
 };
 
 mod b_tree;
@@ -147,6 +147,7 @@ fn main() {
         PlanNode::Projection(projection_executor.plan.clone()),
         Executor::Projection(projection_executor),
     );
+    println!("{}", filter_executor.to_string(0));
 
     while let Some((tuple, _)) = filter_executor.next() {
         println!("{}", tuple.to_string(&schema));

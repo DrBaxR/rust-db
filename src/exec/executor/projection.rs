@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use crate::{
     exec::{
         expression::Evaluate,
@@ -35,5 +37,21 @@ impl Execute for ProjectionExecutor {
 
     fn output_schema(&self) -> &Schema {
         self.plan.get_output_schema()
+    }
+
+    fn to_string(&self, indent_level: usize) -> String {
+        let self_string = format!(
+            "Projection | Schema: {} | Exprs: [ {} ]",
+            self.output_schema().to_string(),
+            self.plan
+                .expressions
+                .iter()
+                .map(|e| e.to_string())
+                .collect::<Vec<String>>()
+                .join(", ")
+        );
+
+        let tabs = "\t".repeat(indent_level + 1);
+        format!("{}\n{}-> {}", self_string, tabs, self.child.to_string(indent_level + 1))
     }
 }

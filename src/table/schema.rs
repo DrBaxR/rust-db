@@ -60,6 +60,17 @@ impl Schema {
     pub fn get_col_type(&self, index: usize) -> ColumnType {
         self.columns[index].col_type.clone()
     }
+
+    pub fn to_string(&self) -> String {
+        format!(
+            "{{ {} }}",
+            self.columns
+                .iter()
+                .map(|c| format!("{}:{}", c.name, c.col_type.to_string()))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
 }
 
 #[derive(Clone)]
@@ -113,6 +124,19 @@ impl ColumnType {
             ColumnType::Decimal => 8,
             ColumnType::Timestamp => 8,
             ColumnType::Varchar(length) => *length + 4,
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            ColumnType::Boolean => "BOOLEAN".to_string(),
+            ColumnType::TinyInt => "TINY INT".to_string(),
+            ColumnType::SmallInt => "SMALL INT".to_string(),
+            ColumnType::Integer => "INTEGER".to_string(),
+            ColumnType::BigInt => "BIG INT".to_string(),
+            ColumnType::Decimal => "DECIMAL".to_string(),
+            ColumnType::Timestamp => "TIMESTAMP".to_string(),
+            ColumnType::Varchar(length) => format!("VARCHAR({})", length),
         }
     }
 }

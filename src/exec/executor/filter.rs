@@ -7,7 +7,8 @@ use crate::{
     },
     table::{
         schema::Schema,
-        tuple::{Tuple, RID}, value::ColumnValue,
+        tuple::{Tuple, RID},
+        value::ColumnValue,
     },
 };
 
@@ -40,5 +41,21 @@ impl Execute for FilterExecutor {
 
     fn output_schema(&self) -> &Schema {
         self.plan.get_output_schema()
+    }
+
+    fn to_string(&self, indent_level: usize) -> String {
+        let self_string = format!(
+            "Filter | Schema: {} | Predicate: {}",
+            self.output_schema().to_string(),
+            self.plan.predicate.to_string()
+        );
+
+        let tabs = "\t".repeat(indent_level + 1);
+        format!(
+            "{}\n{}-> {}",
+            self_string,
+            tabs,
+            self.child.to_string(indent_level + 1)
+        )
     }
 }

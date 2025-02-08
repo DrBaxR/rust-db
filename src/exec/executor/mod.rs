@@ -18,6 +18,7 @@ pub trait Execute {
     fn init(&mut self);
     fn next(&mut self) -> Option<(Tuple, RID)>;
     fn output_schema(&self) -> &Schema;
+    fn to_string(&self, indent_level: usize) -> String;
 }
 
 pub enum Executor {
@@ -50,5 +51,12 @@ impl Execute for Executor {
             Executor::Filter(executor) => executor.output_schema(),
         }
     }
-}
 
+    fn to_string(&self, indent_level: usize) -> String {
+        match self {
+            Executor::Values(executor) => executor.to_string(indent_level),
+            Executor::Projection(executor) => executor.to_string(indent_level),
+            Executor::Filter(executor) => executor.to_string(indent_level),
+        }
+    }
+}
