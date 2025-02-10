@@ -57,7 +57,7 @@ fn single_thread(
         let end = start + 250;
 
         for i in start..end {
-            ht.insert(i, i).unwrap();
+            ht.insert(i, i, 4, 4).unwrap();
         }
     }
 
@@ -77,7 +77,7 @@ fn multi_thread(
             let end = start + 250;
 
             for i in start..end {
-                ht.insert(i, i).unwrap();
+                ht.insert(i, i, 4, 4).unwrap();
             }
         });
 
@@ -112,7 +112,7 @@ fn insert_multi_threaded_semantics() {
             let end = start + 250;
 
             for i in start..end {
-                ht.insert(i, i).unwrap();
+                ht.insert(i, i, 4, 4).unwrap();
             }
         });
 
@@ -144,7 +144,7 @@ fn remove_multi_threaded() {
 
     // insert initial elements
     for i in 0..4000 {
-        ht.insert(i, i).unwrap();
+        ht.insert(i, i, 4, 4).unwrap();
     }
 
     // remove all elements
@@ -190,7 +190,7 @@ fn multi_threaded_insert_remove() {
     
     // insert initial elements
     for i in 0..3000 {
-        ht.insert(i, i).unwrap();
+        ht.insert(i, i, 4, 4).unwrap();
     }
 
     let mut handles = vec![];
@@ -203,7 +203,7 @@ fn multi_threaded_insert_remove() {
             let end = start + 500;
 
             for i in start..end {
-                ht.insert(i, i).unwrap();
+                ht.insert(i, i, 4, 4).unwrap();
             }
         });
 

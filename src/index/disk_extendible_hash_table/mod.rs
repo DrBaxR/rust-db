@@ -80,7 +80,11 @@ where
     ///
     /// # Errors
     /// Will return `Err` if it's not possible to insert.
-    pub fn insert(&self, key: K, value: V) -> Result<(), ()> {
+    /// 
+    /// # Note
+    /// The `key_size` and `value_size` are used to determine the size of the key and value in the bucket page. These
+    /// were added as a quick fix to the serialization/deserialization of the bucket page.
+    pub fn insert(&self, key: K, value: V, key_size: u32, value_size: u32) -> Result<(), ()> {
         let hash = self.hash(&key);
 
         // get directory page ID from header if exists, if not create empty one
@@ -90,7 +94,7 @@ where
         let d_pid = match header.get_directory_page_id(d_index) {
             Some(pid) => pid,
             None => {
-                let empty_dir_pid = self.new_empty_directory();
+                let empty_dir_pid = self.new_empty_directory(key_size, value_size);
 
                 header
                     .set_directory_page_id(d_index, empty_dir_pid)
@@ -130,7 +134,7 @@ where
         }
 
         // split the bucket
-        let mut split_image_bucket = HashTableBucketPage::<K, V>::new_empty();
+        let mut split_image_bucket = HashTableBucketPage::<K, V>::new_empty(key_size, value_size);
 
         // increase local depth or buckets
         let old_local_depth = directory.increment_local_depth(b_index).unwrap();
@@ -188,10 +192,10 @@ where
         Ok(())
     }
 
-    fn new_empty_directory(&self) -> PageID {
+    fn new_empty_directory(&self, key_size: u32, value_size: u32) -> PageID {
         // create bucket page
         let empty_bucket_pid = self.bpm.new_page();
-        let bucket = HashTableBucketPage::<K, V>::new_empty();
+        let bucket = HashTableBucketPage::<K, V>::new_empty(key_size, value_size);
 
         let mut empty_bucket_page = self.bpm.get_write_page(empty_bucket_pid);
         empty_bucket_page.write(bucket.serialize());

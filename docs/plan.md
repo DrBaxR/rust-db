@@ -10,8 +10,8 @@ This note is meant to document the progress that has been made in developing thi
 - [ ] Planner (takes the binder's output and creates a plan tree)
 - [ ] Optimizer (takes a plan tree and spits out an optimized plan tree)
 - [ ] (WIP - blocked) Execution Engine (takes in a plan tree and executes it)
-- [ ] (WIP - blocked) Catalog (database of database's metadata) - this will require to also implement the `Index`
-- [ ] (WIP) Index (using the extendible hash table data structure)
+- [ ] (WIP) Catalog (database of database's metadata) - this will require to also implement the `Index`
+- [x] Index (using the extendible hash table data structure)
 
 ## System Overview
 

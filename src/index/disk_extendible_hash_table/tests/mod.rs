@@ -22,10 +22,10 @@ fn simple_insert() {
         DiskExtendibleHashTable::<i32, i32>::new(Arc::clone(&bpm), 0, 0, String::from("index"));
 
     // simple inserts
-    ht.insert(0, 1).unwrap();
-    ht.insert(1, 2).unwrap();
-    ht.insert(1, 9).unwrap();
-    ht.insert(3, 4).unwrap();
+    ht.insert(0, 1, 4, 4).unwrap();
+    ht.insert(1, 2, 4, 4).unwrap();
+    ht.insert(1, 9, 4, 4).unwrap();
+    ht.insert(3, 4, 4, 4).unwrap();
 
     assert_eq!(ht.lookup(0), vec![1]);
     assert_eq!(ht.lookup(1), vec![2, 9]);
@@ -45,11 +45,11 @@ fn bucket_single_split_insert_overflow() {
         DiskExtendibleHashTable::<i32, i32>::new(Arc::clone(&bpm), 0, 0, String::from("index")); // depths too small
 
     // simple inserts
-    for i in 0..511 {
-        ht.insert(i, i + 1).unwrap();
+    for i in 0..510 {
+        ht.insert(i, i + 1, 4, 4).unwrap();
     }
 
-    assert!(ht.insert(1, 1).is_err());
+    assert!(ht.insert(1, 1, 4, 4).is_err());
 
     // cleanup
     remove_file(db_path).expect("Couldn't remove test DB file");
@@ -66,7 +66,7 @@ fn bucket_single_split_insert() {
 
     // simple inserts
     for i in 0..513 {
-        ht.insert(i, i + 1).unwrap();
+        ht.insert(i, i + 1, 4, 4).unwrap();
         ht.print();
     }
 
@@ -90,7 +90,7 @@ fn bucket_split_insert_directory_double() {
 
     // simple inserts
     for i in 0..2000 {
-        ht.insert(i, i + 1).unwrap();
+        ht.insert(i, i + 1, 4, 4).unwrap();
     }
 
     for i in 0..2000 {
@@ -113,7 +113,7 @@ fn serialization() {
 
     // insert data
     for i in 0..513 {
-        ht.insert(i, i + 1).unwrap();
+        ht.insert(i, i + 1, 4, 4).unwrap();
     }
     bpm.flush_all_pages();
 
@@ -143,7 +143,7 @@ fn remove_simple() {
         DiskExtendibleHashTable::<i32, i32>::new(Arc::clone(&bpm), 0, 2, String::from("index"));
 
     // insert and remove
-    ht.insert(1, 1).unwrap();
+    ht.insert(1, 1, 4, 4).unwrap();
     assert_eq!(ht.lookup(1), vec![1]);
 
     assert_eq!(ht.remove(1), 1);
@@ -163,10 +163,10 @@ fn remove_multiple() {
         DiskExtendibleHashTable::<i32, i32>::new(Arc::clone(&bpm), 0, 2, String::from("index"));
 
     // insert and remove
-    ht.insert(1, 1).unwrap();
-    ht.insert(1, 2).unwrap();
-    ht.insert(1, 3).unwrap();
-    ht.insert(2, 2).unwrap();
+    ht.insert(1, 1, 4, 4).unwrap();
+    ht.insert(1, 2, 4, 4).unwrap();
+    ht.insert(1, 3, 4, 4).unwrap();
+    ht.insert(2, 2, 4, 4).unwrap();
     assert_eq!(ht.lookup(1), vec![1, 2, 3]);
 
     assert_eq!(ht.remove(1), 3);
@@ -190,13 +190,13 @@ fn remove_merges() {
 
     // split once
     for i in 0..513 {
-        ht.insert(i, i).unwrap();
+        ht.insert(i, i, 4, 4).unwrap();
     }
     assert_eq!(get_directories(&ht)[0].size(), 2);
 
     // split second time
     for i in 513..1025 {
-        ht.insert(i, i).unwrap();
+        ht.insert(i, i, 4, 4).unwrap();
     }
     assert_eq!(get_directories(&ht)[0].size(), 4);
 

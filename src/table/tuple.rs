@@ -1,8 +1,11 @@
-use crate::disk::disk_manager::PageID;
+use crate::{
+    disk::disk_manager::PageID,
+    index::serial::{Deserialize, Serialize},
+};
 
 use super::{schema::Schema, value::ColumnValue};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Tuple {
     data: Vec<u8>,
 }
@@ -23,24 +26,6 @@ impl Tuple {
 
             data.append(&mut value.serialize());
         }
-
-        Self { data }
-    }
-
-    /// Structure: `| length (4) | data (length) |`
-    pub fn serialize(&self) -> Vec<u8> {
-        let mut bytes = (self.data.len() as u32).to_be_bytes().to_vec();
-        bytes.append(&mut self.data.clone());
-
-        bytes
-    }
-
-    pub fn deserialize(data: &[u8]) -> Self {
-        assert!(data.len() > 4);
-        let length = u32::from_be_bytes([data[0], data[1], data[2], data[3]]) as usize;
-
-        assert_eq!(data.len(), length + 4);
-        let data = data[4..].to_vec();
 
         Self { data }
     }
@@ -79,6 +64,28 @@ impl Tuple {
     }
 }
 
+impl Serialize for Tuple {
+    /// Structure: `| length (4) | data (length) |`
+    fn serialize(&self) -> Vec<u8> {
+        let mut bytes = (self.data.len() as u32).to_be_bytes().to_vec();
+        bytes.append(&mut self.data.clone());
+
+        bytes
+    }
+}
+
+impl Deserialize for Tuple {
+    fn deserialize(data: &[u8]) -> Self {
+        assert!(data.len() > 4);
+        let length = u32::from_be_bytes([data[0], data[1], data[2], data[3]]) as usize;
+
+        assert_eq!(data.len(), length + 4);
+        let data = data[4..].to_vec();
+
+        Self { data }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct RID {
     pub page_id: PageID,
@@ -108,15 +115,39 @@ impl RID {
     pub fn get(&self) -> u64 {
         (self.page_id as u64) << 32 | self.slot_num as u64
     }
+
+    pub fn size() -> usize {
+        8
+    }
+}
+
+impl Serialize for RID {
+    fn serialize(&self) -> Vec<u8> {
+        self.get().to_be_bytes().to_vec()
+    }
+}
+
+impl Deserialize for RID {
+    fn deserialize(data: &[u8]) -> Self {
+        assert_eq!(data.len(), 8);
+        let rid = u64::from_be_bytes([
+            data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
+        ]);
+
+        Self::from_rid(rid)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::table::{
-        schema::{Column, ColumnType, Schema},
-        tuple::{Tuple, RID},
-        value::{
-            BigIntValue, BooleanValue, ColumnValue, TimestampValue, TinyIntValue, VarcharValue,
+    use crate::{
+        index::serial::{Deserialize, Serialize},
+        table::{
+            schema::{Column, ColumnType, Schema},
+            tuple::{Tuple, RID},
+            value::{
+                BigIntValue, BooleanValue, ColumnValue, TimestampValue, TinyIntValue, VarcharValue,
+            },
         },
     };
 

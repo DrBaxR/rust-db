@@ -4,22 +4,22 @@ use super::HashTableBucketPage;
 
 #[test]
 fn new_max_size() {
-    let bucket = HashTableBucketPage::new(vec![(1, 2)]);
-    assert_eq!(bucket.max_size, 511); // (i32, i32) = 8 => max_size = 4088 / 8 = 511
+    let bucket = HashTableBucketPage::new(vec![(1, 2)], 4, 4);
+    assert_eq!(bucket.max_size, 510); // (i32, i32) = 8 => max_size = 4080 / 8 = 510
 
-    let bucket = HashTableBucketPage::new(vec![(1u32, 2u8)]);
-    assert_eq!(bucket.max_size, 817); // (u32, u8) = 5 => max_size = 4088 / 5 = 817
+    let bucket = HashTableBucketPage::new(vec![(1u32, 2u8)], 4, 1);
+    assert_eq!(bucket.max_size, 816); // (u32, u8) = 5 => max_size = 4080 / 5 = 816
 }
 
 #[test]
 #[should_panic]
 fn new_panic() {
-    let _ = HashTableBucketPage::new([(1, 2); 512].to_vec()); // 512 > 511
+    let _ = HashTableBucketPage::new([(1, 2); 512].to_vec(), 4, 4); // 512 > 510
 }
 
 #[test]
 fn lookup() {
-    let bucket = HashTableBucketPage::new(vec![(3, 4), (1, 2), (1, 5)]);
+    let bucket = HashTableBucketPage::new(vec![(3, 4), (1, 2), (1, 5)], 4, 4);
 
     let res: Vec<i32> = bucket.lookup(1).iter().map(|v| **v).collect();
     assert_eq!(res, vec![2, 5]);
@@ -33,13 +33,13 @@ fn lookup() {
 
 #[test]
 fn insert() {
-    let mut bucket = HashTableBucketPage::<i32, i32>::new(vec![]);
+    let mut bucket = HashTableBucketPage::<i32, i32>::new(vec![], 4, 4);
     bucket.insert(1, 2).unwrap();
 
     let res: Vec<i32> = bucket.lookup(1).iter().map(|v| **v).collect();
     assert_eq!(res, vec![2]);
 
-    for i in 0..510 {
+    for i in 0..509 {
         bucket.insert(1, i).unwrap();
     }
 
@@ -49,7 +49,7 @@ fn insert() {
 
 #[test]
 fn remove() {
-    let mut bucket = HashTableBucketPage::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)]);
+    let mut bucket = HashTableBucketPage::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)], 4, 4);
 
     let removed = bucket.remove(1);
     assert_eq!(removed, 3);
@@ -66,7 +66,7 @@ fn remove() {
 
 #[test]
 fn remove_at() {
-    let mut bucket = HashTableBucketPage::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)]);
+    let mut bucket = HashTableBucketPage::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)], 4, 4);
 
     let res = bucket.remove_at(1).unwrap();
     assert_eq!(res, (1, 2));
@@ -78,7 +78,7 @@ fn remove_at() {
 
 #[test]
 fn entry_key_value_at() {
-    let bucket = HashTableBucketPage::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)]);
+    let bucket = HashTableBucketPage::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)], 4, 4);
 
     assert_eq!(*bucket.entry_at(3).unwrap(), (3, 4));
     assert!(bucket.entry_at(4).is_none());
@@ -89,7 +89,7 @@ fn entry_key_value_at() {
 
 #[test]
 fn serialization() {
-    let bucket = HashTableBucketPage::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)]);
+    let bucket = HashTableBucketPage::new(vec![(1, 1), (1, 2), (1, 3), (3, 4)], 4, 4);
     let bucked_deserialized = HashTableBucketPage::<i32, i32>::deserialize(&bucket.serialize());
 
     assert_eq!(bucket.max_size, bucked_deserialized.max_size);

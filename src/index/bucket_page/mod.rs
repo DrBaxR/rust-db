@@ -8,12 +8,14 @@ use super::{
 #[cfg(test)]
 mod tests;
 
-const HASH_TABLE_BUCKET_PAGE_DATA_SIZE: usize = 4088;
+const HASH_TABLE_BUCKET_PAGE_DATA_SIZE: usize = DB_PAGE_SIZE as usize - 4 - 4 - 4 - 4; // 4 bytes for max_size, 4 bytes for size, 4 bytes for key_size, 4 bytes for value_size
 
 /// Bucket page for extendinble hashing index. Its structure looks like this on disk:
 /// - `max_size` (0-3): The number of key-value pairs in bucket
 /// - `size` (4-7): The max number of key-value pairs that the bucket can hold
-/// - `data` (8-4095): The data of the key-value pairs stored, in an array form
+/// - `key_size` (8-11): The size of the key
+/// - `value_size` (12-15): The size of the value
+/// - `data` (16-4095): The data of the key-value pairs stored, in an array form
 ///
 /// # Note
 /// This bucket supports **non-unique** keys.
@@ -25,6 +27,8 @@ where
 {
     max_size: u32,
     data: Vec<(K, V)>,
+    key_size: u32,
+    value_size: u32,
 }
 
 impl<K, V> HashTableBucketPage<K, V>
@@ -32,19 +36,24 @@ where
     K: Serialize + Deserialize + Eq,
     V: Serialize + Deserialize,
 {
-    pub fn new(data: Vec<(K, V)>) -> Self {
+    pub fn new(data: Vec<(K, V)>, key_size: u32, value_size: u32) -> Self {
         // using this instead of `size_of::<K, V>()` because of memory alignment, which is undesirable for serialization
-        let pair_size = size_of::<K>() + size_of::<V>();
-        let max_size = (HASH_TABLE_BUCKET_PAGE_DATA_SIZE / pair_size) as u32;
+        let pair_size = key_size + value_size;
+        let max_size = (HASH_TABLE_BUCKET_PAGE_DATA_SIZE / pair_size as usize) as u32;
 
         let size = data.len() as u32;
         assert!(size <= max_size);
 
-        Self { max_size, data }
+        Self {
+            max_size,
+            data,
+            key_size,
+            value_size,
+        }
     }
 
-    pub fn new_empty() -> Self {
-        HashTableBucketPage::<K, V>::new(vec![])
+    pub fn new_empty(key_size: u32, value_size: u32) -> Self {
+        HashTableBucketPage::<K, V>::new(vec![], key_size, value_size)
     }
 
     /// Returns the values associated to `key`.
@@ -145,6 +154,8 @@ where
 
         data.extend_from_slice(&self.max_size.to_be_bytes());
         data.extend_from_slice(&(self.size() as u32).to_be_bytes()); // usize needs cast to u32 for serialization
+        data.extend_from_slice(&self.key_size.to_be_bytes());
+        data.extend_from_slice(&self.value_size.to_be_bytes());
 
         for (key, value) in self.data.iter() {
             data.extend_from_slice(&key.serialize());
@@ -157,7 +168,7 @@ where
     }
 }
 
-const DATA_OFFSET: usize = 8;
+const DATA_OFFSET: usize = 16;
 
 impl<K, V> Deserialize for HashTableBucketPage<K, V>
 where
@@ -169,8 +180,9 @@ where
         let size = u32::from_be_bytes(get_four_bytes_group(data, 1));
         let mut entries = vec![];
 
-        let key_size = size_of::<K>();
-        let value_size = size_of::<V>();
+        // TODO: this will need to be changed - in serialization, we need to store the size of the key and value in the header of the page
+        let key_size = u32::from_be_bytes(get_four_bytes_group(data, 2)) as usize;
+        let value_size = u32::from_be_bytes(get_four_bytes_group(data, 3)) as usize;
         let entry_size = key_size + value_size;
         for i in 0..size {
             let pair_offset = DATA_OFFSET + i as usize * entry_size;
@@ -183,6 +195,8 @@ where
         Self {
             max_size,
             data: entries,
+            key_size: key_size as u32,
+            value_size: value_size as u32,
         }
     }
 }
