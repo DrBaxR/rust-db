@@ -24,6 +24,7 @@ mod exec;
 mod index;
 mod parser;
 mod table;
+mod catalog;
 
 fn values_executor() -> (ValuesExecutor, Schema) {
     let schema = Schema::with_types(vec![
