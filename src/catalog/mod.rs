@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     sync::{
         atomic::{AtomicU32, Ordering},
-        Arc,
+        Arc, Mutex, MutexGuard,
     },
 };
 
@@ -14,18 +14,23 @@ use crate::{
 
 type OID = u32;
 
-// TODO: will need to be thread safe
+type TablesMapping = Mutex<HashMap<OID, Arc<Mutex<TableInfo>>>>;
+type TableNamesMapping = Mutex<HashMap<String, OID>>;
+
+type IndexesMapping = Mutex<HashMap<OID, Arc<Mutex<IndexInfo>>>>;
+type IndexNamesMapping = Mutex<HashMap<String, HashMap<String, OID>>>;
+
 pub struct Catalog {
     bpm: Arc<BufferPoolManager>,
     next_oid: AtomicU32,
     /// oid -> table info
-    tables: HashMap<OID, TableInfo>,
+    tables: TablesMapping,
     /// table name -> oid
-    table_names: HashMap<String, OID>,
+    table_names: TableNamesMapping,
     /// oid -> index info
-    indexes: HashMap<OID, IndexInfo>,
+    indexes: IndexesMapping,
     /// table name -> index name -> oid
-    index_names: HashMap<String, HashMap<String, OID>>,
+    index_names: IndexNamesMapping,
 }
 
 impl Catalog {
@@ -33,15 +38,19 @@ impl Catalog {
         Self {
             bpm,
             next_oid: AtomicU32::new(0),
-            tables: HashMap::new(),
-            table_names: HashMap::new(),
-            indexes: HashMap::new(),
-            index_names: HashMap::new(),
+            tables: Mutex::new(HashMap::new()),
+            table_names: Mutex::new(HashMap::new()),
+            indexes: Mutex::new(HashMap::new()),
+            index_names: Mutex::new(HashMap::new()),
         }
     }
 
-    pub fn create_table(&mut self, name: &str, schema: Schema) -> Result<&TableInfo, ()> {
-        if let Some(_) = self.table_names.get(name) {
+    pub fn create_table(
+        &mut self,
+        name: &str,
+        schema: Schema,
+    ) -> Result<Arc<Mutex<TableInfo>>, ()> {
+        if let Some(_) = self.table_names.lock().unwrap().get(name) {
             return Err(());
         }
 
@@ -54,22 +63,31 @@ impl Catalog {
             table: heap,
         };
 
-        self.table_names.insert(name.to_string(), oid);
-        self.index_names.insert(name.to_string(), HashMap::new());
-        self.tables.insert(oid, table_info);
+        self.table_names
+            .lock()
+            .unwrap()
+            .insert(name.to_string(), oid);
 
-        Ok(self.tables.get(&oid).unwrap())
+        self.index_names
+            .lock()
+            .unwrap()
+            .insert(name.to_string(), HashMap::new());
+
+        let mut tables = self.tables.lock().unwrap();
+        tables.insert(oid, Arc::new(Mutex::new(table_info)));
+
+        Ok(tables.get(&oid).unwrap().clone())
     }
 
-    pub fn get_table_by_name(&self, name: &str) -> Option<&TableInfo> {
-        match self.table_names.get(name) {
-            Some(oid) => self.tables.get(oid),
+    pub fn get_table_by_name(&self, name: &str) -> Option<Arc<Mutex<TableInfo>>> {
+        match self.table_names.lock().unwrap().get(name) {
+            Some(oid) => self.tables.lock().unwrap().get(oid).cloned(),
             None => None,
         }
     }
 
-    pub fn get_table_by_oid(&self, oid: OID) -> Option<&TableInfo> {
-        self.tables.get(&oid)
+    pub fn get_table_by_oid(&self, oid: OID) -> Option<Arc<Mutex<TableInfo>>> {
+        self.tables.lock().unwrap().get(&oid).cloned()
     }
 
     pub fn create_index(
@@ -80,24 +98,28 @@ impl Catalog {
         key_schema: Schema,
         key_attrs: Vec<usize>,
         keysize: usize,
-    ) -> OID {
+    ) -> Result<Arc<Mutex<IndexInfo>>, ()> {
         todo!()
     }
 
-    pub fn get_index_by_name(&self, index_name: &str, table_name: &str) -> Option<&IndexInfo> {
+    pub fn get_index_by_name(
+        &self,
+        index_name: &str,
+        table_name: &str,
+    ) -> Option<Arc<Mutex<IndexInfo>>> {
         todo!()
     }
 
-    pub fn get_index_by_oid(&self, oid: OID) -> Option<&IndexInfo> {
+    pub fn get_index_by_oid(&self, oid: OID) -> Option<Arc<Mutex<IndexInfo>>> {
         todo!()
     }
 
-    pub fn get_table_indexes(&self, name: &str) -> Vec<&IndexInfo> {
+    pub fn get_table_indexes(&self, name: &str) -> Vec<Arc<Mutex<IndexInfo>>> {
         todo!()
     }
 
     pub fn get_table_names(&self) -> Vec<String> {
-        self.table_names.keys().cloned().collect()
+        self.table_names.lock().unwrap().keys().cloned().collect()
     }
 }
 
