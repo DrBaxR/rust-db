@@ -100,18 +100,22 @@ impl Index {
         &self.meta
     }
 
-    fn insert(&self, key: Tuple, rid: RID) -> Result<(), ()> {
+    /// Inserts a new key-value pair in the index.
+    /// 
+    /// # Errors
+    /// Will return `Err` if there was an internal error in the extendible hash table (the data structure is full).
+    pub fn insert(&self, key: Tuple, rid: RID) -> Result<(), ()> {
         let key_size = key.size() as u32;
         let value_size = RID::size() as u32;
 
         self.deht.insert(key, rid, key_size, value_size)
     }
 
-    fn delete(&self, key: Tuple) {
+    pub fn delete(&self, key: Tuple) {
         self.deht.remove(key);
     }
 
-    fn scan(&self, key: Tuple) -> Vec<RID> {
+    pub fn scan(&self, key: Tuple) -> Vec<RID> {
         self.deht.lookup(key)
     }
 }

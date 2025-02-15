@@ -30,6 +30,20 @@ impl Tuple {
         Self { data }
     }
 
+    pub fn from_projection(
+        other: &Tuple,
+        other_schema: &Schema,
+        new_schema: &Schema,
+        new_attrs: &[usize],
+    ) -> Self {
+        let mut values = vec![];
+        for &attr in new_attrs {
+            values.push(other.get_value(other_schema, attr));
+        }
+
+        Self::new(values, new_schema)
+    }
+
     pub fn get_value(&self, schema: &Schema, col_index: usize) -> ColumnValue {
         let offset = schema
             .get_offset(col_index)
@@ -269,5 +283,50 @@ mod tests {
 
         let tuple = Tuple::new(values.clone(), &schema);
         tuple.get_value(&schema, 10);
+    }
+
+    #[test]
+    fn tuple_projection() {
+        // create a tuple with 5 columns
+        let schema = Schema::with_types(vec![
+            ColumnType::TinyInt,
+            ColumnType::Varchar(255),
+            ColumnType::Boolean,
+            ColumnType::BigInt,
+            ColumnType::Timestamp,
+        ]);
+        let values: Vec<ColumnValue> = vec![
+            ColumnValue::TinyInt(TinyIntValue { value: 8 }),
+            ColumnValue::Varchar(VarcharValue {
+                value: "test".to_string(),
+                length: 255,
+            }),
+            ColumnValue::Boolean(BooleanValue { value: true }),
+            ColumnValue::BigInt(BigIntValue { value: 1237900123 }),
+            ColumnValue::Timestamp(TimestampValue { value: 99912395390 }),
+        ];
+        let tuple = Tuple::new(values.clone(), &schema);
+
+        // project the tuple to a new schema with only 3 columns
+        let new_schema = Schema::with_types(vec![
+            ColumnType::TinyInt,
+            ColumnType::Boolean,
+            ColumnType::Varchar(255),
+        ]);
+        let new_attrs = vec![0, 2, 1];
+        let projected = Tuple::from_projection(&tuple, &schema, &new_schema, &new_attrs);
+
+        // check that the projected tuple has the correct values
+        let expected_values = vec![
+            ColumnValue::TinyInt(TinyIntValue { value: 8 }),
+            ColumnValue::Boolean(BooleanValue { value: true }),
+            ColumnValue::Varchar(VarcharValue {
+                value: "test".to_string(),
+                length: 255,
+            }),
+        ];
+        assert_eq!(projected.get_value(&new_schema, 0), expected_values[0]);
+        assert_eq!(projected.get_value(&new_schema, 1), expected_values[1]);
+        assert_eq!(projected.get_value(&new_schema, 2), expected_values[2]);
     }
 }

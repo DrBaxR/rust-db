@@ -79,7 +79,8 @@ where
     /// Insert the `key`-`value` pair.
     ///
     /// # Errors
-    /// Will return `Err` if it's not possible to insert.
+    /// Will return `Err` if it's not possible to insert. This can happen if the directory page is already at its maximum capacity
+    /// and all buckets are full.
     /// 
     /// # Note
     /// The `key_size` and `value_size` are used to determine the size of the key and value in the bucket page. These

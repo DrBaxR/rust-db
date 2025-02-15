@@ -112,11 +112,58 @@ impl TableHeap {
 
         data
     }
+
+    pub fn iter(&self) -> TableHeapIterator {
+        TableHeapIterator::new(self)
+    }
+}
+
+pub struct TableHeapIterator<'a> {
+    heap: &'a TableHeap,
+    current_page: PageID,
+    current_slot: usize,
+}
+
+impl<'a> TableHeapIterator<'a> {
+    fn new(heap: &'a TableHeap) -> Self {
+        Self {
+            heap,
+            current_page: heap.first_page,
+            current_slot: 0,
+        }
+    }
+}
+
+impl<'a> Iterator for TableHeapIterator<'a> {
+    type Item = (TupleMeta, Tuple, RID);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let page = self.heap.bpm.get_read_page(self.current_page);
+        let t_page = TablePage::deserialize(page.read());
+        let tuples = t_page.get_tuples();
+
+        if self.current_page == self.heap.last_page && self.current_slot >= tuples.len() {
+            return None;
+        }
+
+        if self.current_slot >= tuples.len() {
+            self.current_page = t_page.next_page;
+            self.current_slot = 0;
+            return self.next();
+        }
+
+        let (meta, tuple) = &tuples[self.current_slot];
+        let rid = RID::new(self.current_page, self.current_slot as u16);
+
+        self.current_slot += 1;
+
+        Some(((*meta).clone(), (*tuple).clone(), rid))
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{cmp::Ordering, collections::HashMap, env::temp_dir, fs::remove_file, sync::Arc};
+    use std::{collections::HashMap, env::temp_dir, fs::remove_file, sync::Arc};
 
     use crate::{
         disk::buffer_pool_manager::BufferPoolManager,
@@ -274,6 +321,45 @@ mod tests {
                 is_deleted: true
             }
         );
+
+        // cleanup
+        remove_file(db_path).expect("Couldn't remove test DB file");
+    }
+
+    #[test]
+    fn iterator() {
+        // init
+        let db_path = temp_dir().join("th_iterator.db");
+        let db_file_path = db_path.to_str().unwrap().to_string();
+        let bpm = Arc::new(BufferPoolManager::new(String::from(db_file_path), 100, 2));
+        let mut table_heap = TableHeap::new(bpm);
+
+        // test
+        let simple_schema = simple_schema();
+        let tuples: Vec<_> = (0..4096)
+            .map(|i| {
+                table_heap.insert_tuple(
+                    TupleMeta {
+                        ts: 0,
+                        is_deleted: false,
+                    },
+                    simple_tuple(&format!("name {i}"), i, &simple_schema),
+                )
+            })
+            .collect();
+        let tuples = tuples
+            .clone()
+            .iter()
+            .map(|rid| table_heap.get_tuple(&rid.clone().unwrap()).unwrap().1)
+            .collect::<Vec<_>>();
+
+        let mut iter = table_heap.iter();
+        let mut tuples_actual = vec![];
+        while let Some(tuple) = iter.next() {
+            tuples_actual.push(tuple.1);
+        }
+
+        assert_eq!(tuples, tuples_actual);
 
         // cleanup
         remove_file(db_path).expect("Couldn't remove test DB file");
