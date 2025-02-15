@@ -99,7 +99,9 @@ impl Catalog {
         key_attrs: Vec<usize>,
         keysize: usize,
     ) -> Result<Arc<Mutex<IndexInfo>>, ()> {
-        todo!()
+        // check error cases
+        // create index
+        // update catalog metadata``
     }
 
     pub fn get_index_by_name(
