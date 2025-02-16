@@ -8,7 +8,7 @@ use crate::disk::{
     disk_manager::PageID,
 };
 
-mod page;
+pub mod page;
 pub mod schema;
 pub mod tuple;
 pub mod value;

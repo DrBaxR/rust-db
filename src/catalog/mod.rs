@@ -110,7 +110,7 @@ impl Catalog {
         &mut self,
         index_name: &str,
         table_name: &str,
-        schema: Schema,
+        table_schema: Schema,
         key_schema: Schema,
         key_attrs: Vec<usize>,
         key_size: usize,
@@ -141,7 +141,7 @@ impl Catalog {
         for (_, tuple, rid) in tuples {
             let key = Tuple::from_projection(
                 &tuple,
-                &schema,
+                &table_schema,
                 index.meta().key_schema(),
                 index.meta().key_attrs(),
             );

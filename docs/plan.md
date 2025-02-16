@@ -9,8 +9,8 @@ This note is meant to document the progress that has been made in developing thi
 - [x] Parser (takes in a SQL string and spits out an AST)
 - [ ] Planner (takes the binder's output and creates a plan tree)
 - [ ] Optimizer (takes a plan tree and spits out an optimized plan tree)
-- [ ] (WIP - blocked) Execution Engine (takes in a plan tree and executes it)
-- [ ] (WIP) Catalog (database of database's metadata) - this will require to also implement the `Index`
+- [ ] (WIP) Execution Engine (takes in a plan tree and executes it)
+- [x] Catalog (database of database's metadata) - this will require to also implement the `Index`
 - [x] Index (using the extendible hash table data structure)
 
 ## System Overview

@@ -6,7 +6,7 @@ use exec::{
     expression::{
         arithmetic::{ArithmeticExpression, ArithmeticType},
         boolean::{BooleanExpression, BooleanType},
-        constant::{const_bool, const_decimal, const_int, ConstantExpression},
+        constant::ConstantExpression,
         value::{ColumnValueExpression, JoinSide},
         Expression,
     },
@@ -14,8 +14,12 @@ use exec::{
 };
 use table::{
     schema::{Column, ColumnType, Schema},
-    value::{BooleanValue, ColumnValue, IntegerValue},
+    value::{ColumnValue, IntegerValue},
 };
+use test_utils::{const_bool, const_decimal, const_int};
+
+// #[cfg(test)]
+mod test_utils;
 
 mod b_tree;
 mod config;

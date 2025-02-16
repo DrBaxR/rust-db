@@ -4,7 +4,7 @@ use crate::{
         expression::{
             arithmetic::{ArithmeticExpression, ArithmeticType},
             boolean::{BooleanExpression, BooleanType},
-            constant::{const_int, ConstantExpression},
+            constant::ConstantExpression,
             value::{ColumnValueExpression, JoinSide},
             Expression,
         },
@@ -15,7 +15,7 @@ use crate::{
     table::{
         schema::{Column, ColumnType, Schema},
         value::{ColumnValue, IntegerValue},
-    },
+    }, test_utils::const_int,
 };
 
 use super::{
