@@ -1,10 +1,17 @@
+use std::{f32::consts::E, sync::Arc};
+
 use filter::FilterExecutor;
 use projection::ProjectionExecutor;
+use seq_scan::SeqScanExecutor;
 use values::ValuesExecutor;
 
-use crate::table::{
-    schema::Schema,
-    tuple::{Tuple, RID},
+use crate::{
+    catalog::Catalog,
+    disk::buffer_pool_manager::BufferPoolManager,
+    table::{
+        schema::Schema,
+        tuple::{Tuple, RID},
+    },
 };
 
 #[cfg(test)]
@@ -12,7 +19,13 @@ pub mod tests;
 
 pub mod filter;
 pub mod projection;
+pub mod seq_scan;
 pub mod values;
+
+struct ExecutorContext {
+    catalog: Arc<Catalog>,
+    bpm: Arc<BufferPoolManager>,
+}
 
 pub trait Execute {
     fn init(&mut self);
@@ -25,6 +38,7 @@ pub enum Executor {
     Values(ValuesExecutor),
     Projection(ProjectionExecutor),
     Filter(FilterExecutor),
+    SeqScan(SeqScanExecutor),
 }
 
 impl Execute for Executor {
@@ -33,6 +47,7 @@ impl Execute for Executor {
             Executor::Values(executor) => executor.init(),
             Executor::Projection(executor) => executor.init(),
             Executor::Filter(executor) => executor.init(),
+            Executor::SeqScan(executor) => executor.init(),
         }
     }
 
@@ -41,6 +56,7 @@ impl Execute for Executor {
             Executor::Values(executor) => executor.next(),
             Executor::Projection(executor) => executor.next(),
             Executor::Filter(executor) => executor.next(),
+            Executor::SeqScan(executor) => executor.next(),
         }
     }
 
@@ -49,6 +65,7 @@ impl Execute for Executor {
             Executor::Values(executor) => executor.output_schema(),
             Executor::Projection(executor) => executor.output_schema(),
             Executor::Filter(executor) => executor.output_schema(),
+            Executor::SeqScan(executor) => executor.output_schema(),
         }
     }
 
@@ -57,6 +74,7 @@ impl Execute for Executor {
             Executor::Values(executor) => executor.to_string(indent_level),
             Executor::Projection(executor) => executor.to_string(indent_level),
             Executor::Filter(executor) => executor.to_string(indent_level),
+            Executor::SeqScan(executor) => executor.to_string(indent_level),
         }
     }
 }

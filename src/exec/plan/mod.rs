@@ -7,6 +7,7 @@ use crate::table::schema::Schema;
 pub mod values;
 pub mod projection;
 pub mod filter;
+pub mod seq_scan;
 
 /// Interface (probably) mainly used by the planner to generate the query execution plan. The executors will
 /// probably use the interface provided by the specific plan node implementation.

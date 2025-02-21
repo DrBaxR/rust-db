@@ -18,7 +18,7 @@ pub mod info;
 #[cfg(test)]
 mod tests;
 
-type OID = u32;
+pub type OID = u32;
 
 type TablesMapping = Mutex<HashMap<OID, Arc<Mutex<TableInfo>>>>;
 type TableNamesMapping = Mutex<HashMap<String, OID>>;
