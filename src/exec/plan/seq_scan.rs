@@ -3,10 +3,10 @@ use crate::{catalog::OID, exec::expression::boolean::BooleanExpression, table::s
 use super::AbstractPlanNode;
 
 pub struct SeqScanPlanNode {
-    output_schema: Schema,
-    table_oid: OID,
-    table_name: String,
-    filter_expr: Option<BooleanExpression>,
+    pub output_schema: Schema,
+    pub table_oid: OID,
+    pub table_name: String,
+    pub filter_expr: Option<BooleanExpression>,
 }
 
 impl AbstractPlanNode for SeqScanPlanNode {

@@ -116,6 +116,19 @@ impl TableHeap {
     pub fn iter(&self) -> TableHeapIterator {
         TableHeapIterator::new(self)
     }
+
+    /// Returns the first tuple in the table heap. Returns `None` if the table is empty.
+    pub fn first_tuple(&self) -> Option<(Tuple, RID)> {
+        todo!()
+    }
+
+    /// Returns the tuple after the given RID. Returns `None` if if the given RID is the last tuple in the table heap.
+    /// 
+    /// # Panics
+    /// Panics if there is no tuple with the given RID in the table.
+    pub fn tuple_after(&self, rid: RID) -> Option<(TupleMeta, Tuple, RID)> {
+        todo!()
+    }
 }
 
 pub struct TableHeapIterator<'a> {
