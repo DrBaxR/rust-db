@@ -36,19 +36,24 @@ impl SeqScanExecutor {
 
 impl Execute for SeqScanExecutor {
     fn init(&mut self) {
-        self.current_rid = self
-            .table_info
-            .lock()
-            .unwrap()
-            .table
-            .first_tuple()
-            .map(|(_, rid)| rid);
+        let first = self.table_info.lock().unwrap().table.first_tuple();
+
+        self.current_rid = match first {
+            Some((meta, _, rid)) => {
+                if meta.is_deleted {
+                    self.next();
+                }
+                Some(rid)
+            }
+            None => None,
+        }
     }
 
     fn next(&mut self) -> Option<(Tuple, RID)> {
         let table_heap = self.table_info.lock().unwrap();
         let current_rid = self.current_rid.clone()?;
 
+        // TODO: double check that this makes sense and test
         if let Some((next_meta, next_tuple, next_rid)) = table_heap.table.tuple_after(current_rid) {
             self.current_rid = Some(next_rid.clone());
 

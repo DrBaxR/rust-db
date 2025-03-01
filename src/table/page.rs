@@ -179,6 +179,7 @@ impl TablePage {
         Ok((*rid).clone())
     }
 
+    /// Returns the tuple at the given RID. Returns `None` if the slot number is out of bounds.
     pub fn get_tuple(&self, rid: &RID) -> Option<(&TupleMeta, &Tuple)> {
         assert_eq!(self.tuples_data.len(), self.tuples_info.len());
         let slot = rid.slot_num as usize;

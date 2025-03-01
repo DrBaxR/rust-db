@@ -62,6 +62,7 @@ impl TableHeap {
         drop(page);
         self.last_page = new_pid;
 
+        // write content of new page
         let mut new_page = self.bpm.get_write_page(new_pid);
         new_page.write(new_t_page.serialize());
         drop(new_page);
@@ -118,16 +119,45 @@ impl TableHeap {
     }
 
     /// Returns the first tuple in the table heap. Returns `None` if the table is empty.
-    pub fn first_tuple(&self) -> Option<(Tuple, RID)> {
-        todo!()
+    pub fn first_tuple(&self) -> Option<(TupleMeta, Tuple, RID)> {
+        let page = self.bpm.get_read_page(self.first_page);
+        let t_page = TablePage::deserialize(page.read());
+
+        let (meta, tuple) = t_page.get_tuples().first()?.clone();
+
+        Some((
+            (*meta).clone(),
+            (*tuple).clone(),
+            RID::new(self.first_page, 0),
+        ))
     }
 
     /// Returns the tuple after the given RID. Returns `None` if if the given RID is the last tuple in the table heap.
-    /// 
+    ///
     /// # Panics
     /// Panics if there is no tuple with the given RID in the table.
     pub fn tuple_after(&self, rid: RID) -> Option<(TupleMeta, Tuple, RID)> {
-        todo!()
+        let page = self.bpm.get_read_page(rid.page_id);
+        let t_page = TablePage::deserialize(page.read());
+
+        let next_rid = RID::new(rid.page_id, rid.slot_num + 1);
+        match t_page.get_tuple(&next_rid) {
+            Some((meta, tuple)) => Some(((*meta).clone(), (*tuple).clone(), next_rid)),
+            None => {
+                if t_page.next_page == END_PAGE_ID {
+                    None
+                } else {
+                    let next_pid = t_page.next_page;
+                    let next_page = self.bpm.get_read_page(t_page.next_page);
+                    let next_t_page = TablePage::deserialize(next_page.read());
+                    drop(t_page);
+
+                    let (meta, tuple) = next_t_page.get_tuples().first()?.clone();
+
+                    Some(((*meta).clone(), (*tuple).clone(), RID::new(next_pid, 0)))
+                }
+            }
+        }
     }
 }
 
