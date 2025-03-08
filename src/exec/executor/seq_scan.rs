@@ -53,7 +53,6 @@ impl Execute for SeqScanExecutor {
         let table_heap = self.table_info.lock().unwrap();
         let current_rid = self.current_rid.clone()?;
 
-        // TODO: double check that this makes sense and test
         if let Some((next_meta, next_tuple, next_rid)) = table_heap.table.tuple_after(current_rid) {
             self.current_rid = Some(next_rid.clone());
 

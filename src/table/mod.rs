@@ -219,6 +219,8 @@ mod tests {
         },
     };
 
+    use super::tuple::RID;
+
     fn simple_schema() -> Schema {
         Schema::new(vec![
             Column::new_named("name".to_string(), ColumnType::Varchar(10)),
@@ -369,12 +371,7 @@ mod tests {
         remove_file(db_path).expect("Couldn't remove test DB file");
     }
 
-    #[test]
-    fn iterator() {
-        // init
-        let db_path = temp_dir().join("th_iterator.db");
-        let db_file_path = db_path.to_str().unwrap().to_string();
-        let bpm = Arc::new(BufferPoolManager::new(String::from(db_file_path), 100, 2));
+    fn sample_heap(bpm: Arc<BufferPoolManager>) -> (TableHeap, Vec<Option<RID>>) {
         let mut table_heap = TableHeap::new(bpm);
 
         // test
@@ -390,6 +387,19 @@ mod tests {
                 )
             })
             .collect();
+
+        (table_heap, tuples)
+    }
+
+    #[test]
+    fn iterator() {
+        // init
+        let db_path = temp_dir().join("th_iterator.db");
+        let db_file_path = db_path.to_str().unwrap().to_string();
+        let bpm = Arc::new(BufferPoolManager::new(String::from(db_file_path), 100, 2));
+        let (table_heap, tuples) = sample_heap(bpm);
+
+        // test
         let tuples = tuples
             .clone()
             .iter()
@@ -403,6 +413,43 @@ mod tests {
         }
 
         assert_eq!(tuples, tuples_actual);
+
+        // cleanup
+        remove_file(db_path).expect("Couldn't remove test DB file");
+    }
+
+    #[test]
+    fn first_tuple() {
+        // init
+        let db_path = temp_dir().join("th_first_tuple.db");
+        let db_file_path = db_path.to_str().unwrap().to_string();
+        let bpm = Arc::new(BufferPoolManager::new(String::from(db_file_path), 100, 2));
+        let (table_heap, _) = sample_heap(bpm);
+
+        // test
+        let (meta, tuple, rid) = table_heap.first_tuple().unwrap();
+        assert_eq!(rid, RID::new(table_heap.first_page, 0));
+        assert_eq!(meta, TupleMeta { ts: 0, is_deleted: false });
+        assert_eq!(tuple, simple_tuple("name 0", 0, &simple_schema()));
+
+        // cleanup
+        remove_file(db_path).expect("Couldn't remove test DB file");
+    }
+
+    #[test]
+    fn next_tuple() {
+        // init
+        let db_path = temp_dir().join("th_next_tuple.db");
+        let db_file_path = db_path.to_str().unwrap().to_string();
+        let bpm = Arc::new(BufferPoolManager::new(String::from(db_file_path), 100, 2));
+        let (table_heap, _) = sample_heap(bpm);
+
+        // test
+        let (_, _, first_rid) = table_heap.first_tuple().unwrap();
+        let (meta, tuple, rid) = table_heap.tuple_after(first_rid).unwrap();
+        assert_eq!(rid, RID::new(table_heap.first_page, 1));
+        assert_eq!(meta, TupleMeta { ts: 0, is_deleted: false });
+        assert_eq!(tuple, simple_tuple("name 1", 1, &simple_schema()));
 
         // cleanup
         remove_file(db_path).expect("Couldn't remove test DB file");
