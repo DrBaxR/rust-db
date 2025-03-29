@@ -1,7 +1,15 @@
+use std::sync::Arc;
+
+use b_tree::node;
+use catalog::{info::TableInfo, Catalog};
+use disk::buffer_pool_manager::BufferPoolManager;
 use exec::{
     executor::{
-        filter::FilterExecutor, projection::ProjectionExecutor, values::ValuesExecutor, Execute,
-        Executor,
+        filter::FilterExecutor,
+        projection::{self, ProjectionExecutor},
+        seq_scan::SeqScanExecutor,
+        values::ValuesExecutor,
+        Execute, Executor, ExecutorContext,
     },
     expression::{
         arithmetic::{ArithmeticExpression, ArithmeticType},
@@ -10,26 +18,34 @@ use exec::{
         value::{ColumnValueExpression, JoinSide},
         Expression,
     },
-    plan::{filter::FilterNode, projection::ProjectionPlanNode, values::ValuesPlanNode, PlanNode},
+    plan::{
+        filter::FilterNode, projection::ProjectionPlanNode, seq_scan::SeqScanPlanNode,
+        values::ValuesPlanNode, PlanNode,
+    },
 };
 use table::{
-    schema::{Column, ColumnType, Schema},
-    value::{ColumnValue, IntegerValue},
+    page::TupleMeta,
+    schema::{self, Column, ColumnType, Schema},
+    tuple::Tuple,
+    value::{BooleanValue, ColumnValue, DecimalValue, IntegerValue},
+    TableHeap,
 };
 use test_utils::{const_bool, const_decimal, const_int};
 
+// uncomment when there is no more sample code in main.rs
 // #[cfg(test)]
 mod test_utils;
 
 mod b_tree;
+mod catalog;
 mod config;
 mod disk;
 mod exec;
 mod index;
 mod parser;
 mod table;
-mod catalog;
 
+// EXEC: () -> (int, bool, decimal)
 fn values_executor() -> (ValuesExecutor, Schema) {
     let schema = Schema::with_types(vec![
         ColumnType::Integer,
@@ -60,6 +76,7 @@ fn values_executor() -> (ValuesExecutor, Schema) {
     )
 }
 
+// EXEC: (int, bool, decimal) -> (int, decimal)
 fn projection_executor(child_pln: PlanNode, child_exec: Executor) -> (ProjectionExecutor, Schema) {
     let int_col = Column::new(ColumnType::Integer);
     let dec_col = Column::new(ColumnType::Decimal);
@@ -94,6 +111,7 @@ fn projection_executor(child_pln: PlanNode, child_exec: Executor) -> (Projection
     )
 }
 
+// EXEC: (int, decimal) -> (int, decimal)
 fn filter_executor(child_pln: PlanNode, child_exec: Executor) -> (FilterExecutor, Schema) {
     let schema = Schema::with_types(vec![ColumnType::Integer, ColumnType::Decimal]);
 
@@ -142,19 +160,126 @@ fn filter_executor(child_pln: PlanNode, child_exec: Executor) -> (FilterExecutor
     )
 }
 
-fn main() {
-    let (values_executor, _) = values_executor();
-    let (projection_executor, schema) = projection_executor(
-        PlanNode::Values(values_executor.plan.clone()),
-        Executor::Values(values_executor),
+fn populate_heap(table_heap: &mut TableHeap, schema: &Schema) {
+    table_heap.insert_tuple(
+        TupleMeta {
+            ts: 0,
+            is_deleted: false,
+        },
+        Tuple::new(
+            vec![
+                ColumnValue::Integer(IntegerValue { value: 1 }),
+                ColumnValue::Boolean(BooleanValue { value: true }),
+                ColumnValue::Decimal(DecimalValue { value: 10.1 }),
+            ],
+            schema,
+        ),
     );
-    let (mut filter_executor, _) = filter_executor(
-        PlanNode::Projection(projection_executor.plan.clone()),
-        Executor::Projection(projection_executor),
+    table_heap.insert_tuple(
+        TupleMeta {
+            ts: 0,
+            is_deleted: false,
+        },
+        Tuple::new(
+            vec![
+                ColumnValue::Integer(IntegerValue { value: 2 }),
+                ColumnValue::Boolean(BooleanValue { value: false }),
+                ColumnValue::Decimal(DecimalValue { value: 20.2 }),
+            ],
+            schema,
+        ),
     );
-    println!("{}", filter_executor.to_string(0));
+    table_heap.insert_tuple(
+        TupleMeta {
+            ts: 0,
+            is_deleted: false,
+        },
+        Tuple::new(
+            vec![
+                ColumnValue::Integer(IntegerValue { value: 3 }),
+                ColumnValue::Boolean(BooleanValue { value: false }),
+                ColumnValue::Decimal(DecimalValue { value: 30.3 }),
+            ],
+            schema,
+        ),
+    );
+}
 
-    while let Some((tuple, _)) = filter_executor.next() {
+// EXEC: () -> (int, bood, decimal)
+fn seq_scan_executor() -> (SeqScanExecutor, Schema) {
+    let schema = Schema::with_types(vec![
+        ColumnType::Integer,
+        ColumnType::Boolean,
+        ColumnType::Decimal,
+    ]);
+
+    // init executor context
+    let bpm = Arc::new(BufferPoolManager::new("db/test.db".to_string(), 2, 2));
+    let catalog = Arc::new(Catalog::new(bpm.clone()));
+    let executor_context = ExecutorContext {
+        catalog: catalog.clone(),
+        bpm: bpm.clone(),
+    };
+
+    // create a table
+    bpm.new_page(); // this is needed as table heaps assume page with PID 0 is not used
+    let table_name = "test_table".to_string();
+    let table_oid = executor_context
+        .catalog
+        .create_table(&table_name, schema.clone())
+        .unwrap()
+        .lock()
+        .unwrap()
+        .oid;
+
+    // insert some tuples
+    let table_info = executor_context
+        .catalog
+        .get_table_by_oid(table_oid)
+        .unwrap();
+    let mut table_info = table_info.lock().unwrap();
+
+    populate_heap(&mut table_info.table, &schema);
+
+    drop(table_info);
+
+    // create a sequential scan executor
+    let plan = SeqScanPlanNode {
+        output_schema: schema.clone(),
+        table_oid,
+        table_name,
+        filter_expr: None,
+    };
+
+    (SeqScanExecutor::new(executor_context, plan), schema)
+}
+
+fn main() {
+    // let (values_executor, _) = values_executor();
+    // let (projection_executor, schema) = projection_executor(
+    //     PlanNode::Values(values_executor.plan.clone()),
+    //     Executor::Values(values_executor),
+    // );
+    // let (mut filter_executor, _) = filter_executor(
+    //     PlanNode::Projection(projection_executor.plan.clone()),
+    //     Executor::Projection(projection_executor),
+    // );
+    // println!("{}", filter_executor.to_string(0));
+
+    // while let Some((tuple, _)) = filter_executor.next() {
+    //     println!("{}", tuple.to_string(&schema));
+    // }
+
+    let (seq_scan_executor, _) = seq_scan_executor();
+    let (mut projection_executor, schema) = projection_executor(
+        PlanNode::SeqScan(seq_scan_executor.plan.clone()),
+        Executor::SeqScan(seq_scan_executor),
+    );
+
+    println!("{}", projection_executor.to_string(0));
+
+    projection_executor.init();
+    while let Some((tuple, _)) = projection_executor.next() {
         println!("{}", tuple.to_string(&schema));
     }
 }

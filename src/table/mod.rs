@@ -15,6 +15,11 @@ pub mod value;
 
 const END_PAGE_ID: PageID = 0;
 
+/// A table heap is a collection of pages that store tuples. The table heap is a linked list of pages, where each page points to the next page 
+/// in the list. The first page is the head of the list, and the last page is the tail of the list.
+/// 
+/// # Assumptions
+/// The table heap assumes that the page with `PageID` 0 will never be used in the context of it.
 pub struct TableHeap {
     bpm: Arc<BufferPoolManager>,
     first_page: PageID,
@@ -136,7 +141,7 @@ impl TableHeap {
     ///
     /// # Panics
     /// Panics if there is no tuple with the given RID in the table.
-    pub fn tuple_after(&self, rid: RID) -> Option<(TupleMeta, Tuple, RID)> {
+    pub fn tuple_after(&self, rid: &RID) -> Option<(TupleMeta, Tuple, RID)> {
         let page = self.bpm.get_read_page(rid.page_id);
         let t_page = TablePage::deserialize(page.read());
 
@@ -446,7 +451,7 @@ mod tests {
 
         // test
         let (_, _, first_rid) = table_heap.first_tuple().unwrap();
-        let (meta, tuple, rid) = table_heap.tuple_after(first_rid).unwrap();
+        let (meta, tuple, rid) = table_heap.tuple_after(&first_rid).unwrap();
         assert_eq!(rid, RID::new(table_heap.first_page, 1));
         assert_eq!(meta, TupleMeta { ts: 0, is_deleted: false });
         assert_eq!(tuple, simple_tuple("name 1", 1, &simple_schema()));

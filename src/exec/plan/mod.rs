@@ -1,5 +1,6 @@
 use filter::FilterNode;
 use projection::ProjectionPlanNode;
+use seq_scan::SeqScanPlanNode;
 use values::ValuesPlanNode;
 
 use crate::table::schema::Schema;
@@ -21,6 +22,7 @@ pub enum PlanNode {
     Values(ValuesPlanNode),
     Projection(ProjectionPlanNode),
     Filter(FilterNode),
+    SeqScan(SeqScanPlanNode),
 }
 
 impl AbstractPlanNode for PlanNode {
@@ -29,6 +31,7 @@ impl AbstractPlanNode for PlanNode {
             PlanNode::Values(node) => node.get_children(),
             PlanNode::Projection(node) => node.get_children(),
             PlanNode::Filter(node) => node.get_children(),
+            PlanNode::SeqScan(node) => node.get_children(),
         }
     }
 
@@ -37,6 +40,7 @@ impl AbstractPlanNode for PlanNode {
             PlanNode::Values(node) => node.get_output_schema(),
             PlanNode::Projection(node) => node.get_output_schema(),
             PlanNode::Filter(node) => node.get_output_schema(),
+            PlanNode::SeqScan(node) => node.get_output_schema(),
         }
     }
 }

@@ -22,9 +22,9 @@ pub mod projection;
 pub mod seq_scan;
 pub mod values;
 
-struct ExecutorContext {
-    catalog: Arc<Catalog>,
-    bpm: Arc<BufferPoolManager>,
+pub struct ExecutorContext {
+    pub catalog: Arc<Catalog>,
+    pub bpm: Arc<BufferPoolManager>,
 }
 
 pub trait Execute {

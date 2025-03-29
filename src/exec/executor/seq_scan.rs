@@ -13,14 +13,15 @@ use crate::{
 use super::{Execute, ExecutorContext};
 
 pub struct SeqScanExecutor {
-    plan: SeqScanPlanNode,
-    table_info: Arc<Mutex<TableInfo>>,
+    pub plan: SeqScanPlanNode,
+    pub table_info: Arc<Mutex<TableInfo>>,
     /// When `None`, it means that there are no more tuples in the table.
     current_rid: Option<RID>,
+    is_first: bool,
 }
 
 impl SeqScanExecutor {
-    fn new(context: ExecutorContext, plan: SeqScanPlanNode) -> Self {
+    pub fn new(context: ExecutorContext, plan: SeqScanPlanNode) -> Self {
         let table_info = context
             .catalog
             .get_table_by_oid(plan.table_oid)
@@ -30,6 +31,7 @@ impl SeqScanExecutor {
             plan,
             table_info,
             current_rid: None,
+            is_first: true,
         }
     }
 }
@@ -53,7 +55,16 @@ impl Execute for SeqScanExecutor {
         let table_heap = self.table_info.lock().unwrap();
         let current_rid = self.current_rid.clone()?;
 
-        if let Some((next_meta, next_tuple, next_rid)) = table_heap.table.tuple_after(current_rid) {
+        // get the next tuple (or first tuple, if this is the first call)
+        let tuple = if self.is_first {
+            self.is_first = false;
+            let first = table_heap.table.get_tuple(&current_rid).unwrap();
+            Some((first.0, first.1, current_rid.clone()))
+        } else {
+            table_heap.table.tuple_after(&current_rid)
+        };
+
+        if let Some((next_meta, next_tuple, next_rid)) = tuple {
             self.current_rid = Some(next_rid.clone());
 
             // filter out deleted tuples
@@ -90,6 +101,16 @@ impl Execute for SeqScanExecutor {
     }
 
     fn to_string(&self, indent_level: usize) -> String {
-        todo!()
+        format!(
+            "SeqScan | Schema: {} | Table: {}({}) | Filter: {}",
+            self.output_schema().to_string(),
+            self.plan.table_name,
+            self.plan.table_oid,
+            self.plan
+                .filter_expr
+                .as_ref()
+                .map(|e| e.to_string())
+                .unwrap_or_else(|| "None".to_string())
+        )
     }
 }

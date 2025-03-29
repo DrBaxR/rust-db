@@ -56,7 +56,7 @@ impl Catalog {
     /// # Errors
     /// Will return `Err` if a table with the same name already exists.
     pub fn create_table(
-        &mut self,
+        &self,
         name: &str,
         schema: Schema,
     ) -> Result<Arc<Mutex<TableInfo>>, ()> {
@@ -107,7 +107,7 @@ impl Catalog {
     /// # Errors
     /// Will return `Err` if a table with `table_name` does not exist **or** if an index with the same name already exists.
     pub fn create_index(
-        &mut self,
+        &self,
         index_name: &str,
         table_name: &str,
         table_schema: Schema,

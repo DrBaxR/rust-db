@@ -2,6 +2,7 @@ use crate::{catalog::OID, exec::expression::boolean::BooleanExpression, table::s
 
 use super::AbstractPlanNode;
 
+#[derive(Clone)]
 pub struct SeqScanPlanNode {
     pub output_schema: Schema,
     pub table_oid: OID,
