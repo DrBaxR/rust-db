@@ -28,6 +28,12 @@ Notes:
 
 Executors can be created by using the executor factory. This entity can create new executors from plan nodes and their children. For example, in order to create a *filter executor*, it will take in a *filter plan node* and create an executor that wraps it; using the **node**'s child plan node to create the **executor**'s child executor.
 
+## Executor Context
+
+Some executors will require an `ExecutorContext` in order to be constructed. This executor context contains information about the database system that some executors require in order to do their jobs. 
+
+The simplest example for a reason why this is necessary is the sequencial scan executor, which just reads all the tuples in a table one by one. This executor will obviously needaccess to the information of the table for which it does a sequencial scan (the table's `TableInfo`), which can obtained from the `Catalog`, which is part of the `ExecutorContext`.
+
 Implementation flow:
 - [x] Expressions
 - [x] General structure of plan node
