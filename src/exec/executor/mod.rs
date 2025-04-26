@@ -1,6 +1,7 @@
 use std::{f32::consts::E, sync::Arc};
 
 use filter::FilterExecutor;
+use insert::InsertExecutor;
 use projection::ProjectionExecutor;
 use seq_scan::SeqScanExecutor;
 use values::ValuesExecutor;
@@ -18,6 +19,7 @@ use crate::{
 pub mod tests;
 
 pub mod filter;
+pub mod insert;
 pub mod projection;
 pub mod seq_scan;
 pub mod values;
@@ -39,6 +41,7 @@ pub enum Executor {
     Projection(ProjectionExecutor),
     Filter(FilterExecutor),
     SeqScan(SeqScanExecutor),
+    Insert(InsertExecutor),
 }
 
 impl Execute for Executor {
@@ -48,6 +51,7 @@ impl Execute for Executor {
             Executor::Projection(executor) => executor.init(),
             Executor::Filter(executor) => executor.init(),
             Executor::SeqScan(executor) => executor.init(),
+            Executor::Insert(executor) => executor.init(),
         }
     }
 
@@ -57,6 +61,7 @@ impl Execute for Executor {
             Executor::Projection(executor) => executor.next(),
             Executor::Filter(executor) => executor.next(),
             Executor::SeqScan(executor) => executor.next(),
+            Executor::Insert(executor) => executor.next(),
         }
     }
 
@@ -66,6 +71,7 @@ impl Execute for Executor {
             Executor::Projection(executor) => executor.output_schema(),
             Executor::Filter(executor) => executor.output_schema(),
             Executor::SeqScan(executor) => executor.output_schema(),
+            Executor::Insert(executor) => executor.output_schema(),
         }
     }
 
@@ -75,6 +81,7 @@ impl Execute for Executor {
             Executor::Projection(executor) => executor.to_string(indent_level),
             Executor::Filter(executor) => executor.to_string(indent_level),
             Executor::SeqScan(executor) => executor.to_string(indent_level),
+            Executor::Insert(executor) => executor.to_string(indent_level),
         }
     }
 }

@@ -1,4 +1,5 @@
 use filter::FilterNode;
+use insert::InsertPlanNode;
 use projection::ProjectionPlanNode;
 use seq_scan::SeqScanPlanNode;
 use values::ValuesPlanNode;
@@ -9,6 +10,7 @@ pub mod values;
 pub mod projection;
 pub mod filter;
 pub mod seq_scan;
+pub mod insert;
 
 /// Interface (probably) mainly used by the planner to generate the query execution plan. The executors will
 /// probably use the interface provided by the specific plan node implementation.
@@ -23,6 +25,7 @@ pub enum PlanNode {
     Projection(ProjectionPlanNode),
     Filter(FilterNode),
     SeqScan(SeqScanPlanNode),
+    Insert(InsertPlanNode),
 }
 
 impl AbstractPlanNode for PlanNode {
@@ -32,6 +35,7 @@ impl AbstractPlanNode for PlanNode {
             PlanNode::Projection(node) => node.get_children(),
             PlanNode::Filter(node) => node.get_children(),
             PlanNode::SeqScan(node) => node.get_children(),
+            PlanNode::Insert(node) => node.get_children(),
         }
     }
 
@@ -41,6 +45,7 @@ impl AbstractPlanNode for PlanNode {
             PlanNode::Projection(node) => node.get_output_schema(),
             PlanNode::Filter(node) => node.get_output_schema(),
             PlanNode::SeqScan(node) => node.get_output_schema(),
+            PlanNode::Insert(node) => node.get_output_schema(),
         }
     }
 }

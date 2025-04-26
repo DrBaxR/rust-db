@@ -43,8 +43,8 @@ Implementation flow:
 - [x] Filter
 - [x] Executors tests
 - [x] Stringified version of the whole executor tree
-- [ ] (WIP) Sequencial scan - will require adding context to the executors (for now BPM and catalog, which will need to be implemented beforehand)
-- [ ] Insert
+- [x] Sequencial scan - will require adding context to the executors (for now BPM and catalog, which will need to be implemented beforehand)
+- [ ] (WIP) Insert
 - [ ] Update
 - [ ] Delete
 - [ ] Index scan
