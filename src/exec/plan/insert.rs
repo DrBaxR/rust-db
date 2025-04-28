@@ -10,14 +10,16 @@ pub struct InsertPlanNode {
     /// Schema is always a single column with one integer representing the number of rows inserted.
     output_schema: Schema,
     pub table_oid: OID,
+    pub table_name: String,
     pub child: Box<PlanNode>,
 }
 
 impl InsertPlanNode {
-    pub fn new(table_oid: OID, child: PlanNode) -> Self {
+    pub fn new(table_oid: OID, table_name: String, child: PlanNode) -> Self {
         Self {
             output_schema: Schema::with_types(vec![ColumnType::Integer]),
             table_oid,
+            table_name,
             child: Box::new(child),
         }
     }
