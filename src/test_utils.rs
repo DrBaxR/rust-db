@@ -36,3 +36,7 @@ pub fn const_varchar(value: String) -> Expression {
 pub fn int_value(value: i32) -> ColumnValue {
     ColumnValue::Integer(IntegerValue { value })
 }
+
+pub fn bool_value(value: bool) -> ColumnValue {
+    ColumnValue::Boolean(BooleanValue { value })
+}

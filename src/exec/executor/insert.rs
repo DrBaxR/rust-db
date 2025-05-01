@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    catalog::{self, Catalog},
+    catalog::Catalog,
     exec::plan::{insert::InsertPlanNode, AbstractPlanNode},
     table::{
         page::TupleMeta,
@@ -72,12 +72,9 @@ impl Execute for InsertExecutor {
             // update indexes of table if they exist
             for index_info in &index_infos {
                 let index_info = index_info.lock().unwrap();
-
-                // TODO: make sure that inserting a tuple into the index is correct - look into catalog.create_index
-                // TODO: it's not, will need to change it to cast the tuple into a key for the index
                 index_info
                     .index
-                    .insert(tuple.clone(), tuple_rid.clone())
+                    .insert(&tuple, &self.child.output_schema(), tuple_rid.clone())
                     .unwrap();
             }
 

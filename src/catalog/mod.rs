@@ -55,11 +55,7 @@ impl Catalog {
     ///
     /// # Errors
     /// Will return `Err` if a table with the same name already exists.
-    pub fn create_table(
-        &self,
-        name: &str,
-        schema: Schema,
-    ) -> Result<Arc<Mutex<TableInfo>>, ()> {
+    pub fn create_table(&self, name: &str, schema: Schema) -> Result<Arc<Mutex<TableInfo>>, ()> {
         if let Some(_) = self.table_names.lock().unwrap().get(name) {
             return Err(());
         }
@@ -139,15 +135,8 @@ impl Catalog {
 
         let tuples = table.table.iter();
         for (_, tuple, rid) in tuples {
-            let key = Tuple::from_projection(
-                &tuple,
-                &table_schema,
-                index.meta().key_schema(),
-                index.meta().key_attrs(),
-            );
-
             index
-                .insert(key, rid)
+                .insert(&tuple, &table_schema, rid)
                 .expect("Can't create index. Too many tuples!");
         }
 

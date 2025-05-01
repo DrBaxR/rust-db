@@ -101,14 +101,30 @@ impl Index {
     }
 
     /// Inserts a new key-value pair in the index.
-    /// 
+    ///
+    /// # Assumptions
+    /// This method **EXPECTS** the key to have the same schema as the index key schema. For inserting
+    /// a *uncasted* tuple, use `insert`.
+    ///
     /// # Errors
     /// Will return `Err` if there was an internal error in the extendible hash table (the data structure is full).
-    pub fn insert(&self, key: Tuple, rid: RID) -> Result<(), ()> {
+    fn insert_raw(&self, key: Tuple, rid: RID) -> Result<(), ()> {
         let key_size = key.size() as u32;
         let value_size = RID::size() as u32;
 
         self.deht.insert(key, rid, key_size, value_size)
+    }
+
+    /// Inserts a tuple in the index, casting it to the index key schema.
+    pub fn insert(&self, tuple: &Tuple, tuple_schema: &Schema, rid: RID) -> Result<(), ()> {
+        let key = Tuple::from_projection(
+            tuple,
+            tuple_schema,
+            &self.meta.key_schema(),
+            self.meta.key_attrs(),
+        );
+
+        self.insert_raw(key, rid)
     }
 
     pub fn delete(&self, key: Tuple) {
