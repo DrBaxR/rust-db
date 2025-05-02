@@ -1,9 +1,13 @@
+use std::sync::Arc;
+
 use crate::catalog::Catalog;
-use crate::disk::buffer_pool_manager::BufferPoolManager;
+use crate::exec::executor::insert::InsertExecutor;
+use crate::exec::executor::ExecutorContext;
+use crate::exec::plan::insert::InsertPlanNode;
 use crate::exec::{
     executor::{
         filter::FilterExecutor, projection::ProjectionExecutor, seq_scan::SeqScanExecutor,
-        values::ValuesExecutor, Execute, Executor, ExecutorContext,
+        values::ValuesExecutor, Executor,
     },
     expression::{
         arithmetic::{ArithmeticExpression, ArithmeticType},
@@ -18,17 +22,15 @@ use crate::exec::{
     },
 };
 use crate::table::{
-    page::TupleMeta,
     schema::{Column, ColumnType, Schema},
-    tuple::Tuple,
-    value::{BooleanValue, ColumnValue, DecimalValue, IntegerValue},
-    TableHeap,
+    value::{ColumnValue, IntegerValue},
 };
-use std::sync::Arc;
 
 use crate::test_utils::{const_bool, const_decimal, const_int};
 
-// EXEC: () -> (int, bool, decimal)
+use super::util::create_table;
+
+/// EXEC: () -> (int, bool, decimal)
 pub fn values_executor() -> (ValuesExecutor, Schema) {
     let schema = Schema::with_types(vec![
         ColumnType::Integer,
@@ -59,8 +61,11 @@ pub fn values_executor() -> (ValuesExecutor, Schema) {
     )
 }
 
-// EXEC: (int, bool, decimal) -> (int, decimal)
-pub fn projection_executor(child_pln: PlanNode, child_exec: Executor) -> (ProjectionExecutor, Schema) {
+/// EXEC: (int, bool, decimal) -> (int, decimal)
+pub fn projection_executor(
+    child_pln: PlanNode,
+    child_exec: Executor,
+) -> (ProjectionExecutor, Schema) {
     let int_col = Column::new(ColumnType::Integer);
     let dec_col = Column::new(ColumnType::Decimal);
 
@@ -94,7 +99,7 @@ pub fn projection_executor(child_pln: PlanNode, child_exec: Executor) -> (Projec
     )
 }
 
-// EXEC: (int, decimal) -> (int, decimal)
+/// EXEC: (int, decimal) -> (int, decimal)
 pub fn filter_executor(child_pln: PlanNode, child_exec: Executor) -> (FilterExecutor, Schema) {
     let schema = Schema::with_types(vec![ColumnType::Integer, ColumnType::Decimal]);
 
@@ -143,88 +148,10 @@ pub fn filter_executor(child_pln: PlanNode, child_exec: Executor) -> (FilterExec
     )
 }
 
-pub fn populate_heap(table_heap: &mut TableHeap, schema: &Schema) {
-    table_heap.insert_tuple(
-        TupleMeta {
-            ts: 0,
-            is_deleted: false,
-        },
-        Tuple::new(
-            vec![
-                ColumnValue::Integer(IntegerValue { value: 1 }),
-                ColumnValue::Boolean(BooleanValue { value: true }),
-                ColumnValue::Decimal(DecimalValue { value: 10.1 }),
-            ],
-            schema,
-        ),
-    );
-    table_heap.insert_tuple(
-        TupleMeta {
-            ts: 0,
-            is_deleted: false,
-        },
-        Tuple::new(
-            vec![
-                ColumnValue::Integer(IntegerValue { value: 2 }),
-                ColumnValue::Boolean(BooleanValue { value: false }),
-                ColumnValue::Decimal(DecimalValue { value: 20.2 }),
-            ],
-            schema,
-        ),
-    );
-    table_heap.insert_tuple(
-        TupleMeta {
-            ts: 0,
-            is_deleted: false,
-        },
-        Tuple::new(
-            vec![
-                ColumnValue::Integer(IntegerValue { value: 3 }),
-                ColumnValue::Boolean(BooleanValue { value: false }),
-                ColumnValue::Decimal(DecimalValue { value: 30.3 }),
-            ],
-            schema,
-        ),
-    );
-}
-
-// EXEC: () -> (int, bood, decimal)
+/// EXEC: () -> (int, bool, decimal)
+/// SIDE: creates a table and inserts three tuples into it
 pub fn seq_scan_executor() -> (SeqScanExecutor, Schema) {
-    let schema = Schema::with_types(vec![
-        ColumnType::Integer,
-        ColumnType::Boolean,
-        ColumnType::Decimal,
-    ]);
-
-    // init executor context
-    let bpm = Arc::new(BufferPoolManager::new("db/test.db".to_string(), 2, 2));
-    let catalog = Arc::new(Catalog::new(bpm.clone()));
-    let executor_context = ExecutorContext {
-        catalog: catalog.clone(),
-        bpm: bpm.clone(),
-    };
-
-    // create a table
-    bpm.new_page(); // this is needed as table heaps assume page with PID 0 is not used
-    let table_name = "test_table".to_string();
-    let table_oid = executor_context
-        .catalog
-        .create_table(&table_name, schema.clone())
-        .unwrap()
-        .lock()
-        .unwrap()
-        .oid;
-
-    // insert some tuples
-    let table_info = executor_context
-        .catalog
-        .get_table_by_oid(table_oid)
-        .unwrap();
-    let mut table_info = table_info.lock().unwrap();
-
-    populate_heap(&mut table_info.table, &schema);
-
-    drop(table_info);
+    let (executor_context, schema, table_oid, table_name) = create_table();
 
     // create a sequential scan executor
     let plan = SeqScanPlanNode {
@@ -235,4 +162,21 @@ pub fn seq_scan_executor() -> (SeqScanExecutor, Schema) {
     };
 
     (SeqScanExecutor::new(executor_context, plan), schema)
+}
+
+/// EXEC: (int, bool, decimal) -> (int)
+/// SIDE: creates a table and inserts three tuples into it
+pub fn insert_executor(
+    child_pln: PlanNode,
+    child_exec: Executor,
+) -> (InsertExecutor, Schema, Arc<Catalog>) {
+    let (executor_context, _, table_oid, table_name) = create_table();
+    let plan = InsertPlanNode::new(table_oid, table_name, child_pln);
+    let catalog = executor_context.catalog.clone();
+
+    (
+        InsertExecutor::new(executor_context, plan, child_exec),
+        Schema::with_types(vec![ColumnType::Integer]),
+        catalog,
+    )
 }

@@ -1,4 +1,4 @@
-use sample_code::{seq_scan_projection, values_projection_filter};
+use sample_code::{seq_scan_projection, values_insert, values_projection_filter};
 
 // uncomment when there is no more sample code in main.rs
 // #[cfg(test)]
@@ -15,9 +15,7 @@ mod parser;
 mod table;
 
 fn main() {
-    // TODO: write test for insert executor
-    // TODO: test should check that tuples were inserted into the table and that the indexes were updated
-
     // seq_scan_projection();
-    values_projection_filter();
+    // values_projection_filter();
+    values_insert();
 }

@@ -98,7 +98,17 @@ impl Execute for InsertExecutor {
     }
 
     fn to_string(&self, indent_level: usize) -> String {
-        // TODO: implement this
-        todo!("string representation for the insert executor")
+        // TODO
+        let self_string = format!(
+            "todo hihi",
+        );
+
+        let tabs = "\t".repeat(indent_level + 1);
+        format!(
+            "{}\n{}-> {}",
+            self_string,
+            tabs,
+            self.child.to_string(indent_level + 1)
+        )
     }
 }
