@@ -100,7 +100,10 @@ impl Execute for InsertExecutor {
     fn to_string(&self, indent_level: usize) -> String {
         // TODO
         let self_string = format!(
-            "todo hihi",
+            "Insert | Schema: {} | Table: {}({})",
+            self.output_schema().to_string(),
+            self.plan.table_name,
+            self.plan.table_oid
         );
 
         let tabs = "\t".repeat(indent_level + 1);
@@ -110,5 +113,14 @@ impl Execute for InsertExecutor {
             tabs,
             self.child.to_string(indent_level + 1)
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test() {
+        // TODO: write what is in the main function as a test
+        // check that tuples were inserted into the table AND that the index was updated (also create a index before running the insert executor)
     }
 }
