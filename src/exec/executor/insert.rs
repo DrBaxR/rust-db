@@ -118,9 +118,56 @@ impl Execute for InsertExecutor {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        exec::{
+            executor::{Execute, Executor},
+            plan::PlanNode,
+        },
+        sample_code::executors::{insert_executor, values_executor},
+        table::value::{ColumnValue, DecimalValue},
+    };
+
     #[test]
     fn test() {
-        // TODO: write what is in the main function as a test
-        // check that tuples were inserted into the table AND that the index was updated (also create a index before running the insert executor)
+        // init
+        // TODO: BPM file init and pass it to insert_executor
+        let (values_executor, values_schema) = values_executor();
+        let (mut insert_executor, insert_schema, catalog) = insert_executor(
+            PlanNode::Values(values_executor.plan.clone()),
+            Executor::Values(values_executor),
+        );
+
+        // initial state
+        let table_oid = insert_executor.plan.table_oid;
+        let table_info = catalog
+            .get_table_by_oid(table_oid)
+            .expect("Table not found");
+        let table_info = table_info.lock().unwrap();
+        assert_eq!(table_info.table.sequencial_dump().len(), 3);
+        drop(table_info);
+
+        // run insert executor
+        insert_executor.init();
+        let mut times_run = 0;
+        while let Some((tuple, _)) = insert_executor.next() {
+            times_run += 1;
+            assert_eq!(
+                tuple.get_value(&insert_schema, 0).to_decimal().unwrap(),
+                ColumnValue::Decimal(DecimalValue { value: 6.0 })
+            );
+        }
+        assert_eq!(times_run, 1);
+
+        // check final state of table
+        let table_info = catalog
+            .get_table_by_oid(table_oid)
+            .expect("Table not found");
+        let table_info = table_info.lock().unwrap();
+        let tuples = table_info.table.sequencial_dump();
+
+        assert_eq!(tuples.len(), 9);
+        // TODO: check that the index was updated (also create a index before running the insert executor) - run through all the tuples and make sure that the index is correct
+
+        // cleanup
     }
 }

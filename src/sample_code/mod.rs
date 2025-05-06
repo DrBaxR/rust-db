@@ -9,8 +9,8 @@ use crate::{
     table::schema::{ColumnType, Schema},
 };
 
-mod executors;
-mod util;
+pub mod executors;
+pub mod util;
 
 pub fn seq_scan_projection() {
     let (seq_scan_executor, _) = seq_scan_executor();
