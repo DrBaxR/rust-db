@@ -12,8 +12,8 @@ use crate::{
 pub mod executors;
 pub mod util;
 
-pub fn seq_scan_projection() {
-    let (seq_scan_executor, _) = seq_scan_executor();
+pub fn seq_scan_projection(db_file: String) {
+    let (seq_scan_executor, _) = seq_scan_executor(db_file);
     let (mut projection_executor, schema) = projection_executor(
         PlanNode::SeqScan(seq_scan_executor.plan.clone()),
         Executor::SeqScan(seq_scan_executor),
@@ -44,9 +44,10 @@ pub fn values_projection_filter() {
     }
 }
 
-pub fn values_insert() {
+pub fn values_insert(db_file: String) {
     let (values_executor, tuples_schema) = values_executor();
     let (mut insert_executor, schema, catalog) = executors::insert_executor(
+        db_file,
         PlanNode::Values(values_executor.plan.clone()),
         Executor::Values(values_executor),
     );

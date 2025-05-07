@@ -59,8 +59,7 @@ pub fn populate_heap(table_heap: &mut TableHeap, schema: &Schema) {
 }
 
 /// Creates a table with the schema (int, bool, decimal) and populates it with three tuples.
-pub fn create_table() -> (ExecutorContext, Schema, OID, String) {
-    // TODO: pass db file as param so it can be used in tests
+pub fn create_table(db_file: String) -> (ExecutorContext, Schema, OID, String) {
     let schema = Schema::with_types(vec![
         ColumnType::Integer,
         ColumnType::Boolean,
@@ -68,7 +67,7 @@ pub fn create_table() -> (ExecutorContext, Schema, OID, String) {
     ]);
 
     // init executor context
-    let bpm = Arc::new(BufferPoolManager::new("db/test.db".to_string(), 2, 2));
+    let bpm = Arc::new(BufferPoolManager::new(db_file, 2, 2));
     let catalog = Arc::new(Catalog::new(bpm.clone()));
     let executor_context = ExecutorContext {
         catalog: catalog.clone(),

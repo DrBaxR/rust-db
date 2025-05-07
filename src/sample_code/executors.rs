@@ -150,8 +150,8 @@ pub fn filter_executor(child_pln: PlanNode, child_exec: Executor) -> (FilterExec
 
 /// EXEC: () -> (int, bool, decimal)
 /// SIDE: creates a table and inserts three tuples into it
-pub fn seq_scan_executor() -> (SeqScanExecutor, Schema) {
-    let (executor_context, schema, table_oid, table_name) = create_table();
+pub fn seq_scan_executor(db_file: String) -> (SeqScanExecutor, Schema) {
+    let (executor_context, schema, table_oid, table_name) = create_table(db_file);
 
     // create a sequential scan executor
     let plan = SeqScanPlanNode {
@@ -167,10 +167,11 @@ pub fn seq_scan_executor() -> (SeqScanExecutor, Schema) {
 /// EXEC: (int, bool, decimal) -> (int)
 /// SIDE: creates a table and inserts three tuples into it
 pub fn insert_executor(
+    db_file: String,
     child_pln: PlanNode,
     child_exec: Executor,
 ) -> (InsertExecutor, Schema, Arc<Catalog>) {
-    let (executor_context, _, table_oid, table_name) = create_table();
+    let (executor_context, _, table_oid, table_name) = create_table(db_file);
     let plan = InsertPlanNode::new(table_oid, table_name, child_pln);
     let catalog = executor_context.catalog.clone();
 

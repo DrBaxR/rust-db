@@ -118,24 +118,46 @@ impl Execute for InsertExecutor {
 
 #[cfg(test)]
 mod tests {
+    use std::{env::temp_dir, fs::remove_file};
+
     use crate::{
         exec::{
             executor::{Execute, Executor},
             plan::PlanNode,
         },
         sample_code::executors::{insert_executor, values_executor},
-        table::value::{ColumnValue, DecimalValue},
+        table::{
+            schema::{ColumnType, Schema},
+            tuple::Tuple,
+            value::{ColumnValue, DecimalValue},
+        },
     };
 
     #[test]
-    fn test() {
+    fn run_insert_executor() {
         // init
-        // TODO: BPM file init and pass it to insert_executor
+        let db_path = temp_dir().join("insert_run_insert_executor.db");
         let (values_executor, values_schema) = values_executor();
         let (mut insert_executor, insert_schema, catalog) = insert_executor(
+            db_path.to_str().unwrap().to_string(),
             PlanNode::Values(values_executor.plan.clone()),
             Executor::Values(values_executor),
         );
+
+        // create index
+        let index_name = "index";
+        let key_schema = Schema::with_types(vec![ColumnType::Integer]);
+        let key_size = key_schema.get_tuple_len();
+        catalog
+            .create_index(
+                index_name,
+                &insert_executor.plan.table_name,
+                values_schema.clone(),
+                key_schema.clone(),
+                vec![0],
+                key_size,
+            )
+            .unwrap();
 
         // initial state
         let table_oid = insert_executor.plan.table_oid;
@@ -166,8 +188,18 @@ mod tests {
         let tuples = table_info.table.sequencial_dump();
 
         assert_eq!(tuples.len(), 9);
-        // TODO: check that the index was updated (also create a index before running the insert executor) - run through all the tuples and make sure that the index is correct
+        let index_info = catalog
+            .get_index_by_name(index_name, &insert_executor.plan.table_name)
+            .unwrap();
+        let index_info = index_info.lock().unwrap();
+        for (_, tuple) in tuples {
+            let key = Tuple::from_projection(&tuple, &values_schema, &key_schema, &vec![0]);
+
+            let rids = index_info.index.scan(key);
+            assert!(rids.len() >= 1);
+        }
 
         // cleanup
+        remove_file(db_path).expect("Couldn't remove test DB file");
     }
 }
