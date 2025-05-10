@@ -44,7 +44,7 @@ Implementation flow:
 - [x] Executors tests
 - [x] Stringified version of the whole executor tree
 - [x] Sequencial scan - will require adding context to the executors (for now BPM and catalog, which will need to be implemented beforehand)
-- [ ] (WIP) Insert
+- [x] Insert
+- [ ] (WIP) Delete
 - [ ] Update
-- [ ] Delete
 - [ ] Index scan
