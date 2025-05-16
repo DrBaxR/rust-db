@@ -15,7 +15,7 @@ mod parser;
 mod table;
 
 fn main() {
-    // seq_scan_projection();
+    // seq_scan_projection("db/test.db".to_string());
     // values_projection_filter();
     values_insert("db/test.db".to_string());
 }

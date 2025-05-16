@@ -1,5 +1,6 @@
 use std::{f32::consts::E, sync::Arc};
 
+use delete::DeleteExecutor;
 use filter::FilterExecutor;
 use insert::InsertExecutor;
 use projection::ProjectionExecutor;
@@ -23,6 +24,7 @@ pub mod insert;
 pub mod projection;
 pub mod seq_scan;
 pub mod values;
+pub mod delete;
 
 pub struct ExecutorContext {
     pub catalog: Arc<Catalog>,
@@ -42,6 +44,7 @@ pub enum Executor {
     Filter(FilterExecutor),
     SeqScan(SeqScanExecutor),
     Insert(InsertExecutor),
+    Delete(DeleteExecutor),
 }
 
 impl Execute for Executor {
@@ -52,6 +55,7 @@ impl Execute for Executor {
             Executor::Filter(executor) => executor.init(),
             Executor::SeqScan(executor) => executor.init(),
             Executor::Insert(executor) => executor.init(),
+            Executor::Delete(executor) => executor.init(),
         }
     }
 
@@ -62,6 +66,7 @@ impl Execute for Executor {
             Executor::Filter(executor) => executor.next(),
             Executor::SeqScan(executor) => executor.next(),
             Executor::Insert(executor) => executor.next(),
+            Executor::Delete(executor) => executor.next(),
         }
     }
 
@@ -72,6 +77,7 @@ impl Execute for Executor {
             Executor::Filter(executor) => executor.output_schema(),
             Executor::SeqScan(executor) => executor.output_schema(),
             Executor::Insert(executor) => executor.output_schema(),
+            Executor::Delete(executor) => executor.output_schema(),
         }
     }
 
@@ -82,6 +88,7 @@ impl Execute for Executor {
             Executor::Filter(executor) => executor.to_string(indent_level),
             Executor::SeqScan(executor) => executor.to_string(indent_level),
             Executor::Insert(executor) => executor.to_string(indent_level),
+            Executor::Delete(executor) => executor.to_string(indent_level),
         }
     }
 }

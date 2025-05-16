@@ -59,7 +59,7 @@ fn insert_delete_read() {
     index.insert_raw(tuple_1.clone(), RID::new(1, 1)).unwrap();
     index.insert_raw(tuple_2.clone(), RID::new(2, 2)).unwrap();
     index.insert_raw(tuple_1.clone(), RID::new(3, 3)).unwrap();
-    index.delete(tuple_2.clone());
+    index.delete_raw(tuple_2.clone());
 
     assert_eq!(index.scan(tuple_1), vec![RID::new(1, 1), RID::new(3, 3)]);
     assert_eq!(index.scan(tuple_2), vec![]);

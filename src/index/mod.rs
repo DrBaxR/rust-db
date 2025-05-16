@@ -127,8 +127,25 @@ impl Index {
         self.insert_raw(key, rid)
     }
 
-    pub fn delete(&self, key: Tuple) {
+    /// Deleted all values associated with the key.
+    ///
+    /// # Assumptions
+    /// This method **EXPECTS** the key to have the same schema as the index key schema. For deleting
+    /// a *uncasted* tuple, use `delete`.
+    pub fn delete_raw(&self, key: Tuple) {
         self.deht.remove(key);
+    }
+
+    /// Deletes all values associated with the tuple from the index. The tuple is casted to the index key schema.
+    pub fn delete(&self, tuple: &Tuple, tuple_schema: &Schema) {
+        let key = Tuple::from_projection(
+            tuple,
+            tuple_schema,
+            &self.meta.key_schema(),
+            self.meta.key_attrs(),
+        );
+
+        self.delete_raw(key);
     }
 
     pub fn scan(&self, key: Tuple) -> Vec<RID> {

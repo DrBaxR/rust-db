@@ -21,7 +21,7 @@
     - can also *evaluate join* on it, not sure what that is TODO
 
 Notes:
-- Plan nodes are a tree-like structure that mainly hold data (personal note: I don't really understand why they need to be a tree, since executors already have a tree structure)
+- Plan nodes are a tree-like structure that mainly hold data (they don't *necessarily* need to be a tree, the reason why they are is because it's easier for the planner to produce it in that format)
 - Execotors are a tree-like structure that hold plan nodes and know how to *execute* the nodes
 
 ## Executor Factory

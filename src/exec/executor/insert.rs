@@ -34,6 +34,7 @@ impl InsertExecutor {
 
 impl Execute for InsertExecutor {
     fn init(&mut self) {
+        self.child.init();
         self.inserted = false;
     }
 
