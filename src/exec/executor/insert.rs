@@ -138,7 +138,7 @@ mod tests {
     fn run_insert_executor() {
         // init
         let db_path = temp_dir().join("insert_run_insert_executor.db");
-        let (values_executor, values_schema) = values_executor();
+        let (values_executor, values_schema) = values_executor(vec![1, 2, 3, 4, 5, 6]);
         let (mut insert_executor, insert_schema, catalog) = insert_executor(
             db_path.to_str().unwrap().to_string(),
             PlanNode::Values(values_executor.plan.clone()),

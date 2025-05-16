@@ -1,4 +1,4 @@
-use sample_code::{seq_scan_projection, values_insert, values_projection_filter};
+use sample_code::{seq_scan_projection, values_delete, values_insert, values_projection_filter};
 
 // uncomment when there is no more sample code in main.rs
 // #[cfg(test)]
@@ -17,5 +17,6 @@ mod table;
 fn main() {
     // seq_scan_projection("db/test.db".to_string());
     // values_projection_filter();
-    values_insert("db/test.db".to_string());
+    // values_insert("db/test.db".to_string());
+    values_delete("db/test.db".to_string());
 }

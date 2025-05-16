@@ -56,7 +56,9 @@ impl Execute for DeleteExecutor {
             .collect::<Vec<_>>();
 
         let mut deleted_tuples = 0;
-        while let Some((_, rid)) = self.child.next() {
+        while let Some((a, rid)) = self.child.next() {
+            dbg!(a.to_string(self.plan.get_output_schema()));
+
             let (mut meta, tuple) = table_info
                 .table
                 .get_tuple(&rid)
@@ -88,7 +90,8 @@ impl Execute for DeleteExecutor {
     }
 
     fn to_string(&self, indent_level: usize) -> String {
-        todo!()
+        // TODO: this
+        return String::from("todo");
     }
 }
 

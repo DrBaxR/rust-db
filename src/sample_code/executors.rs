@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
 use crate::catalog::Catalog;
+use crate::exec::executor::delete::DeleteExecutor;
 use crate::exec::executor::insert::InsertExecutor;
 use crate::exec::executor::ExecutorContext;
+use crate::exec::plan::delete::DeletePlanNode;
 use crate::exec::plan::insert::InsertPlanNode;
 use crate::exec::{
     executor::{
@@ -31,21 +33,23 @@ use crate::test_utils::{const_bool, const_decimal, const_int};
 use super::util::create_table;
 
 /// EXEC: () -> (int, bool, decimal)
-pub fn values_executor() -> (ValuesExecutor, Schema) {
+pub fn values_executor(values: Vec<i32>) -> (ValuesExecutor, Schema) {
     let schema = Schema::with_types(vec![
         ColumnType::Integer,
         ColumnType::Boolean,
         ColumnType::Decimal,
     ]);
 
-    let values = vec![
-        vec![const_int(1), const_bool(true), const_decimal(10.1)],
-        vec![const_int(2), const_bool(false), const_decimal(20.2)],
-        vec![const_int(3), const_bool(true), const_decimal(30.3)],
-        vec![const_int(4), const_bool(false), const_decimal(40.4)],
-        vec![const_int(5), const_bool(false), const_decimal(50.5)],
-        vec![const_int(6), const_bool(false), const_decimal(60.6)],
-    ];
+    let values = values
+        .into_iter()
+        .map(|v| {
+            vec![
+                const_int(v),
+                const_bool(v % 2 == 0),
+                const_decimal(v as f64 * 10.1),
+            ]
+        })
+        .collect::<Vec<_>>();
 
     let values_plan = ValuesPlanNode {
         output_schema: schema.clone(),
@@ -177,6 +181,24 @@ pub fn insert_executor(
 
     (
         InsertExecutor::new(executor_context, plan, child_exec),
+        Schema::with_types(vec![ColumnType::Integer]),
+        catalog,
+    )
+}
+
+/// EXEC: (int, bool, decimal) -> (int)
+/// SIDE: creates a table and inserts three tuples into it
+pub fn delete_executor(
+    db_file: String,
+    child_pln: PlanNode,
+    child_exec: Executor,
+) -> (DeleteExecutor, Schema, Arc<Catalog>) {
+    let (executor_context, _, table_oid, table_name) = create_table(db_file);
+    let plan = DeletePlanNode::new(table_oid, table_name, child_pln);
+    let catalog = executor_context.catalog.clone();
+
+    (
+        DeleteExecutor::new(executor_context, plan, child_exec),
         Schema::with_types(vec![ColumnType::Integer]),
         catalog,
     )
