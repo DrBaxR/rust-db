@@ -99,7 +99,6 @@ impl Execute for InsertExecutor {
     }
 
     fn to_string(&self, indent_level: usize) -> String {
-        // TODO
         let self_string = format!(
             "Insert | Schema: {} | Table: {}({})",
             self.output_schema().to_string(),

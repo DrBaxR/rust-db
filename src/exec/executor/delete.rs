@@ -93,8 +93,20 @@ impl Execute for DeleteExecutor {
     }
 
     fn to_string(&self, indent_level: usize) -> String {
-        // TODO: this
-        return String::from("todo");
+        let self_string = format!(
+            "Delete | Schema: {} | Table: {}({})",
+            self.output_schema().to_string(),
+            self.plan.table_name,
+            self.plan.table_oid
+        );
+
+        let tabs = "\t".repeat(indent_level + 1);
+        format!(
+            "{}\n{}-> {}",
+            self_string,
+            tabs,
+            self.child.to_string(indent_level + 1)
+        )
     }
 }
 
