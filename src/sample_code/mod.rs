@@ -1,4 +1,7 @@
-use executors::{delete_executor, filter_executor, insert_executor, projection_executor, seq_scan_executor, values_executor};
+use executors::{
+    delete_executor, filter_executor, insert_executor, projection_executor, seq_scan_executor,
+    values_executor, TableConstructorType,
+};
 
 use crate::{
     catalog,
@@ -13,7 +16,7 @@ pub mod executors;
 pub mod util;
 
 pub fn seq_scan_projection(db_file: String) {
-    let (seq_scan_executor, _) = seq_scan_executor(db_file);
+    let (seq_scan_executor, _) = seq_scan_executor(TableConstructorType::WithTable(db_file));
     let (mut projection_executor, schema) = projection_executor(
         PlanNode::SeqScan(seq_scan_executor.plan.clone()),
         Executor::SeqScan(seq_scan_executor),
@@ -85,27 +88,29 @@ pub fn values_insert(db_file: String) {
 }
 
 pub fn values_delete(db_file: String) {
-    // TODO: this won't work with a values executor, because it doesn't have valid RIDs. Will need to use a seq scan executor instead.
-    let (values_executor, tuples_schema) = values_executor(vec![2, 3]); 
-    let (mut delete_executor, schema, catalog) = delete_executor(
-        db_file,
-        PlanNode::Values(values_executor.plan.clone()),
-        Executor::Values(values_executor),
+    // init
+    let (scan_executor, table_context) =
+        seq_scan_executor(TableConstructorType::WithTable(db_file));
+    let tuples_schema = table_context.1.clone();
+
+    let (mut delete_executor, schema) = delete_executor(
+        PlanNode::SeqScan(scan_executor.plan.clone()),
+        Executor::SeqScan(scan_executor),
+        TableConstructorType::WithoutTable(table_context.clone()),
     );
 
     // table before
     println!("Table before:");
-    let table = catalog
-        .get_table_by_oid(delete_executor.plan.table_oid)
-        .unwrap();
-    let table = table.lock().unwrap();
-    let tuples = table.table.sequencial_dump();
-    for (_, tuple) in tuples {
+    let (mut tmp_scan_executor, _) =
+        seq_scan_executor(TableConstructorType::WithoutTable(table_context.clone()));
+
+
+    tmp_scan_executor.init();
+    while let Some((tuple, _)) = tmp_scan_executor.next() {
         println!("{}", tuple.to_string(&tuples_schema));
     }
-    drop(table);
 
-    // insert
+    // delete
     println!("\nDelete executor:");
     println!("{}", delete_executor.to_string(0));
     delete_executor.init();
@@ -115,12 +120,12 @@ pub fn values_delete(db_file: String) {
 
     // table after
     println!("\nTable after:");
-    let table = catalog
-        .get_table_by_oid(delete_executor.plan.table_oid)
-        .unwrap();
-    let table = table.lock().unwrap();
-    let tuples = table.table.sequencial_dump();
-    for (_, tuple) in tuples {
+    let (mut tmp_scan_executor, _) =
+        seq_scan_executor(TableConstructorType::WithoutTable(table_context.clone()));
+
+    tmp_scan_executor.init();
+    while let Some((tuple, _)) = tmp_scan_executor.next() {
         println!("{}", tuple.to_string(&tuples_schema));
     }
+
 }

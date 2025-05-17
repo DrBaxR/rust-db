@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::catalog::Catalog;
+use crate::catalog::{Catalog, OID};
 use crate::exec::executor::delete::DeleteExecutor;
 use crate::exec::executor::insert::InsertExecutor;
 use crate::exec::executor::ExecutorContext;
@@ -152,20 +152,35 @@ pub fn filter_executor(child_pln: PlanNode, child_exec: Executor) -> (FilterExec
     )
 }
 
+type TableContext = (ExecutorContext, Schema, OID, String);
+
+pub enum TableConstructorType {
+    WithoutTable(TableContext),
+    WithTable(String),
+}
+
 /// EXEC: () -> (int, bool, decimal)
 /// SIDE: creates a table and inserts three tuples into it
-pub fn seq_scan_executor(db_file: String) -> (SeqScanExecutor, Schema) {
-    let (executor_context, schema, table_oid, table_name) = create_table(db_file);
+pub fn seq_scan_executor(c_type: TableConstructorType) -> (SeqScanExecutor, TableContext) {
+    let (executor_context, schema, table_oid, table_name) = match c_type {
+        TableConstructorType::WithoutTable((executor_context, schema, table_oid, table_name)) => {
+            (executor_context, schema, table_oid, table_name)
+        }
+        TableConstructorType::WithTable(db_file) => create_table(db_file),
+    };
 
     // create a sequential scan executor
     let plan = SeqScanPlanNode {
         output_schema: schema.clone(),
         table_oid,
-        table_name,
+        table_name: table_name.clone(),
         filter_expr: None,
     };
 
-    (SeqScanExecutor::new(executor_context, plan), schema)
+    (
+        SeqScanExecutor::new(executor_context.clone(), plan),
+        (executor_context, schema, table_oid, table_name),
+    )
 }
 
 /// EXEC: (int, bool, decimal) -> (int)
@@ -187,19 +202,25 @@ pub fn insert_executor(
 }
 
 /// EXEC: (int, bool, decimal) -> (int)
-/// SIDE: creates a table and inserts three tuples into it
+/// SIDE: creates a table and inserts three tuples into it (only if context is `None`)
 pub fn delete_executor(
-    db_file: String,
     child_pln: PlanNode,
     child_exec: Executor,
-) -> (DeleteExecutor, Schema, Arc<Catalog>) {
-    let (executor_context, _, table_oid, table_name) = create_table(db_file);
-    let plan = DeletePlanNode::new(table_oid, table_name, child_pln);
-    let catalog = executor_context.catalog.clone();
+    c_type: TableConstructorType,
+) -> (DeleteExecutor, Schema) {
+    let (executor_context, table_oid, table_name) = match c_type {
+        TableConstructorType::WithoutTable((executor_context, _, table_oid, table_name)) => {
+            (executor_context, table_oid, table_name)
+        }
+        TableConstructorType::WithTable(db_file) => {
+            let (executor_context, _, table_oid, table_name) = create_table(db_file);
+            (executor_context, table_oid, table_name)
+        }
+    };
 
+    let plan = DeletePlanNode::new(table_oid, table_name, child_pln);
     (
         DeleteExecutor::new(executor_context, plan, child_exec),
         Schema::with_types(vec![ColumnType::Integer]),
-        catalog,
     )
 }

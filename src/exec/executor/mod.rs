@@ -26,6 +26,7 @@ pub mod seq_scan;
 pub mod values;
 pub mod delete;
 
+#[derive(Clone)]
 pub struct ExecutorContext {
     pub catalog: Arc<Catalog>,
     pub bpm: Arc<BufferPoolManager>,
