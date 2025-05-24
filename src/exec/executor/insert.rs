@@ -188,6 +188,8 @@ mod tests {
         let tuples = table_info.table.sequencial_dump();
 
         assert_eq!(tuples.len(), 9);
+
+        // check final state of index
         let index_info = catalog
             .get_index_by_name(index_name, &insert_executor.plan.table_name)
             .unwrap();

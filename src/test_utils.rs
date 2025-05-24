@@ -40,3 +40,7 @@ pub fn int_value(value: i32) -> ColumnValue {
 pub fn bool_value(value: bool) -> ColumnValue {
     ColumnValue::Boolean(BooleanValue { value })
 }
+
+pub fn decimal_value(value: f64) -> ColumnValue {
+    ColumnValue::Decimal(DecimalValue { value })
+}
