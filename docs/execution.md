@@ -46,5 +46,5 @@ Implementation flow:
 - [x] Sequencial scan - will require adding context to the executors (for now BPM and catalog, which will need to be implemented beforehand)
 - [x] Insert
 - [x] Delete
-- [ ] Update
+- [ ] (WIP) Update
 - [ ] Index scan

@@ -3,6 +3,7 @@ use filter::FilterNode;
 use insert::InsertPlanNode;
 use projection::ProjectionPlanNode;
 use seq_scan::SeqScanPlanNode;
+use update::UpdatePlanNode;
 use values::ValuesPlanNode;
 
 use crate::table::schema::Schema;
@@ -13,6 +14,7 @@ pub mod filter;
 pub mod seq_scan;
 pub mod insert;
 pub mod delete;
+pub mod update;
 
 /// Interface (probably) mainly used by the planner to generate the query execution plan. The executors will
 /// probably use the interface provided by the specific plan node implementation.
@@ -29,6 +31,7 @@ pub enum PlanNode {
     SeqScan(SeqScanPlanNode),
     Insert(InsertPlanNode),
     Delete(DeletePlanNode),
+    Update(UpdatePlanNode)
 }
 
 impl AbstractPlanNode for PlanNode {
@@ -40,6 +43,7 @@ impl AbstractPlanNode for PlanNode {
             PlanNode::SeqScan(node) => node.get_children(),
             PlanNode::Insert(node) => node.get_children(),
             PlanNode::Delete(node) => node.get_children(),
+            PlanNode::Update(node) => node.get_children(),
         }
     }
 
@@ -51,6 +55,7 @@ impl AbstractPlanNode for PlanNode {
             PlanNode::SeqScan(node) => node.get_output_schema(),
             PlanNode::Insert(node) => node.get_output_schema(),
             PlanNode::Delete(node) => node.get_output_schema(),
+            PlanNode::Update(node) => node.get_output_schema(),
         }
     }
 }
