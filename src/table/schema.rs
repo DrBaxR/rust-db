@@ -95,13 +95,17 @@ impl Column {
         }
     }
 
+    pub fn col_type(&self) -> &ColumnType {
+        &self.col_type
+    }
+
     /// Returns the size (in bytes) of the column's data.
     fn size(&self) -> usize {
         self.col_type.size()
     }
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ColumnType {
     Boolean,
     TinyInt,

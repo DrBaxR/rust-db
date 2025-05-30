@@ -1,4 +1,8 @@
-use crate::{catalog::OID, exec::expression::Expression, table::schema::Schema};
+use crate::{
+    catalog::OID,
+    exec::expression::Expression,
+    table::schema::{ColumnType, Schema},
+};
 
 use super::{AbstractPlanNode, PlanNode};
 
@@ -13,17 +17,28 @@ pub struct UpdatePlanNode {
 }
 
 impl UpdatePlanNode {
-    pub fn new() -> Self {
-        todo!()
+    pub fn new(
+        table_oid: OID,
+        table_name: String,
+        expressions: Vec<Expression>,
+        child: PlanNode,
+    ) -> Self {
+        Self {
+            output_schema: Schema::with_types(vec![ColumnType::Integer]),
+            table_oid,
+            table_name,
+            expressions,
+            child: Box::new(child),
+        }
     }
 }
 
 impl AbstractPlanNode for UpdatePlanNode {
-    fn get_children(&self) -> Vec<&super::PlanNode> {
-        todo!()
+    fn get_children(&self) -> Vec<&PlanNode> {
+        vec![&self.child]
     }
 
-    fn get_output_schema(&self) -> &crate::table::schema::Schema {
-        todo!()
+    fn get_output_schema(&self) -> &Schema {
+        &self.output_schema
     }
 }
