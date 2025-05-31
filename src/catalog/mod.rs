@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     sync::{
         atomic::{AtomicU32, Ordering},
-        Arc, Mutex,
+        Arc, Mutex, MutexGuard,
     },
 };
 
@@ -193,5 +193,23 @@ impl Catalog {
     /// Get all table names in the catalog.
     pub fn get_table_names(&self) -> Vec<String> {
         self.table_names.lock().unwrap().keys().cloned().collect()
+    }
+
+    /// Get `TableInfo` and all `IndexInfo`s for a table with `table_oid` and `table_name`.
+    pub fn get_table_with_indexes(
+        &self,
+        table_oid: OID,
+        table_name: &str,
+    ) -> (Arc<Mutex<TableInfo>>, Vec<Arc<Mutex<IndexInfo>>>) {
+        (
+            self.get_table_by_oid(table_oid).expect(
+                format!(
+                    "Can't get table info for table that doesn't exit ({} - {})",
+                    table_oid, table_name
+                )
+                .as_str(),
+            ),
+            self.get_table_indexes(table_name),
+        )
     }
 }

@@ -20,6 +20,7 @@ use crate::{
 #[cfg(test)]
 pub mod tests;
 
+pub mod util;
 pub mod delete;
 pub mod filter;
 pub mod insert;

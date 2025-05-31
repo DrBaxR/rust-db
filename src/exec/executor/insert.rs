@@ -11,7 +11,10 @@ use crate::{
     },
 };
 
-use super::{Execute, Executor, ExecutorContext};
+use super::{
+    util::{insert_tuple_in_table_and_indexes, int_tuple},
+    Execute, Executor, ExecutorContext,
+};
 
 pub struct InsertExecutor {
     pub plan: InsertPlanNode,
@@ -48,50 +51,25 @@ impl Execute for InsertExecutor {
             return None;
         }
 
-        let table_oid = self.plan.table_oid;
-        let table_info = self
-            .catalog
-            .get_table_by_oid(table_oid)
-            .expect("Can't insert into a non-existing table");
-        let mut table_info = table_info.lock().unwrap();
-        let index_infos = self.catalog.get_table_indexes(&self.plan.table_name);
-
         let mut inserted_tuples = 0;
         while let Some((tuple, _)) = self.child.next() {
-            // insert tuple into the table
-            let tuple_rid = table_info
-                .table
-                .insert_tuple(
-                    TupleMeta {
-                        ts: 0,
-                        is_deleted: false,
-                    },
-                    tuple.clone(),
-                )
-                .expect("Tuple too large to insert");
+            let (table_info, index_infos) = self
+                .catalog
+                .get_table_with_indexes(self.plan.table_oid, &self.plan.table_name);
 
-            // update indexes of table if they exist
-            for index_info in &index_infos {
-                let index_info = index_info.lock().unwrap();
-                index_info
-                    .index
-                    .insert(&tuple, &self.child.output_schema(), tuple_rid.clone())
-                    .unwrap();
-            }
+            let mut table_info = table_info.lock().unwrap();
+            let index_infos = index_infos
+                .iter()
+                .map(|i| i.lock().unwrap())
+                .collect::<Vec<_>>();
+
+            insert_tuple_in_table_and_indexes(&mut table_info, &index_infos, tuple);
 
             inserted_tuples += 1;
         }
 
         self.inserted = true;
-        Some((
-            Tuple::new(
-                vec![ColumnValue::Integer(IntegerValue {
-                    value: inserted_tuples,
-                })],
-                &self.plan.get_output_schema(),
-            ),
-            RID::invalid(),
-        ))
+        Some((int_tuple(inserted_tuples), RID::invalid()))
     }
 
     fn output_schema(&self) -> &Schema {
