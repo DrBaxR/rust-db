@@ -14,7 +14,7 @@ use crate::{
 
 use super::{
     util::{delete_from_table_and_indexes, insert_tuple_in_table_and_indexes, int_tuple},
-    Execute, Executor,
+    Execute, Executor, ExecutorContext,
 };
 
 pub struct UpdateExecutor {
@@ -25,6 +25,15 @@ pub struct UpdateExecutor {
 }
 
 impl UpdateExecutor {
+    pub fn new(context: ExecutorContext, plan: UpdatePlanNode, child: Executor) -> Self {
+        Self {
+            plan,
+            catalog: context.catalog,
+            child: Box::new(child),
+            updated: false,
+        }
+    }
+
     /// # Panics
     /// Will panic if expressions don't properly match table schema.
     fn validate(&self) {

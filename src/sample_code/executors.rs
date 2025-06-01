@@ -3,9 +3,11 @@ use std::sync::Arc;
 use crate::catalog::{Catalog, OID};
 use crate::exec::executor::delete::DeleteExecutor;
 use crate::exec::executor::insert::InsertExecutor;
+use crate::exec::executor::update::UpdateExecutor;
 use crate::exec::executor::ExecutorContext;
 use crate::exec::plan::delete::DeletePlanNode;
 use crate::exec::plan::insert::InsertPlanNode;
+use crate::exec::plan::update::UpdatePlanNode;
 use crate::exec::{
     executor::{
         filter::FilterExecutor, projection::ProjectionExecutor, seq_scan::SeqScanExecutor,
@@ -28,7 +30,7 @@ use crate::table::{
     value::{ColumnValue, IntegerValue},
 };
 
-use crate::test_utils::{const_bool, const_decimal, const_int};
+use crate::test_utils::{const_bool, const_decimal, const_int, int_value};
 
 use super::util::create_table;
 
@@ -221,6 +223,46 @@ pub fn delete_executor(
     let plan = DeletePlanNode::new(table_oid, table_name, child_pln);
     (
         DeleteExecutor::new(executor_context, plan, child_exec),
+        Schema::with_types(vec![ColumnType::Integer]),
+    )
+}
+
+/// EXEC: (int, bool, decimal) -> (int)
+/// SIDE: requires a table that will have all its tuples' first column set to `12`
+pub fn update_executor(
+    child_pln: PlanNode,
+    child_exec: Executor,
+    c_type: TableConstructorType,
+) -> (UpdateExecutor, Schema) {
+    let (executor_context, table_oid, table_name) = match c_type {
+        TableConstructorType::WithoutTable((executor_context, _, table_oid, table_name)) => {
+            (executor_context, table_oid, table_name)
+        }
+        TableConstructorType::WithTable(db_file) => {
+            let (executor_context, _, table_oid, table_name) = create_table(db_file);
+            (executor_context, table_oid, table_name)
+        }
+    };
+
+    let expressions = vec![
+        Expression::Constant(ConstantExpression {
+            value: int_value(12),
+        }),
+        Expression::ColumnValue(ColumnValueExpression {
+            join_side: JoinSide::Left,
+            col_index: 1,
+            return_type: Column::new(ColumnType::Boolean)
+        }),
+        Expression::ColumnValue(ColumnValueExpression {
+            join_side: JoinSide::Left,
+            col_index: 2,
+            return_type: Column::new(ColumnType::Decimal)
+        }),
+    ];
+    let plan = UpdatePlanNode::new(table_oid, table_name, expressions, child_pln);
+
+    (
+        UpdateExecutor::new(executor_context, plan, child_exec),
         Schema::with_types(vec![ColumnType::Integer]),
     )
 }

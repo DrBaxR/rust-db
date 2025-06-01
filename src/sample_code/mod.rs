@@ -1,6 +1,5 @@
 use executors::{
-    delete_executor, filter_executor, insert_executor, projection_executor, seq_scan_executor,
-    values_executor, TableConstructorType,
+    delete_executor, filter_executor, insert_executor, projection_executor, seq_scan_executor, update_executor, values_executor, TableConstructorType
 };
 
 use crate::{
@@ -87,7 +86,7 @@ pub fn values_insert(db_file: String) {
     }
 }
 
-pub fn values_delete(db_file: String) {
+pub fn seq_scan_delete(db_file: String) {
     // init
     let (scan_executor, table_context) =
         seq_scan_executor(TableConstructorType::WithTable(db_file));
@@ -103,7 +102,6 @@ pub fn values_delete(db_file: String) {
     println!("Table before:");
     let (mut tmp_scan_executor, _) =
         seq_scan_executor(TableConstructorType::WithoutTable(table_context.clone()));
-
 
     tmp_scan_executor.init();
     while let Some((tuple, _)) = tmp_scan_executor.next() {
@@ -127,5 +125,45 @@ pub fn values_delete(db_file: String) {
     while let Some((tuple, _)) = tmp_scan_executor.next() {
         println!("{}", tuple.to_string(&tuples_schema));
     }
+}
 
+pub fn seq_scan_update(db_file: String) {
+    // init
+    let (scan_executor, table_context) =
+        seq_scan_executor(TableConstructorType::WithTable(db_file));
+    let tuples_schema = table_context.1.clone();
+
+    let (mut update_executor, schema) = update_executor(
+        PlanNode::SeqScan(scan_executor.plan.clone()),
+        Executor::SeqScan(scan_executor),
+        TableConstructorType::WithoutTable(table_context.clone()),
+    );
+
+    // table before
+    println!("Table before:");
+    let (mut tmp_scan_executor, _) =
+        seq_scan_executor(TableConstructorType::WithoutTable(table_context.clone()));
+
+    tmp_scan_executor.init();
+    while let Some((tuple, _)) = tmp_scan_executor.next() {
+        println!("{}", tuple.to_string(&tuples_schema));
+    }
+
+    // update
+    println!("\nDelete executor:");
+    println!("{}", update_executor.to_string(0));
+    update_executor.init();
+    while let Some((tuple, _)) = update_executor.next() {
+        println!("{}", tuple.to_string(&schema));
+    }
+
+    // table after
+    println!("\nTable after:");
+    let (mut tmp_scan_executor, _) =
+        seq_scan_executor(TableConstructorType::WithoutTable(table_context.clone()));
+
+    tmp_scan_executor.init();
+    while let Some((tuple, _)) = tmp_scan_executor.next() {
+        println!("{}", tuple.to_string(&tuples_schema));
+    }
 }
