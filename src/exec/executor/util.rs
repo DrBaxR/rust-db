@@ -3,7 +3,10 @@ use std::sync::MutexGuard;
 use crate::{
     catalog::info::{IndexInfo, TableInfo},
     table::{
-        page::TupleMeta, schema::{ColumnType, Schema}, tuple::{Tuple, RID}, value::{ColumnValue, IntegerValue}
+        page::TupleMeta,
+        schema::{ColumnType, Schema},
+        tuple::{Tuple, RID},
+        value::{ColumnValue, IntegerValue},
     },
 };
 
@@ -32,7 +35,7 @@ pub fn insert_tuple_in_table_and_indexes(
     table_info: &mut MutexGuard<'_, TableInfo>,
     index_infos: &Vec<MutexGuard<'_, IndexInfo>>,
     tuple: Tuple,
-) {
+) -> RID {
     let new_rid = table_info
         .table
         .insert_tuple(
@@ -50,8 +53,9 @@ pub fn insert_tuple_in_table_and_indexes(
             .insert(&tuple, &table_info.schema, new_rid.clone())
             .unwrap();
     }
-}
 
+    new_rid
+}
 
 /// Create a new `Tuple` with a single integer column containing the given value.
 pub fn int_tuple(value: i32) -> Tuple {

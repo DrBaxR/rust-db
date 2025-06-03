@@ -1,5 +1,6 @@
 use executors::{
-    delete_executor, filter_executor, insert_executor, projection_executor, seq_scan_executor, update_executor, values_executor, TableConstructorType
+    delete_executor, filter_executor, insert_executor, projection_executor, seq_scan_executor,
+    update_executor, values_executor, TableConstructorType,
 };
 
 use crate::{
@@ -8,7 +9,11 @@ use crate::{
         executor::{Execute, Executor},
         plan::PlanNode,
     },
-    table::schema::{ColumnType, Schema},
+    table::{
+        schema::{ColumnType, Schema},
+        tuple::Tuple,
+    },
+    test_utils::int_value,
 };
 
 pub mod executors;
@@ -139,6 +144,21 @@ pub fn seq_scan_update(db_file: String) {
         TableConstructorType::WithoutTable(table_context.clone()),
     );
 
+    let key_schema = Schema::with_types(vec![ColumnType::Integer]);
+    let key_attrs = vec![0];
+    let index_info = table_context
+        .0
+        .catalog
+        .create_index(
+            "first_col",
+            "test_table",
+            tuples_schema.clone(),
+            key_schema.clone(),
+            key_attrs,
+            key_schema.get_tuple_len(),
+        )
+        .unwrap();
+
     // table before
     println!("Table before:");
     let (mut tmp_scan_executor, _) =
@@ -148,6 +168,15 @@ pub fn seq_scan_update(db_file: String) {
     while let Some((tuple, _)) = tmp_scan_executor.next() {
         println!("{}", tuple.to_string(&tuples_schema));
     }
+
+    // index before
+    println!("\nIndex before (value '12'):");
+    let tmp_index_info = index_info.lock().unwrap();
+    let rids = tmp_index_info
+        .index
+        .scan(Tuple::new(vec![int_value(12)], &key_schema));
+    println!("{:?}", rids);
+    drop(tmp_index_info);
 
     // update
     println!("\nDelete executor:");
@@ -166,4 +195,13 @@ pub fn seq_scan_update(db_file: String) {
     while let Some((tuple, _)) = tmp_scan_executor.next() {
         println!("{}", tuple.to_string(&tuples_schema));
     }
+
+    // check index
+    println!("\nIndex after (value '12'):");
+    let tmp_index_info = index_info.lock().unwrap();
+    let rids = tmp_index_info
+        .index
+        .scan(Tuple::new(vec![int_value(12)], &key_schema));
+    println!("{:?}", rids);
+    drop(tmp_index_info);
 }

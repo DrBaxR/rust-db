@@ -22,6 +22,9 @@ pub struct UpdateExecutor {
     pub catalog: Arc<Catalog>,
     pub child: Box<Executor>,
     updated: bool,
+    /// Used for keeping track of what tuples were already updated (deleted + inserted). It contains the new RIDs of
+    /// all tuples that were already processed
+    rids_processed: Vec<RID>,
 }
 
 impl UpdateExecutor {
@@ -31,6 +34,7 @@ impl UpdateExecutor {
             catalog: context.catalog,
             child: Box::new(child),
             updated: false,
+            rids_processed: vec![],
         }
     }
 
@@ -75,6 +79,7 @@ impl Execute for UpdateExecutor {
 
         self.child.init();
         self.updated = false;
+        self.rids_processed = vec![];
     }
 
     fn next(&mut self) -> Option<(Tuple, RID)> {
@@ -84,6 +89,10 @@ impl Execute for UpdateExecutor {
 
         let mut updated_tuples = 0;
         while let Some((_, rid)) = self.child.next() {
+            if self.rids_processed.contains(&rid) {
+                continue;
+            }
+
             let (table_info, index_infos) = self
                 .catalog
                 .get_table_with_indexes(self.plan.table_oid, &self.plan.table_name);
@@ -97,9 +106,11 @@ impl Execute for UpdateExecutor {
             // update is done by deleting old tuple and inserting new tuple with update values of old tuple
             let old_tuple = delete_from_table_and_indexes(&table_info, &index_infos, &rid);
             let new_tuple = self.get_updated_tuple(&old_tuple, &table_info);
-            insert_tuple_in_table_and_indexes(&mut table_info, &index_infos, new_tuple);
+            let new_rid =
+                insert_tuple_in_table_and_indexes(&mut table_info, &index_infos, new_tuple);
 
             updated_tuples += 1;
+            self.rids_processed.push(new_rid);
         }
 
         self.updated = true;
