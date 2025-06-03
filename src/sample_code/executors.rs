@@ -245,18 +245,27 @@ pub fn update_executor(
     };
 
     let expressions = vec![
-        Expression::Constant(ConstantExpression {
-            value: int_value(12),
-        }),
+        Expression::Constant(ConstantExpression { value: int_value(12) }),
+        // Expression::Arithmetic(ArithmeticExpression {
+        //     left: Box::new(Expression::Constant(ConstantExpression {
+        //         value: int_value(100),
+        //     })),
+        //     right: Box::new(Expression::ColumnValue(ColumnValueExpression {
+        //         join_side: JoinSide::Left,
+        //         col_index: 0,
+        //         return_type: Column::new(ColumnType::Integer),
+        //     })),
+        //     typ: ArithmeticType::Multiply,
+        // }),
         Expression::ColumnValue(ColumnValueExpression {
             join_side: JoinSide::Left,
             col_index: 1,
-            return_type: Column::new(ColumnType::Boolean)
+            return_type: Column::new(ColumnType::Boolean),
         }),
         Expression::ColumnValue(ColumnValueExpression {
             join_side: JoinSide::Left,
             col_index: 2,
-            return_type: Column::new(ColumnType::Decimal)
+            return_type: Column::new(ColumnType::Decimal),
         }),
     ];
     let plan = UpdatePlanNode::new(table_oid, table_name, expressions, child_pln);
