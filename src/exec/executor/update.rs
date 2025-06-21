@@ -144,3 +144,107 @@ impl Execute for UpdateExecutor {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{env::temp_dir, fs::remove_file};
+
+    use crate::{
+        exec::{
+            executor::{Execute, Executor},
+            plan::PlanNode,
+        },
+        sample_code::executors::{seq_scan_executor, update_executor, TableConstructorType},
+        table::{
+            schema::{ColumnType, Schema},
+            tuple::Tuple,
+        },
+        test_utils::int_value,
+    };
+
+    #[test]
+    fn run_update_executor() {
+        // init
+        let db_path = temp_dir().join("update_run_update_executor.db");
+        let (scan_executor, table_context) = seq_scan_executor(TableConstructorType::WithTable(
+            db_path.to_str().unwrap().to_string(),
+        ));
+        let tuples_schema = table_context.1.clone();
+
+        let (mut update_executor, schema) = update_executor(
+            PlanNode::SeqScan(scan_executor.plan.clone()),
+            Executor::SeqScan(scan_executor),
+            TableConstructorType::WithoutTable(table_context.clone()),
+        );
+
+        let key_schema = Schema::with_types(vec![ColumnType::Integer]);
+        let key_attrs = vec![0];
+        let index_info = table_context
+            .0
+            .catalog
+            .create_index(
+                "first_col",
+                "test_table",
+                tuples_schema.clone(),
+                key_schema.clone(),
+                key_attrs,
+                key_schema.get_tuple_len(),
+            )
+            .unwrap();
+
+        // table before
+        let (mut tmp_scan_executor, _) =
+            seq_scan_executor(TableConstructorType::WithoutTable(table_context.clone()));
+
+        tmp_scan_executor.init();
+        let (tuple, _) = tmp_scan_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&tuples_schema, 0), int_value(1));
+        let (tuple, _) = tmp_scan_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&tuples_schema, 0), int_value(2));
+        let (tuple, _) = tmp_scan_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&tuples_schema, 0), int_value(3));
+        assert_eq!(tmp_scan_executor.next(), None);
+
+        // index before
+        let tmp_index_info = index_info.lock().unwrap();
+
+        let rids = tmp_index_info
+            .index
+            .scan(Tuple::new(vec![int_value(12)], &key_schema));
+        assert_eq!(rids.len(), 0);
+
+        drop(tmp_index_info);
+
+        // update
+        update_executor.init();
+        let (tuple, _) = update_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&schema, 0), int_value(3));
+        assert_eq!(update_executor.next(), None);
+
+        // table after
+        let (mut tmp_scan_executor, _) =
+            seq_scan_executor(TableConstructorType::WithoutTable(table_context.clone()));
+
+        tmp_scan_executor.init();
+        let (tuple, _) = tmp_scan_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&tuples_schema, 0), int_value(12));
+        let (tuple, _) = tmp_scan_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&tuples_schema, 0), int_value(12));
+        let (tuple, _) = tmp_scan_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&tuples_schema, 0), int_value(12));
+        assert_eq!(tmp_scan_executor.next(), None);
+
+        // check index
+        let tmp_index_info = index_info.lock().unwrap();
+
+        let rids = tmp_index_info
+            .index
+            .scan(Tuple::new(vec![int_value(12)], &key_schema));
+        assert_eq!(rids.len(), 3);
+            
+        drop(tmp_index_info);
+
+        // cleanup
+        remove_file(db_path).expect("Couldn't remove test DB file");
+    }
+}

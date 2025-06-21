@@ -4,7 +4,6 @@ use executors::{
 };
 
 use crate::{
-    catalog,
     exec::{
         executor::{Execute, Executor},
         plan::PlanNode,
@@ -179,7 +178,7 @@ pub fn seq_scan_update(db_file: String) {
     drop(tmp_index_info);
 
     // update
-    println!("\nDelete executor:");
+    println!("\nUpdate executor:");
     println!("{}", update_executor.to_string(0));
     update_executor.init();
     while let Some((tuple, _)) = update_executor.next() {
