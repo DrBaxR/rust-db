@@ -11,6 +11,7 @@ use values::ValuesExecutor;
 use crate::{
     catalog::Catalog,
     disk::buffer_pool_manager::BufferPoolManager,
+    exec::executor::idx_scan::IdxScanExecutor,
     table::{
         schema::Schema,
         tuple::{Tuple, RID},
@@ -20,13 +21,14 @@ use crate::{
 #[cfg(test)]
 pub mod tests;
 
-pub mod util;
 pub mod delete;
 pub mod filter;
+pub mod idx_scan;
 pub mod insert;
 pub mod projection;
 pub mod seq_scan;
 pub mod update;
+pub mod util;
 pub mod values;
 
 #[derive(Clone)]
@@ -50,6 +52,7 @@ pub enum Executor {
     Insert(InsertExecutor),
     Delete(DeleteExecutor),
     Update(UpdateExecutor),
+    IdxScan(IdxScanExecutor),
 }
 
 impl Execute for Executor {
@@ -62,6 +65,7 @@ impl Execute for Executor {
             Executor::Insert(executor) => executor.init(),
             Executor::Delete(executor) => executor.init(),
             Executor::Update(executor) => executor.init(),
+            Executor::IdxScan(executor) => executor.init(),
         }
     }
 
@@ -74,6 +78,7 @@ impl Execute for Executor {
             Executor::Insert(executor) => executor.next(),
             Executor::Delete(executor) => executor.next(),
             Executor::Update(executor) => executor.next(),
+            Executor::IdxScan(executor) => executor.next(),
         }
     }
 
@@ -86,6 +91,7 @@ impl Execute for Executor {
             Executor::Insert(executor) => executor.output_schema(),
             Executor::Delete(executor) => executor.output_schema(),
             Executor::Update(executor) => executor.output_schema(),
+            Executor::IdxScan(executor) => executor.output_schema(),
         }
     }
 
@@ -98,6 +104,7 @@ impl Execute for Executor {
             Executor::Insert(executor) => executor.to_string(indent_level),
             Executor::Delete(executor) => executor.to_string(indent_level),
             Executor::Update(executor) => executor.to_string(indent_level),
+            Executor::IdxScan(executor) => executor.to_string(indent_level),
         }
     }
 }

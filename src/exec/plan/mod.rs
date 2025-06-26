@@ -6,15 +6,16 @@ use seq_scan::SeqScanPlanNode;
 use update::UpdatePlanNode;
 use values::ValuesPlanNode;
 
-use crate::table::schema::Schema;
+use crate::{exec::plan::idx_scan::IdxScanPlanNode, table::schema::Schema};
 
-pub mod values;
-pub mod projection;
-pub mod filter;
-pub mod seq_scan;
-pub mod insert;
 pub mod delete;
+pub mod filter;
+pub mod idx_scan;
+pub mod insert;
+pub mod projection;
+pub mod seq_scan;
 pub mod update;
+pub mod values;
 
 /// Interface (probably) mainly used by the planner to generate the query execution plan. The executors will
 /// probably use the interface provided by the specific plan node implementation.
@@ -31,7 +32,8 @@ pub enum PlanNode {
     SeqScan(SeqScanPlanNode),
     Insert(InsertPlanNode),
     Delete(DeletePlanNode),
-    Update(UpdatePlanNode)
+    Update(UpdatePlanNode),
+    IdxScan(IdxScanPlanNode),
 }
 
 impl AbstractPlanNode for PlanNode {
@@ -44,6 +46,7 @@ impl AbstractPlanNode for PlanNode {
             PlanNode::Insert(node) => node.get_children(),
             PlanNode::Delete(node) => node.get_children(),
             PlanNode::Update(node) => node.get_children(),
+            PlanNode::IdxScan(node) => node.get_children(),
         }
     }
 
@@ -56,6 +59,7 @@ impl AbstractPlanNode for PlanNode {
             PlanNode::Insert(node) => node.get_output_schema(),
             PlanNode::Delete(node) => node.get_output_schema(),
             PlanNode::Update(node) => node.get_output_schema(),
+            PlanNode::IdxScan(node) => node.get_output_schema(),
         }
     }
 }
