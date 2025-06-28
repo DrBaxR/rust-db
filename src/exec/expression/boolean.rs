@@ -8,7 +8,7 @@ use crate::table::{
 
 use super::{Evaluate, Expression};
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum BooleanType {
     // composite
     And,
