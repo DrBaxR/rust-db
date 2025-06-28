@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     sync::{
         atomic::{AtomicU32, Ordering},
-        Arc, Mutex, MutexGuard,
+        Arc, Mutex,
     },
 };
 
@@ -11,7 +11,7 @@ use info::{IndexInfo, TableInfo};
 use crate::{
     disk::buffer_pool_manager::BufferPoolManager,
     index::{Index, IndexMeta},
-    table::{schema::Schema, tuple::Tuple, TableHeap},
+    table::{schema::Schema, TableHeap},
 };
 
 pub mod info;
@@ -188,6 +188,32 @@ impl Catalog {
             .values()
             .map(|oid| self.get_index_by_oid(*oid).unwrap().clone())
             .collect()
+    }
+
+    /// Get index for table with `table_name` that is made for the column with the index `col_index`. Will return `None`
+    /// if there is no index that matches the two criteria.
+    pub fn get_table_index_by_column(
+        &self,
+        table_name: &str,
+        col_index: usize,
+    ) -> Option<Arc<Mutex<IndexInfo>>> {
+        // search for index
+        let indexes = self.get_table_indexes(table_name);
+        if indexes.is_empty() {
+            return None;
+        }
+
+        for index in indexes.into_iter() {
+            let index_guard = index.lock().unwrap();
+
+            let meta = index_guard.index.meta();
+            if meta.key_attrs().len() == 1 && meta.key_attrs()[0] == col_index {
+                drop(index_guard);
+                return Some(index);
+            }
+        }
+
+        return None;
     }
 
     /// Get all table names in the catalog.

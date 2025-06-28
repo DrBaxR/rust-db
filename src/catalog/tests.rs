@@ -1,9 +1,4 @@
-use std::{
-    collections::HashMap,
-    env::temp_dir,
-    fs::remove_file,
-    sync::Arc,
-};
+use std::{collections::HashMap, env::temp_dir, fs::remove_file, sync::Arc};
 
 use crate::{
     disk::buffer_pool_manager::BufferPoolManager,
@@ -61,7 +56,7 @@ fn create_index_and_use() {
     let db_path = temp_dir().join("catalog_create_index_and_use.db");
     let db_file_path = db_path.to_str().unwrap().to_string();
     let bpm = BufferPoolManager::new(db_file_path.clone(), 2, 2);
-    let mut catalog = Catalog::new(Arc::new(bpm));
+    let catalog = Catalog::new(Arc::new(bpm));
 
     // test
     // insert 0..10 in table
@@ -128,6 +123,41 @@ fn create_index_and_use() {
 
         assert_eq!(tuple_val, *val);
     }
+
+    // cleanup
+    remove_file(db_path).expect("Couldn't remove test DB file");
+}
+
+#[test]
+pub fn get_index_by_column() {
+    // init
+    let db_path = temp_dir().join("catalog_get_index_by_column.db");
+    let db_file_path = db_path.to_str().unwrap().to_string();
+    let bpm = BufferPoolManager::new(db_file_path.clone(), 2, 2);
+    let catalog = Catalog::new(Arc::new(bpm));
+
+    // test
+    let table_schema = Schema::with_types(vec![ColumnType::Integer, ColumnType::Boolean]);
+    let _ = catalog.create_table("table", table_schema.clone()).unwrap();
+
+    let key_schema = Schema::with_types(vec![ColumnType::Integer]);
+    let index = catalog.create_index(
+        "index",
+        "table",
+        table_schema.clone(),
+        key_schema.clone(),
+        vec![0],
+        key_schema.get_tuple_len(),
+    ).unwrap();
+    let index_oid = index.lock().unwrap().oid;
+
+    // assert
+    let result = catalog.get_table_index_by_column("table", 0).unwrap();
+    let result_oid = result.lock().unwrap().oid;
+    assert_eq!(index_oid, result_oid);
+
+    let result = catalog.get_table_index_by_column("table", 1);
+    assert!(result.is_none());
 
     // cleanup
     remove_file(db_path).expect("Couldn't remove test DB file");
