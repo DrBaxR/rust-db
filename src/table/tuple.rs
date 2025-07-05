@@ -11,6 +11,11 @@ pub struct Tuple {
 }
 
 impl Tuple {
+    /// Creates a new empty tuple
+    pub fn empty() -> Self {
+        Self { data: vec![] }
+    }
+
     /// Creates a new tuple from the given values as long as they match the given schema.
     ///
     /// # Panics
