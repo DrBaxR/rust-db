@@ -13,12 +13,11 @@ pub struct IdxScanPlanNode {
     pub table_oid: OID,
     pub table_name: String,
     pub filter_expr: BooleanExpression,
-    pub child: Box<PlanNode>,
 }
 
 impl AbstractPlanNode for IdxScanPlanNode {
     fn get_children(&self) -> Vec<&PlanNode> {
-        vec![&self.child]
+        vec![]
     }
 
     fn get_output_schema(&self) -> &Schema {

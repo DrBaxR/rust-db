@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 use crate::catalog::{Catalog, OID};
 use crate::exec::executor::delete::DeleteExecutor;
+use crate::exec::executor::idx_scan::IdxScanExecutor;
 use crate::exec::executor::insert::InsertExecutor;
 use crate::exec::executor::update::UpdateExecutor;
 use crate::exec::executor::ExecutorContext;
 use crate::exec::plan::delete::DeletePlanNode;
+use crate::exec::plan::idx_scan::IdxScanPlanNode;
 use crate::exec::plan::insert::InsertPlanNode;
 use crate::exec::plan::update::UpdatePlanNode;
 use crate::exec::{
@@ -25,12 +27,13 @@ use crate::exec::{
         values::ValuesPlanNode, PlanNode,
     },
 };
+use crate::sample_code::util::create_table_with_values;
 use crate::table::{
     schema::{Column, ColumnType, Schema},
     value::{ColumnValue, IntegerValue},
 };
 
-use crate::test_utils::{const_bool, const_decimal, const_int, int_value};
+use crate::test_utils::{column_with, const_bool, const_decimal, const_int, int_value};
 
 use super::util::create_table;
 
@@ -245,7 +248,6 @@ pub fn update_executor(
     };
 
     let expressions = vec![
-        Expression::Constant(ConstantExpression { value: int_value(12) }),
         // Expression::Arithmetic(ArithmeticExpression {
         //     left: Box::new(Expression::Constant(ConstantExpression {
         //         value: int_value(100),
@@ -257,21 +259,50 @@ pub fn update_executor(
         //     })),
         //     typ: ArithmeticType::Multiply,
         // }),
-        Expression::ColumnValue(ColumnValueExpression {
-            join_side: JoinSide::Left,
-            col_index: 1,
-            return_type: Column::new(ColumnType::Boolean),
-        }),
-        Expression::ColumnValue(ColumnValueExpression {
-            join_side: JoinSide::Left,
-            col_index: 2,
-            return_type: Column::new(ColumnType::Decimal),
-        }),
+        const_int(12),
+        column_with(1, ColumnType::Boolean),
+        column_with(2, ColumnType::Decimal),
     ];
     let plan = UpdatePlanNode::new(table_oid, table_name, expressions, child_pln);
 
     (
         UpdateExecutor::new(executor_context, plan, child_exec),
         Schema::with_types(vec![ColumnType::Integer]),
+    )
+}
+
+/// EXEC: () -> (int, bool, decimal)
+/// SIDE: creates a table and inserts three tuples into it (all the same)
+pub fn idx_scan_executor(c_type: TableConstructorType) -> (IdxScanExecutor, TableContext) {
+    let (executor_context, schema, table_oid, table_name) = match c_type {
+        TableConstructorType::WithoutTable((executor_context, schema, table_oid, table_name)) => {
+            (executor_context, schema, table_oid, table_name)
+        }
+        TableConstructorType::WithTable(db_file) => {
+            let (executor_context, schema, table_oid, table_name) =
+                create_table_with_values(db_file, &vec![2, 2, 2]);
+            (executor_context, schema, table_oid, table_name)
+        }
+    };
+
+    let filter_expr = BooleanExpression {
+        left: Box::new(column_with(0, ColumnType::Integer)),
+        right: Box::new(const_int(2)),
+        typ: BooleanType::EQ,
+    };
+    let plan = IdxScanPlanNode {
+        output_schema: Schema::with_types(vec![
+            ColumnType::Integer,
+            ColumnType::Boolean,
+            ColumnType::Decimal,
+        ]),
+        table_oid,
+        table_name: table_name.clone(),
+        filter_expr,
+    };
+
+    (
+        IdxScanExecutor::new(executor_context.clone(), plan),
+        (executor_context, schema, table_oid, table_name),
     )
 }

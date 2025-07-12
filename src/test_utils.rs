@@ -1,4 +1,12 @@
-use crate::{exec::expression::{constant::ConstantExpression, Expression}, table::value::{BooleanValue, ColumnValue, DecimalValue, IntegerValue, TimestampValue, VarcharValue}};
+use crate::{
+    exec::expression::{constant::ConstantExpression, value::{ColumnValueExpression, JoinSide}, Expression},
+    table::{
+        schema::{Column, ColumnType},
+        value::{
+            BooleanValue, ColumnValue, DecimalValue, IntegerValue, TimestampValue, VarcharValue,
+        },
+    },
+};
 
 pub fn const_int(value: i32) -> Expression {
     Expression::Constant(ConstantExpression {
@@ -30,6 +38,14 @@ pub fn const_varchar(value: String) -> Expression {
             length: value.len(),
             value,
         }),
+    })
+}
+
+pub fn column_with(col_index: usize, typ: ColumnType) -> Expression {
+    Expression::ColumnValue(ColumnValueExpression {
+        join_side: JoinSide::Left,
+        col_index: col_index,
+        return_type: Column::new(typ),
     })
 }
 

@@ -8,6 +8,7 @@ use crate::{
         executor::{Execute, Executor},
         plan::PlanNode,
     },
+    sample_code::executors::idx_scan_executor,
     table::{
         schema::{ColumnType, Schema},
         tuple::Tuple,
@@ -203,4 +204,35 @@ pub fn seq_scan_update(db_file: String) {
         .scan(Tuple::new(vec![int_value(12)], &key_schema));
     println!("{:?}", rids);
     drop(tmp_index_info);
+}
+
+pub fn idx_scan_projection(db_file: String) {
+    // init
+    let (idx_scan, (exec_ctx, table_schema, table_oid, table_name)) =
+        idx_scan_executor(TableConstructorType::WithTable(db_file));
+    let (mut projection_executor, schema) = projection_executor(
+        PlanNode::IdxScan(idx_scan.plan.clone()),
+        Executor::IdxScan(idx_scan),
+    );
+
+    let key_schema = Schema::with_types(vec![ColumnType::Integer]);
+    let index = exec_ctx
+        .catalog
+        .create_index(
+            "first_col",
+            &table_name,
+            table_schema,
+            key_schema.clone(),
+            vec![0],
+            key_schema.get_tuple_len(),
+        )
+        .unwrap();
+
+    // TODO: a bunch o checks and to string shit and stuff
+
+    // run
+    projection_executor.init();
+    while let Some((tuple, _)) = projection_executor.next() {
+        println!("{}", tuple.to_string(&schema));
+    }
 }
