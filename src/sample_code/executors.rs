@@ -301,6 +301,7 @@ pub fn idx_scan_executor(c_type: TableConstructorType) -> (IdxScanExecutor, Tabl
         filter_expr,
     };
 
+    // TODO: create index before calling new() - new does the check for index
     (
         IdxScanExecutor::new(executor_context.clone(), plan),
         (executor_context, schema, table_oid, table_name),
