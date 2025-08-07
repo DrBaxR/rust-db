@@ -47,4 +47,5 @@ Implementation flow:
 - [x] Insert
 - [x] Delete
 - [x] Update
-- [ ] (WIP) Index scan
+- [x] Index scan
+- [ ] (WIP) Research aggregator executors

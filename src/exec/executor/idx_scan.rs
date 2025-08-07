@@ -110,3 +110,61 @@ impl Execute for IdxScanExecutor {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{env::temp_dir, fs::remove_file};
+
+    use crate::{
+        exec::{
+            executor::{Execute, Executor},
+            plan::PlanNode,
+        },
+        sample_code::executors::{
+            idx_scan_executor, projection_executor, seq_scan_executor, TableConstructorType,
+        },
+        test_utils::int_value,
+    };
+
+    #[test]
+    fn idx_scan() {
+        // init
+        let db_path = temp_dir().join("idx_scan_run_idx_scan.db");
+        let (idx_scan, table_context) = idx_scan_executor(TableConstructorType::WithTable(
+            db_path.to_str().unwrap().to_string(),
+        ));
+        let (mut projection_executor, schema) = projection_executor(
+            PlanNode::IdxScan(idx_scan.plan.clone()),
+            Executor::IdxScan(idx_scan),
+        );
+        let tuples_schema = table_context.1.clone();
+
+        // initial table state check
+        let (mut tmp_scan_executor, _) =
+            seq_scan_executor(TableConstructorType::WithoutTable(table_context.clone()));
+
+        tmp_scan_executor.init();
+        let (tuple, _) = tmp_scan_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&tuples_schema, 0), int_value(2));
+        let (tuple, _) = tmp_scan_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&tuples_schema, 0), int_value(1));
+        let (tuple, _) = tmp_scan_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&tuples_schema, 0), int_value(2));
+        let (tuple, _) = tmp_scan_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&tuples_schema, 0), int_value(2));
+        assert_eq!(tmp_scan_executor.next(), None);
+
+        // run
+        projection_executor.init();
+        let (tuple, _) = projection_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&schema, 0), int_value(2));
+        let (tuple, _) = projection_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&schema, 0), int_value(2));
+        let (tuple, _) = projection_executor.next().unwrap();
+        assert_eq!(tuple.get_value(&schema, 0), int_value(2));
+        assert_eq!(tmp_scan_executor.next(), None);
+
+        // cleanup
+        remove_file(db_path).expect("Couldn't remove test DB file");
+    }
+}
