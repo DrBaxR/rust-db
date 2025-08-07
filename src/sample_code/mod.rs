@@ -208,29 +208,26 @@ pub fn seq_scan_update(db_file: String) {
 
 pub fn idx_scan_projection(db_file: String) {
     // init
-    let (idx_scan, (exec_ctx, table_schema, table_oid, table_name)) =
+    let (idx_scan, table_context) =
         idx_scan_executor(TableConstructorType::WithTable(db_file));
     let (mut projection_executor, schema) = projection_executor(
         PlanNode::IdxScan(idx_scan.plan.clone()),
         Executor::IdxScan(idx_scan),
     );
 
-    let key_schema = Schema::with_types(vec![ColumnType::Integer]);
-    let index = exec_ctx
-        .catalog
-        .create_index(
-            "first_col",
-            &table_name,
-            table_schema,
-            key_schema.clone(),
-            vec![0],
-            key_schema.get_tuple_len(),
-        )
-        .unwrap();
+    // show table
+    println!("Sequencial Scan:");
+    let (mut tmp_scan_executor, _) =
+        seq_scan_executor(TableConstructorType::WithoutTable(table_context.clone()));
+    tmp_scan_executor.init();
+    while let Some((tuple, _)) = tmp_scan_executor.next() {
+        println!("{}", tuple.to_string(&table_context.1));
+    }
 
-    // TODO: a bunch o checks and to string shit and stuff
+    println!("\n{}", projection_executor.to_string(0));
 
     // run
+    println!("\nIndex Scan:");
     projection_executor.init();
     while let Some((tuple, _)) = projection_executor.next() {
         println!("{}", tuple.to_string(&schema));

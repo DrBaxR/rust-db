@@ -8,7 +8,7 @@ use crate::{
         plan::{idx_scan::IdxScanPlanNode, AbstractPlanNode},
     },
     table::{
-        schema::Schema,
+        schema::{ColumnType, Schema},
         tuple::{Tuple, RID},
     },
 };
@@ -52,11 +52,10 @@ impl IdxScanExecutor {
 
 impl Execute for IdxScanExecutor {
     fn init(&mut self) {
-        let right_val = self
-            .plan
-            .filter_expr
-            .right
-            .evaluate(&Tuple::empty(), &Schema::with_types(vec![])); // evaluate should be an expression that doesn't depend on specific tuple
+        let right_val = self.plan.filter_expr.right.evaluate(
+            &Tuple::empty(),
+            &Schema::with_types(vec![ColumnType::Integer]),
+        ); // evaluate should be an expression that doesn't depend on specific tuple
 
         let key = Tuple::new(
             vec![right_val.clone()],
@@ -90,6 +89,24 @@ impl Execute for IdxScanExecutor {
     }
 
     fn to_string(&self, indent_level: usize) -> String {
-        todo!()
+        let table = self.table.lock().unwrap();
+        let table_name = table.name.clone();
+        let table_oid = table.oid;
+        drop(table);
+
+        let index = self.index.lock().unwrap();
+        let index_name = index.name.clone();
+        let index_oid = index.oid;
+        drop(index);
+
+        format!(
+            "IdxScan | Schema: {} | Table: {}({}) | Index: {}({}) - {}",
+            self.output_schema().to_string(),
+            table_name,
+            table_oid,
+            index_name,
+            index_oid,
+            self.plan.filter_expr.to_string()
+        )
     }
 }

@@ -272,7 +272,7 @@ pub fn update_executor(
 }
 
 /// EXEC: () -> (int, bool, decimal)
-/// SIDE: creates a table and inserts three tuples into it (all the same)
+/// SIDE: creates a table and inserts four tuples into it; creates index for table with "first_col"
 pub fn idx_scan_executor(c_type: TableConstructorType) -> (IdxScanExecutor, TableContext) {
     let (executor_context, schema, table_oid, table_name) = match c_type {
         TableConstructorType::WithoutTable((executor_context, schema, table_oid, table_name)) => {
@@ -280,10 +280,23 @@ pub fn idx_scan_executor(c_type: TableConstructorType) -> (IdxScanExecutor, Tabl
         }
         TableConstructorType::WithTable(db_file) => {
             let (executor_context, schema, table_oid, table_name) =
-                create_table_with_values(db_file, &vec![2, 2, 2]);
+                create_table_with_values(db_file, &vec![2, 1, 2, 2]);
             (executor_context, schema, table_oid, table_name)
         }
     };
+
+    let key_schema = Schema::with_types(vec![ColumnType::Integer]);
+    let _ = executor_context
+        .catalog
+        .create_index(
+            "first_col",
+            &table_name,
+            schema.clone(),
+            key_schema.clone(),
+            vec![0],
+            key_schema.get_tuple_len(),
+        )
+        .unwrap();
 
     let filter_expr = BooleanExpression {
         left: Box::new(column_with(0, ColumnType::Integer)),
@@ -301,7 +314,6 @@ pub fn idx_scan_executor(c_type: TableConstructorType) -> (IdxScanExecutor, Tabl
         filter_expr,
     };
 
-    // TODO: create index before calling new() - new does the check for index
     (
         IdxScanExecutor::new(executor_context.clone(), plan),
         (executor_context, schema, table_oid, table_name),
